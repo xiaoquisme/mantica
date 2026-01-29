@@ -4,13 +4,14 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { v7 as uuidv7 } from "uuid";
 
 const ProcessSchema = Type.Object({
-  action: Type.String({ description: "Action: start | status | stop | output." }),
+  action: Type.String({ description: "Action: start | status | stop | output | cleanup." }),
   id: Type.Optional(Type.String({ description: "Process id for status/stop/output." })),
   command: Type.Optional(Type.String({ description: "Command to run for start." })),
   cwd: Type.Optional(Type.String({ description: "Working directory." })),
 });
 
 const MAX_OUTPUT_BUFFER = 64 * 1024; // 64KB per process
+const TERMINATED_PROCESS_TTL = 60 * 60 * 1000; // 1 hour TTL for terminated processes
 
 type ProcessEntry = {
   id: string;
@@ -19,11 +20,25 @@ type ProcessEntry = {
   child: ChildProcess;
   exitCode: number | null;
   startedAt: number;
+  terminatedAt?: number | undefined;
   outputBuffer: string[];
   outputSize: number;
 };
 
 const PROCESS_REGISTRY = new Map<string, ProcessEntry>();
+
+/** Remove terminated processes older than TTL */
+function cleanupTerminatedProcesses(): number {
+  const now = Date.now();
+  let removed = 0;
+  for (const [id, entry] of PROCESS_REGISTRY) {
+    if (entry.terminatedAt && now - entry.terminatedAt > TERMINATED_PROCESS_TTL) {
+      PROCESS_REGISTRY.delete(id);
+      removed++;
+    }
+  }
+  return removed;
+}
 
 export type ProcessResult = {
   id?: string | undefined;
@@ -37,9 +52,12 @@ export function createProcessTool(defaultCwd?: string): AgentTool<typeof Process
   return {
     name: "process",
     label: "Process",
-    description: "Manage long-running background processes like servers, watchers, or daemons. Actions: 'start' to launch (returns immediately with process id), 'status' to check if running, 'output' to read stdout/stderr, 'stop' to terminate. Use this for servers (e.g., python server.py, npm run dev) instead of 'exec'.",
+    description: "Manage long-running background processes like servers, watchers, or daemons. Actions: 'start' to launch (returns immediately with process id), 'status' to check if running, 'output' to read stdout/stderr, 'stop' to terminate, 'cleanup' to remove terminated processes from memory. Use this for servers (e.g., python server.py, npm run dev) instead of 'exec'.",
     parameters: ProcessSchema,
     execute: async (_toolCallId, params, signal) => {
+      // Auto-cleanup old terminated processes on each invocation
+      cleanupTerminatedProcesses();
+
       const action = String(params.action ?? "").toLowerCase();
       if (!action) {
         throw new Error("Missing action");
@@ -88,11 +106,16 @@ export function createProcessTool(defaultCwd?: string): AgentTool<typeof Process
               };
               PROCESS_REGISTRY.set(id, entry);
 
-              // 收集输出到缓冲区
+              // Collect output to buffer with size limit
               const collectOutput = (data: Buffer) => {
-                const text = data.toString("utf8");
-                if (entry.outputSize + text.length > MAX_OUTPUT_BUFFER) {
-                  // 超出限制时，移除旧的输出
+                let text = data.toString("utf8");
+                // Truncate if single chunk exceeds max buffer
+                if (text.length > MAX_OUTPUT_BUFFER) {
+                  text = text.slice(-MAX_OUTPUT_BUFFER);
+                  entry.outputBuffer = [];
+                  entry.outputSize = 0;
+                } else if (entry.outputSize + text.length > MAX_OUTPUT_BUFFER) {
+                  // Remove old entries to make room
                   while (entry.outputBuffer.length > 0 && entry.outputSize + text.length > MAX_OUTPUT_BUFFER) {
                     const removed = entry.outputBuffer.shift();
                     if (removed) entry.outputSize -= removed.length;
@@ -107,6 +130,7 @@ export function createProcessTool(defaultCwd?: string): AgentTool<typeof Process
 
               child.on("close", (code) => {
                 entry.exitCode = code;
+                entry.terminatedAt = Date.now();
               });
 
               if (signal) {
@@ -179,6 +203,43 @@ export function createProcessTool(defaultCwd?: string): AgentTool<typeof Process
         return {
           content: [{ type: "text", text: output || "(no output)" }],
           details: { id, running, exitCode: entry.exitCode, output },
+        };
+      }
+
+      if (action === "cleanup") {
+        // Remove specific terminated process, or all terminated processes if no id
+        const id = params.id ? String(params.id) : undefined;
+        if (id) {
+          const entry = PROCESS_REGISTRY.get(id);
+          if (!entry) {
+            return {
+              content: [{ type: "text", text: `Process not found: ${id}` }],
+              details: { id, running: false },
+            };
+          }
+          if (entry.exitCode === null) {
+            return {
+              content: [{ type: "text", text: `Process still running: ${id}` }],
+              details: { id, running: true },
+            };
+          }
+          PROCESS_REGISTRY.delete(id);
+          return {
+            content: [{ type: "text", text: `Removed process: ${id}` }],
+            details: { id, running: false, message: "cleaned up" },
+          };
+        }
+        // Remove all terminated processes
+        let removed = 0;
+        for (const [entryId, entry] of PROCESS_REGISTRY) {
+          if (entry.exitCode !== null) {
+            PROCESS_REGISTRY.delete(entryId);
+            removed++;
+          }
+        }
+        return {
+          content: [{ type: "text", text: `Removed ${removed} terminated process(es)` }],
+          details: { message: `cleaned up ${removed} processes` },
         };
       }
 
