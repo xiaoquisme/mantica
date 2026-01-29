@@ -11,7 +11,6 @@ const client = new GatewayClient({
   url: "http://localhost:3000",
   deviceId: "client-001",
   deviceType: "client",
-  metadata: { name: "Test Client" },
 });
 
 // 模拟一个 Agent
@@ -19,7 +18,6 @@ const agent = new GatewayClient({
   url: "http://localhost:3000",
   deviceId: "agent-001",
   deviceType: "agent",
-  metadata: { name: "Test Agent" },
 });
 
 // Agent 监听消息

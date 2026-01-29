@@ -15,13 +15,12 @@ import type { Server, Socket } from "socket.io";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import {
   GatewayEvents,
-  type RegisterPayload,
-  type RegisteredResponse,
   type RoutedMessage,
   type SendErrorResponse,
   type PingPayload,
   type PongResponse,
   type DeviceInfo,
+  type DeviceType,
 } from "../shared/gateway-sdk/index.js";
 
 @Injectable()
@@ -55,12 +54,56 @@ export class EventsGateway
   }
 
   handleConnection(client: Socket): void {
-    this.logger.info({ socketId: client.id }, "Socket connected");
+    const query = client.handshake.query;
+    const deviceId = query["deviceId"] as string | undefined;
+    const deviceType = query["deviceType"] as DeviceType | undefined;
+
+    this.logger.debug(
+      { socketId: client.id, deviceId, deviceType },
+      "Incoming connection"
+    );
+
+    if (!deviceId || !deviceType) {
+      this.logger.warn(
+        { socketId: client.id },
+        "Missing deviceId or deviceType in query, disconnecting"
+      );
+      client.disconnect(true);
+      return;
+    }
+
+    // 检查 deviceId 是否已被其他 socket 使用
+    const existingSocketId = this.deviceToSocket.get(deviceId);
+    if (existingSocketId && existingSocketId !== client.id) {
+      this.logger.warn(
+        { deviceId, existingSocketId },
+        "Device already registered by another socket, disconnecting"
+      );
+      client.emit(GatewayEvents.REGISTERED, {
+        success: false,
+        deviceId,
+        error: "Device ID already in use",
+      });
+      client.disconnect(true);
+      return;
+    }
+
+    // 注册设备
+    const deviceInfo: DeviceInfo = { deviceId, deviceType };
+    this.deviceToSocket.set(deviceId, client.id);
+    this.socketToDevice.set(client.id, deviceInfo);
+
+    this.logger.info({ deviceId, deviceType }, "Device connected and registered");
+    client.emit(GatewayEvents.REGISTERED, { success: true, deviceId });
   }
 
   handleDisconnect(client: Socket): void {
     const deviceInfo = this.socketToDevice.get(client.id);
     if (deviceInfo) {
+      this.logger.debug(
+        { socketId: client.id, deviceId: deviceInfo.deviceId, deviceType: deviceInfo.deviceType },
+        "Device disconnecting"
+      );
       this.logger.info(
         { deviceId: deviceInfo.deviceId, deviceType: deviceInfo.deviceType },
         "Device disconnected"
@@ -72,45 +115,16 @@ export class EventsGateway
     }
   }
 
-  @SubscribeMessage(GatewayEvents.REGISTER)
-  handleRegister(
-    @MessageBody() data: RegisterPayload,
-    @ConnectedSocket() client: Socket
-  ): void {
-    const { deviceId, deviceType, metadata } = data;
-
-    // 检查 deviceId 是否已被其他 socket 使用
-    const existingSocketId = this.deviceToSocket.get(deviceId);
-    if (existingSocketId && existingSocketId !== client.id) {
-      this.logger.warn(
-        { deviceId, existingSocketId },
-        "Device already registered by another socket"
-      );
-      const response: RegisteredResponse = {
-        success: false,
-        deviceId,
-        error: "Device ID already in use",
-      };
-      client.emit(GatewayEvents.REGISTERED, response);
-      return;
-    }
-
-    // 注册设备
-    const deviceInfo: DeviceInfo = { deviceId, deviceType, metadata };
-    this.deviceToSocket.set(deviceId, client.id);
-    this.socketToDevice.set(client.id, deviceInfo);
-
-    this.logger.info({ deviceId, deviceType }, "Device registered");
-
-    const response: RegisteredResponse = { success: true, deviceId };
-    client.emit(GatewayEvents.REGISTERED, response);
-  }
-
   @SubscribeMessage(GatewayEvents.SEND)
   handleSend(
     @MessageBody() message: RoutedMessage,
     @ConnectedSocket() client: Socket
   ): void {
+    this.logger.debug(
+      { socketId: client.id, message },
+      "Received send event"
+    );
+
     const senderDevice = this.socketToDevice.get(client.id);
 
     // 检查发送者是否已注册

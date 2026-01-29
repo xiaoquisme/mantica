@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "dev:gateway": "tsx --watch src/gateway/main.ts",
+    "dev:console": "tsx --watch src/console/main.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
@@ -26,6 +27,7 @@
     "@nestjs/core": "^11.1.12",
     "@nestjs/platform-express": "^11.1.12",
     "@nestjs/platform-socket.io": "^11.1.12",
+    "@nestjs/serve-static": "^5.0.4",
     "@nestjs/websockets": "^11.1.12",
     "nestjs-pino": "^4.5.0",
     "pino": "^10.3.0",
