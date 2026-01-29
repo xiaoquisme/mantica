@@ -5,6 +5,7 @@ import { createAgentOutput } from "./output.js";
 import { resolveModel, resolveTools } from "./tools.js";
 import { SessionManager } from "./session/session-manager.js";
 import { ProfileManager } from "./profile/index.js";
+import { SkillManager } from "./skills/index.js";
 import {
   checkContextWindow,
   DEFAULT_CONTEXT_TOKENS,
@@ -43,6 +44,7 @@ export class Agent {
   private readonly output;
   private readonly session: SessionManager;
   private readonly profile?: ProfileManager;
+  private readonly skillManager?: SkillManager;
   private readonly contextWindowGuard: ContextWindowGuardResult;
   private readonly debug: boolean;
 
@@ -57,7 +59,7 @@ export class Agent {
 
     this.agent = new PiAgentCore();
 
-    // 加载 Agent Profile（如果指定了 profileId）
+    // Load Agent Profile (if profileId is specified)
     let systemPrompt: string | undefined;
     if (options.profileId) {
       this.profile = new ProfileManager({
@@ -65,13 +67,29 @@ export class Agent {
         baseDir: options.profileBaseDir,
       });
       systemPrompt = this.profile.buildSystemPrompt();
-      if (systemPrompt) {
-        this.agent.setSystemPrompt(systemPrompt);
-      }
     } else if (options.systemPrompt) {
-      // 直接使用传入的 systemPrompt
+      // Use provided systemPrompt directly
       systemPrompt = options.systemPrompt;
-      this.agent.setSystemPrompt(options.systemPrompt);
+    }
+
+    // Initialize SkillManager (enabled by default)
+    if (options.enableSkills !== false) {
+      this.skillManager = new SkillManager({
+        profileId: options.profileId,
+        profileBaseDir: options.profileBaseDir,
+        extraDirs: options.extraSkillDirs,
+      });
+
+      // Append skills prompt to system prompt
+      const skillsPrompt = this.skillManager.buildSkillsPrompt();
+      if (skillsPrompt) {
+        systemPrompt = systemPrompt ? `${systemPrompt}\n\n${skillsPrompt}` : skillsPrompt;
+      }
+    }
+
+    // Set the combined system prompt
+    if (systemPrompt) {
+      this.agent.setSystemPrompt(systemPrompt);
     }
 
     this.sessionId = options.sessionId ?? uuidv7();

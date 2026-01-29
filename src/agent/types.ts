@@ -48,4 +48,10 @@ export type AgentOptions = {
 
   /** Enable debug logging */
   debug?: boolean | undefined;
+
+  // === Skills Configuration ===
+  /** Enable skills system (default: true) */
+  enableSkills?: boolean | undefined;
+  /** Additional directories to search for skills */
+  extraSkillDirs?: string[] | undefined;
 };
