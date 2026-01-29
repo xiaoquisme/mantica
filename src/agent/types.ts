@@ -24,4 +24,25 @@ export type AgentOptions = {
   cwd?: string | undefined;
   sessionId?: string | undefined;
   logger?: AgentLogger | undefined;
+
+  // === Context Window Guard 配置 ===
+  /** 手动指定 context window token 数（覆盖 model 的值） */
+  contextWindowTokens?: number | undefined;
+  /** 预留给响应生成的 token 数，默认 1024 */
+  reserveTokens?: number | undefined;
+  /**
+   * Compaction 模式:
+   * - "count": 使用旧的消息计数
+   * - "tokens": 使用 token 感知（默认）
+   * - "summary": 使用 LLM 生成摘要
+   */
+  compactionMode?: "count" | "tokens" | "summary" | undefined;
+  /** Compaction 目标利用率 (0-1)，默认 0.5 */
+  compactionTargetRatio?: number | undefined;
+  /** 最小保留消息数，默认 10 */
+  minKeepMessages?: number | undefined;
+
+  // === Summary Compaction 配置 ===
+  /** 自定义摘要生成指令 */
+  summaryInstructions?: string | undefined;
 };
