@@ -3,7 +3,6 @@ export const GatewayEvents = {
   // 系统事件
   PING: "ping",
   PONG: "pong",
-  REGISTER: "register",
   REGISTERED: "registered",
 
   // 消息路由
@@ -21,14 +20,6 @@ export type DeviceType = "client" | "agent";
 export interface DeviceInfo {
   deviceId: string;
   deviceType: DeviceType;
-  metadata?: Record<string, unknown> | undefined;
-}
-
-/** 注册请求 */
-export interface RegisterPayload {
-  deviceId: string;
-  deviceType: DeviceType;
-  metadata?: Record<string, unknown>;
 }
 
 /** 注册响应 */
@@ -88,8 +79,6 @@ export interface GatewayClientOptions {
   deviceId: string;
   /** 设备类型 */
   deviceType: DeviceType;
-  /** 设备元数据 */
-  metadata?: Record<string, unknown> | undefined;
   /** 自动重连，默认 true */
   autoReconnect?: boolean | undefined;
   /** 重连延迟（毫秒），默认 1000 */
@@ -115,16 +104,3 @@ export interface GatewayClientCallbacks {
   onStateChange?: (state: ConnectionState) => void;
 }
 
-// ============ 兼容旧API（可删除） ============
-
-/** @deprecated 使用 RoutedMessage */
-export interface SendMessagePayload {
-  text: string;
-}
-
-/** @deprecated 使用 RoutedMessage */
-export interface BroadcastMessage {
-  from: string;
-  text: string;
-  timestamp: string;
-}

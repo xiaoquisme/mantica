@@ -3,7 +3,6 @@ export {
   GatewayEvents,
   type DeviceType,
   type DeviceInfo,
-  type RegisterPayload,
   type RegisteredResponse,
   type RoutedMessage,
   type SendErrorResponse,

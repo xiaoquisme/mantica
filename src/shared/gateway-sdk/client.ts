@@ -17,7 +17,6 @@ interface ResolvedOptions {
   path: string;
   deviceId: string;
   deviceType: DeviceType;
-  metadata: Record<string, unknown> | undefined;
   autoReconnect: boolean;
   reconnectDelay: number;
 }
@@ -38,7 +37,6 @@ export class GatewayClient {
       path: options.path ?? "/ws",
       deviceId: options.deviceId,
       deviceType: options.deviceType,
-      metadata: options.metadata,
       autoReconnect: options.autoReconnect ?? true,
       reconnectDelay: options.reconnectDelay ?? 1000,
     };
@@ -74,7 +72,7 @@ export class GatewayClient {
     return this._state === "registered";
   }
 
-  /** 连接到服务器 */
+  /** 连接到服务器，deviceId 和 deviceType 通过 query 传递 */
   connect(): this {
     if (this.socket) {
       return this;
@@ -82,8 +80,14 @@ export class GatewayClient {
 
     this.setState("connecting");
 
+    const query: Record<string, string> = {
+      deviceId: this.options.deviceId,
+      deviceType: this.options.deviceType,
+    };
+
     this.socket = io(this.options.url, {
       path: this.options.path,
+      query,
       reconnection: this.options.autoReconnect,
       reconnectionDelay: this.options.reconnectDelay,
     });
@@ -204,24 +208,13 @@ export class GatewayClient {
     return uuidv7();
   }
 
-  private register(): void {
-    if (!this.socket) return;
-
-    this.socket.emit(GatewayEvents.REGISTER, {
-      deviceId: this.options.deviceId,
-      deviceType: this.options.deviceType,
-      metadata: this.options.metadata,
-    });
-  }
-
   private setupListeners(): void {
     if (!this.socket) return;
 
     this.socket.on("connect", () => {
       this.setState("connected");
       this.callbacks.onConnect?.(this.socket!.id!);
-      // 连接后自动注册
-      this.register();
+      // 服务端在连接时从 query 自动注册，等待 registered 事件即可
     });
 
     this.socket.on("disconnect", (reason: string) => {
