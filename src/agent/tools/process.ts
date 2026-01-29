@@ -4,37 +4,60 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { v7 as uuidv7 } from "uuid";
 
 const ProcessSchema = Type.Object({
-  action: Type.String({ description: "Action: start | status | stop." }),
-  id: Type.Optional(Type.String({ description: "Process id for status/stop." })),
+  action: Type.String({ description: "Action: start | status | stop | output | cleanup." }),
+  id: Type.Optional(Type.String({ description: "Process id for status/stop/output." })),
   command: Type.Optional(Type.String({ description: "Command to run for start." })),
   cwd: Type.Optional(Type.String({ description: "Working directory." })),
 });
 
+const MAX_OUTPUT_BUFFER = 64 * 1024; // 64KB per process
+const TERMINATED_PROCESS_TTL = 60 * 60 * 1000; // 1 hour TTL for terminated processes
+
 type ProcessEntry = {
   id: string;
   command: string;
-  cwd?: string;
+  cwd?: string | undefined;
   child: ChildProcess;
   exitCode: number | null;
   startedAt: number;
+  terminatedAt?: number | undefined;
+  outputBuffer: string[];
+  outputSize: number;
 };
 
 const PROCESS_REGISTRY = new Map<string, ProcessEntry>();
 
+/** Remove terminated processes older than TTL */
+function cleanupTerminatedProcesses(): number {
+  const now = Date.now();
+  let removed = 0;
+  for (const [id, entry] of PROCESS_REGISTRY) {
+    if (entry.terminatedAt && now - entry.terminatedAt > TERMINATED_PROCESS_TTL) {
+      PROCESS_REGISTRY.delete(id);
+      removed++;
+    }
+  }
+  return removed;
+}
+
 export type ProcessResult = {
-  id?: string;
-  running?: boolean;
-  exitCode?: number | null;
-  message?: string;
+  id?: string | undefined;
+  running?: boolean | undefined;
+  exitCode?: number | null | undefined;
+  message?: string | undefined;
+  output?: string | undefined;
 };
 
 export function createProcessTool(defaultCwd?: string): AgentTool<typeof ProcessSchema, ProcessResult> {
   return {
     name: "process",
     label: "Process",
-    description: "Manage background processes (start, status, stop).",
+    description: "Manage long-running background processes like servers, watchers, or daemons. Actions: 'start' to launch (returns immediately with process id), 'status' to check if running, 'output' to read stdout/stderr, 'stop' to terminate, 'cleanup' to remove terminated processes from memory. Use this for servers (e.g., python server.py, npm run dev) instead of 'exec'.",
     parameters: ProcessSchema,
     execute: async (_toolCallId, params, signal) => {
+      // Auto-cleanup old terminated processes on each invocation
+      cleanupTerminatedProcesses();
+
       const action = String(params.action ?? "").toLowerCase();
       if (!action) {
         throw new Error("Missing action");
@@ -47,29 +70,87 @@ export function createProcessTool(defaultCwd?: string): AgentTool<typeof Process
         if (PROCESS_REGISTRY.has(id)) {
           throw new Error(`Process already exists: ${id}`);
         }
-        const child = spawn(command, {
-          shell: true,
-          cwd: params.cwd || defaultCwd,
-          stdio: ["ignore", "pipe", "pipe"],
-          detached: true,
-        });
-        const entry: ProcessEntry = {
-          id,
-          command,
-          cwd: params.cwd || defaultCwd,
-          child,
-          exitCode: null,
-          startedAt: Date.now(),
-        };
-        PROCESS_REGISTRY.set(id, entry);
-        child.on("close", (code) => {
-          entry.exitCode = code;
-        });
-        if (signal) {
-          signal.addEventListener("abort", () => {
-            child.kill("SIGTERM");
+
+        // 使用 Promise 等待进程启动或失败
+        const result = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+          const child = spawn(command, {
+            shell: true,
+            cwd: params.cwd || defaultCwd,
+            stdio: ["ignore", "pipe", "pipe"],
+            detached: true,
           });
+
+          let resolved = false;
+
+          // 处理 spawn 错误（如 shell 不存在）
+          child.on("error", (err) => {
+            if (!resolved) {
+              resolved = true;
+              resolve({ success: false, error: err.message });
+            }
+          });
+
+          // 进程启动成功后注册到 registry
+          child.on("spawn", () => {
+            if (!resolved) {
+              resolved = true;
+              const entry: ProcessEntry = {
+                id,
+                command,
+                cwd: params.cwd || defaultCwd,
+                child,
+                exitCode: null,
+                startedAt: Date.now(),
+                outputBuffer: [],
+                outputSize: 0,
+              };
+              PROCESS_REGISTRY.set(id, entry);
+
+              // Collect output to buffer with size limit
+              const collectOutput = (data: Buffer) => {
+                let text = data.toString("utf8");
+                // Truncate if single chunk exceeds max buffer
+                if (text.length > MAX_OUTPUT_BUFFER) {
+                  text = text.slice(-MAX_OUTPUT_BUFFER);
+                  entry.outputBuffer = [];
+                  entry.outputSize = 0;
+                } else if (entry.outputSize + text.length > MAX_OUTPUT_BUFFER) {
+                  // Remove old entries to make room
+                  while (entry.outputBuffer.length > 0 && entry.outputSize + text.length > MAX_OUTPUT_BUFFER) {
+                    const removed = entry.outputBuffer.shift();
+                    if (removed) entry.outputSize -= removed.length;
+                  }
+                }
+                entry.outputBuffer.push(text);
+                entry.outputSize += text.length;
+              };
+
+              child.stdout?.on("data", collectOutput);
+              child.stderr?.on("data", collectOutput);
+
+              child.on("close", (code) => {
+                entry.exitCode = code;
+                entry.terminatedAt = Date.now();
+              });
+
+              if (signal) {
+                signal.addEventListener("abort", () => {
+                  child.kill("SIGTERM");
+                });
+              }
+
+              resolve({ success: true });
+            }
+          });
+        });
+
+        if (!result.success) {
+          return {
+            content: [{ type: "text", text: `Failed to start process: ${result.error}` }],
+            details: { id, running: false, message: result.error },
+          };
         }
+
         return {
           content: [{ type: "text", text: `Started process ${id}` }],
           details: { id, running: true },
@@ -105,6 +186,60 @@ export function createProcessTool(defaultCwd?: string): AgentTool<typeof Process
         return {
           content: [{ type: "text", text: `Stopped process ${id}` }],
           details: { id, running: false },
+        };
+      }
+
+      if (action === "output") {
+        const id = String(params.id ?? "");
+        const entry = PROCESS_REGISTRY.get(id);
+        if (!entry) {
+          return {
+            content: [{ type: "text", text: `Process not found: ${id}` }],
+            details: { id, running: false },
+          };
+        }
+        const output = entry.outputBuffer.join("");
+        const running = entry.exitCode === null;
+        return {
+          content: [{ type: "text", text: output || "(no output)" }],
+          details: { id, running, exitCode: entry.exitCode, output },
+        };
+      }
+
+      if (action === "cleanup") {
+        // Remove specific terminated process, or all terminated processes if no id
+        const id = params.id ? String(params.id) : undefined;
+        if (id) {
+          const entry = PROCESS_REGISTRY.get(id);
+          if (!entry) {
+            return {
+              content: [{ type: "text", text: `Process not found: ${id}` }],
+              details: { id, running: false },
+            };
+          }
+          if (entry.exitCode === null) {
+            return {
+              content: [{ type: "text", text: `Process still running: ${id}` }],
+              details: { id, running: true },
+            };
+          }
+          PROCESS_REGISTRY.delete(id);
+          return {
+            content: [{ type: "text", text: `Removed process: ${id}` }],
+            details: { id, running: false, message: "cleaned up" },
+          };
+        }
+        // Remove all terminated processes
+        let removed = 0;
+        for (const [entryId, entry] of PROCESS_REGISTRY) {
+          if (entry.exitCode !== null) {
+            PROCESS_REGISTRY.delete(entryId);
+            removed++;
+          }
+        }
+        return {
+          content: [{ type: "text", text: `Removed ${removed} terminated process(es)` }],
+          details: { message: `cleaned up ${removed} processes` },
         };
       }
 

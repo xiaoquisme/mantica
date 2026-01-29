@@ -1,13 +1,19 @@
 import { Agent as PiAgentCore, type AgentEvent, type AgentMessage } from "@mariozechner/pi-agent-core";
+import { v7 as uuidv7 } from "uuid";
 import type { AgentOptions, AgentRunResult } from "./types.js";
 import { createAgentOutput } from "./output.js";
 import { resolveModel, resolveTools } from "./tools.js";
 import { SessionManager } from "./session/session-manager.js";
+import { ProfileManager } from "./profile/index.js";
 
 export class Agent {
   private readonly agent: PiAgentCore;
   private readonly output;
   private readonly session: SessionManager;
+  private readonly profile?: ProfileManager;
+
+  /** 当前会话 ID */
+  readonly sessionId: string;
 
   constructor(options: AgentOptions = {}) {
     const stdout = options.logger?.stdout ?? process.stdout;
@@ -15,10 +21,24 @@ export class Agent {
     this.output = createAgentOutput({ stdout, stderr });
 
     this.agent = new PiAgentCore();
-    if (options.systemPrompt) this.agent.setSystemPrompt(options.systemPrompt);
 
-    const sessionId = options.sessionId ?? "default";
-    this.session = new SessionManager({ sessionId });
+    // 加载 Agent Profile（如果指定了 profileId）
+    if (options.profileId) {
+      this.profile = new ProfileManager({
+        profileId: options.profileId,
+        baseDir: options.profileBaseDir,
+      });
+      const systemPrompt = this.profile.buildSystemPrompt();
+      if (systemPrompt) {
+        this.agent.setSystemPrompt(systemPrompt);
+      }
+    } else if (options.systemPrompt) {
+      // 直接使用传入的 systemPrompt
+      this.agent.setSystemPrompt(options.systemPrompt);
+    }
+
+    this.sessionId = options.sessionId ?? uuidv7();
+    this.session = new SessionManager({ sessionId: this.sessionId });
     const storedMeta = this.session.getMeta();
     if (!options.thinkingLevel && storedMeta?.thinkingLevel) {
       this.agent.setThinkingLevel(storedMeta.thinkingLevel as any);
