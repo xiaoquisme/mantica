@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "agent:cli": "tsx src/agent/cli.ts",
+    "agent:profile": "tsx src/agent/profile-cli.ts",
     "dev:gateway": "tsx --watch src/gateway/main.ts",
     "dev:console": "tsx --watch src/console/main.ts",
     "dev:web": "pnpm --filter @multica/web dev",

@@ -2,18 +2,29 @@
 import { Agent } from "./runner.js";
 
 type CliOptions = {
-  provider?: string;
-  model?: string;
-  system?: string;
-  thinking?: string;
-  cwd?: string;
-  session?: string;
-  help?: boolean;
+  profile?: string | undefined;
+  provider?: string | undefined;
+  model?: string | undefined;
+  system?: string | undefined;
+  thinking?: string | undefined;
+  cwd?: string | undefined;
+  session?: string | undefined;
+  help?: boolean | undefined;
 };
 
 function printUsage() {
-  console.log("Usage: pnpm agent:cli [--provider PROVIDER] [--model MODEL] [--system TEXT] [--thinking LEVEL] [--cwd DIR] [--session ID] <prompt>");
+  console.log("Usage: pnpm agent:cli [options] <prompt>");
   console.log("       echo \"your prompt\" | pnpm agent:cli");
+  console.log("");
+  console.log("Options:");
+  console.log("  --profile ID     Load agent profile (identity, soul, tools, memory)");
+  console.log("  --provider NAME  LLM provider (e.g., openai, anthropic, kimi)");
+  console.log("  --model NAME     Model name");
+  console.log("  --system TEXT    System prompt (ignored if --profile is set)");
+  console.log("  --thinking LEVEL Thinking level");
+  console.log("  --cwd DIR        Working directory for commands");
+  console.log("  --session ID     Session ID for conversation persistence");
+  console.log("  --help, -h       Show this help");
 }
 
 function parseArgs(argv: string[]) {
@@ -27,6 +38,10 @@ function parseArgs(argv: string[]) {
     if (arg === "--help" || arg === "-h") {
       opts.help = true;
       break;
+    }
+    if (arg === "--profile") {
+      opts.profile = args.shift();
+      continue;
     }
     if (arg === "--provider") {
       opts.provider = args.shift();
@@ -88,6 +103,7 @@ async function main() {
   }
 
   const agent = new Agent({
+    profileId: opts.profile,
     provider: opts.provider,
     model: opts.model,
     systemPrompt: opts.system,
@@ -95,6 +111,11 @@ async function main() {
     cwd: opts.cwd,
     sessionId: opts.session,
   });
+
+  // 如果是新创建的 session，提示用户 sessionId
+  if (!opts.session) {
+    console.error(`[session: ${agent.sessionId}]`);
+  }
 
   const result = await agent.run(finalPrompt);
   if (result.error) {

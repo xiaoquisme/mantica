@@ -5,7 +5,7 @@ import { appendFile, writeFile } from "fs/promises";
 import type { SessionEntry } from "./types.js";
 
 export type SessionStorageOptions = {
-  baseDir?: string;
+  baseDir?: string | undefined;
 };
 
 export function resolveBaseDir(options?: SessionStorageOptions) {

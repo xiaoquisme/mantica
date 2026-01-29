@@ -28,7 +28,7 @@ export function createExecTool(defaultCwd?: string): AgentTool<typeof ExecSchema
   return {
     name: "exec",
     label: "Exec",
-    description: "Execute a shell command and return its output.",
+    description: "Execute a shell command and wait for it to complete. Returns stdout/stderr output. Use this for short-lived commands only (e.g., ls, cat, pip install). Do NOT use for long-running processes like servers - use the 'process' tool instead.",
     parameters: ExecSchema,
     execute: async (_toolCallId, args, signal) => {
       const { command, cwd, timeoutMs } = args as ExecArgs;
@@ -66,12 +66,29 @@ export function createExecTool(defaultCwd?: string): AgentTool<typeof ExecSchema
 
         child.stdout?.on("data", handleData);
         child.stderr?.on("data", handleData);
+
+        let spawnError: Error | null = null;
         child.on("error", (err) => {
           if (timeout) clearTimeout(timeout);
-          reject(err);
+          spawnError = err;
+          // 不 reject，让 close 事件处理
         });
         child.on("close", (code) => {
           if (timeout) clearTimeout(timeout);
+
+          // 如果有 spawn 错误，返回错误信息
+          if (spawnError) {
+            resolve({
+              content: [{ type: "text", text: `Error: ${spawnError.message}` }],
+              details: {
+                output: `Error: ${spawnError.message}`,
+                exitCode: code ?? 1,
+                truncated: false,
+              },
+            });
+            return;
+          }
+
           const output = Buffer.concat(chunks).toString("utf8");
           resolve({
             content: [{ type: "text", text: output || (timedOut ? "Process timed out." : "") }],

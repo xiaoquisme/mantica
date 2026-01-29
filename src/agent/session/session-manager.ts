@@ -12,7 +12,7 @@ export type SessionManagerOptions = {
 
 export class SessionManager {
   private readonly sessionId: string;
-  private readonly baseDir?: string;
+  private readonly baseDir: string | undefined;
   private readonly maxMessages: number;
   private readonly keepLast: number;
   private queue: Promise<void> = Promise.resolve();
