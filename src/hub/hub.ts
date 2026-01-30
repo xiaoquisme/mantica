@@ -1,11 +1,11 @@
 import type { HubOptions } from "./types.js";
 import type { ConnectionState } from "../shared/gateway-sdk/types.js";
-import { Agent } from "./agent.js";
+import { AsyncAgent } from "../agent/async-agent.js";
 import { getDeviceId } from "./device.js";
 import { GatewayClient } from "../shared/gateway-sdk/client.js";
 
 export class Hub {
-  private readonly agents = new Map<string, Agent>();
+  private readonly agents = new Map<string, AsyncAgent>();
   private readonly agentSenders = new Map<string, string>();
   private client: GatewayClient;
   url: string;
@@ -82,7 +82,7 @@ export class Hub {
   }
 
   /** Create new Agent, or rebuild with existing ID */
-  createAgent(id?: string): Agent {
+  createAgent(id?: string): AsyncAgent {
     if (id) {
       const existing = this.agents.get(id);
       if (existing && !existing.closed) {
@@ -90,31 +90,31 @@ export class Hub {
       }
     }
 
-    const agent = new Agent(id);
-    this.agents.set(agent.id, agent);
+    const agent = new AsyncAgent({ sessionId: id });
+    this.agents.set(agent.sessionId, agent);
 
     // Internally consume messages produced by agent
     void this.consumeAgent(agent);
 
-    console.log(`Agent created: ${agent.id}`);
+    console.log(`Agent created: ${agent.sessionId}`);
     return agent;
   }
 
   /** Internally read agent output and send via Gateway */
-  private async consumeAgent(agent: Agent): Promise<void> {
+  private async consumeAgent(agent: AsyncAgent): Promise<void> {
     for await (const msg of agent.read()) {
-      console.log(`[${agent.id}] ${msg.content}`);
-      const targetDeviceId = this.agentSenders.get(agent.id);
+      console.log(`[${agent.sessionId}] ${msg.content}`);
+      const targetDeviceId = this.agentSenders.get(agent.sessionId);
       if (targetDeviceId) {
         this.client.send(targetDeviceId, "message", {
-          agentId: agent.id,
+          agentId: agent.sessionId,
           content: msg.content,
         });
       }
     }
   }
 
-  getAgent(id: string): Agent | undefined {
+  getAgent(id: string): AsyncAgent | undefined {
     return this.agents.get(id);
   }
 

@@ -3,3 +3,6 @@ export * from "./types.js";
 export * from "./profile/index.js";
 export * from "./context-window/index.js";
 export * from "./skills/index.js";
+export * from "./channel.js";
+export * from "./sync-agent.js";
+export * from "./async-agent.js";

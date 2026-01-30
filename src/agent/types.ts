@@ -55,3 +55,8 @@ export type AgentOptions = {
   /** Additional directories to search for skills */
   extraSkillDirs?: string[] | undefined;
 };
+
+export interface Message {
+  readonly id: string;
+  readonly content: string;
+}
