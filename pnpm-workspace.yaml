@@ -9,3 +9,4 @@ catalog:
   "@types/react-dom": "^19"
   "@types/node": "^25.0.10"
   typescript: "^5.9.3"
+  zustand: "^5.0.0"

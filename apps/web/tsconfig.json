@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@multica/ui/*": ["../../packages/ui/src/*"]
+      "@multica/ui/*": ["../../packages/ui/src/*"],
+      "@multica/store/*": ["../../packages/store/src/*"]
     }
   },
   "include": [
