@@ -3,6 +3,8 @@ import { Agent } from "./runner.js";
 import { Channel } from "./channel.js";
 import type { AgentOptions, Message } from "./types.js";
 
+const devNull = { write: () => true } as NodeJS.WritableStream;
+
 export class AsyncAgent {
   private readonly agent: Agent;
   private readonly channel = new Channel<Message>();
@@ -13,10 +15,7 @@ export class AsyncAgent {
   constructor(options?: AgentOptions) {
     this.agent = new Agent({
       ...options,
-      logger: {
-        stdout: this.createChannelStream("[assistant] "),
-        stderr: this.createChannelStream("[tool] "),
-      },
+      logger: { stdout: devNull, stderr: devNull },
     });
     this.sessionId = this.agent.sessionId;
   }
@@ -31,12 +30,13 @@ export class AsyncAgent {
 
     this.queue = this.queue
       .then(async () => {
+        if (this._closed) return;
         const result = await this.agent.run(content);
+        if (result.text) {
+          this.channel.send({ id: uuidv7(), content: result.text });
+        }
         if (result.error) {
-          this.channel.send({
-            id: uuidv7(),
-            content: `[error] ${result.error}`,
-          });
+          this.channel.send({ id: uuidv7(), content: `[error] ${result.error}` });
         }
       })
       .catch((err) => {
@@ -55,27 +55,5 @@ export class AsyncAgent {
     if (this._closed) return;
     this._closed = true;
     this.channel.close();
-  }
-
-  private createChannelStream(prefix: string): NodeJS.WritableStream {
-    let buffer = "";
-    return {
-      write: (chunk: any) => {
-        if (this._closed) return false;
-        const text =
-          typeof chunk === "string"
-            ? chunk
-            : chunk?.toString?.() ?? String(chunk);
-        if (!text) return true;
-        buffer += text;
-        const parts = buffer.split("\n");
-        buffer = parts.pop() ?? "";
-        for (const part of parts) {
-          if (part.length === 0) continue;
-          this.channel.send({ id: uuidv7(), content: `${prefix}${part}` });
-        }
-        return true;
-      },
-    } as NodeJS.WritableStream;
   }
 }
