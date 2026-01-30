@@ -7,8 +7,8 @@ import { GatewayClient } from "../shared/gateway-sdk/client.js";
 export class Hub {
   private readonly agents = new Map<string, Agent>();
   private readonly agentSenders = new Map<string, string>();
-  private readonly client: GatewayClient;
-  readonly url: string;
+  private client: GatewayClient;
+  url: string;
   readonly path: string;
   readonly deviceId: string;
 
@@ -21,9 +21,13 @@ export class Hub {
     this.url = url;
     this.path = path ?? "/ws";
     this.deviceId = getDeviceId();
+    this.client = this.createClient(this.url);
+    this.client.connect();
+  }
 
-    this.client = new GatewayClient({
-      url: this.url,
+  private createClient(url: string): GatewayClient {
+    const client = new GatewayClient({
+      url,
       path: this.path,
       deviceId: this.deviceId,
       deviceType: "client",
@@ -31,19 +35,19 @@ export class Hub {
       reconnectDelay: 1000,
     });
 
-    this.client.onStateChange((state) => {
+    client.onStateChange((state) => {
       console.log(`[Hub] Connection state: ${state}`);
     });
 
-    this.client.onRegistered((deviceId) => {
+    client.onRegistered((deviceId) => {
       console.log(`[Hub] Registered as: ${deviceId}`);
     });
 
-    this.client.onError((err) => {
+    client.onError((err) => {
       console.error(`[Hub] Connection error:`, err.message);
     });
 
-    this.client.onMessage((msg) => {
+    client.onMessage((msg) => {
       console.log(`[Hub] Received message: id=${msg.id} from=${msg.from} to=${msg.to} action=${msg.action} payload=${JSON.stringify(msg.payload)}`);
       const payload = msg.payload as { agentId?: string; content?: string } | undefined;
       const agentId = payload?.agentId;
@@ -61,10 +65,19 @@ export class Hub {
       }
     });
 
-    this.client.onSendError((err) => {
+    client.onSendError((err) => {
       console.error(`[Hub] Send error: messageId=${err.messageId} code=${err.code} error=${err.error}`);
     });
 
+    return client;
+  }
+
+  /** 重连到新的 Gateway 地址 */
+  reconnect(url: string): void {
+    console.log(`[Hub] Reconnecting to ${url}`);
+    this.client.disconnect();
+    this.url = url;
+    this.client = this.createClient(url);
     this.client.connect();
   }
 

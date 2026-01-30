@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Param,
   Body,
@@ -20,6 +21,15 @@ export class AppController {
       url: this.hub.url,
       connectionState: this.hub.connectionState,
       agentCount: this.hub.listAgents().length,
+    };
+  }
+
+  @Put("hub/gateway")
+  updateGateway(@Body() body: { url: string }) {
+    this.hub.reconnect(body.url);
+    return {
+      url: this.hub.url,
+      connectionState: this.hub.connectionState,
     };
   }
 
