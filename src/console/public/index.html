@@ -15,6 +15,9 @@
     .agent-list { list-style: none; }
     .agent-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #222; font-family: monospace; font-size: 0.85rem; }
     .agent-list li:last-child { border-bottom: none; }
+    .gateway-form { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.8rem; }
+    .gateway-form input { background: #0a0a0a; color: #e0e0e0; border: 1px solid #444; border-radius: 4px; padding: 0.4rem 0.6rem; font-size: 0.85rem; font-family: monospace; flex: 1; }
+    .gateway-form input:focus { outline: none; border-color: #666; }
     button { background: #2a2a2a; color: #e0e0e0; border: 1px solid #444; border-radius: 4px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.8rem; }
     button:hover { background: #3a3a3a; }
     .btn-create { background: #1a3a1a; border-color: #2a5a2a; }
@@ -30,6 +33,10 @@
   <div class="card">
     <h2>Hub Status</h2>
     <div class="hub-info" id="hub-info">Loading...</div>
+    <div class="gateway-form">
+      <input type="text" id="gateway-url" placeholder="Gateway URL">
+      <button class="btn-create" onclick="updateGateway()">Connect</button>
+    </div>
   </div>
 
   <div class="card">
@@ -56,6 +63,11 @@
         `<span>State: <b style="color:${stateColor}">${hubRes.connectionState}</b></span>` +
         `<span>Agents: <b>${hubRes.agentCount}</b></span>`;
 
+      const input = document.getElementById('gateway-url');
+      if (!input.dataset.edited) {
+        input.value = hubRes.url;
+      }
+
       const list = document.getElementById('agent-list');
       if (agentsRes.length === 0) {
         list.innerHTML = '<li class="empty">No agents</li>';
@@ -64,6 +76,23 @@
           `<li><span>${a.id}</span><button class="btn-delete" onclick="deleteAgent('${a.id}')">Delete</button></li>`
         ).join('');
       }
+    }
+
+    document.getElementById('gateway-url').addEventListener('input', function() {
+      this.dataset.edited = '1';
+    });
+
+    async function updateGateway() {
+      const input = document.getElementById('gateway-url');
+      const url = input.value.trim();
+      if (!url) return;
+      await fetch(`${API}/hub/gateway`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      input.dataset.edited = '';
+      refresh();
     }
 
     async function createAgent() {
