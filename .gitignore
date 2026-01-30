@@ -8,6 +8,8 @@ dist
 out
 .turbo
 build
+dist-electron
+release
 *.tsbuildinfo
 
 # env
