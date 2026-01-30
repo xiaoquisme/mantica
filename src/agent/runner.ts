@@ -13,9 +13,12 @@ import {
 } from "./context-window/index.js";
 
 /**
- * Get API Key based on provider
+ * Get API Key based on provider.
+ * Priority: explicit key > provider-specific env var > generic env var format.
  */
-function resolveApiKey(provider: string): string | undefined {
+function resolveApiKey(provider: string, explicitKey?: string): string | undefined {
+  if (explicitKey) return explicitKey;
+
   const providerEnvMap: Record<string, string> = {
     openai: "OPENAI_API_KEY",
     anthropic: "ANTHROPIC_API_KEY",
@@ -39,6 +42,36 @@ function resolveApiKey(provider: string): string | undefined {
   return process.env[`${normalizedProvider}_API_KEY`];
 }
 
+/**
+ * Get Base URL based on provider.
+ * Priority: explicit URL > provider-specific env var > generic env var format.
+ */
+function resolveBaseUrl(provider: string, explicitUrl?: string): string | undefined {
+  if (explicitUrl) return explicitUrl;
+
+  const providerEnvMap: Record<string, string> = {
+    openai: "OPENAI_BASE_URL",
+    anthropic: "ANTHROPIC_BASE_URL",
+    google: "GOOGLE_BASE_URL",
+    "google-genai": "GOOGLE_BASE_URL",
+    kimi: "MOONSHOT_BASE_URL",
+    "kimi-coding": "MOONSHOT_BASE_URL",
+    deepseek: "DEEPSEEK_BASE_URL",
+    groq: "GROQ_BASE_URL",
+    mistral: "MISTRAL_BASE_URL",
+    together: "TOGETHER_BASE_URL",
+  };
+
+  const envVar = providerEnvMap[provider];
+  if (envVar) {
+    return process.env[envVar];
+  }
+
+  // Try generic format: PROVIDER_BASE_URL
+  const normalizedProvider = provider.toUpperCase().replace(/-/g, "_");
+  return process.env[`${normalizedProvider}_BASE_URL`];
+}
+
 export class Agent {
   private readonly agent: PiAgentCore;
   private readonly output;
@@ -57,7 +90,15 @@ export class Agent {
     this.output = createAgentOutput({ stdout, stderr });
     this.debug = options.debug ?? false;
 
-    this.agent = new PiAgentCore();
+    // Resolve provider for API key and base URL
+    const resolvedProvider = options.provider ?? "kimi-coding";
+    const apiKey = resolveApiKey(resolvedProvider, options.apiKey);
+
+    this.agent = new PiAgentCore(
+      apiKey
+        ? { getApiKey: (_provider: string) => apiKey }
+        : {},
+    );
 
     // Load Agent Profile (if profileId is specified)
     let systemPrompt: string | undefined;
@@ -101,11 +142,17 @@ export class Agent {
       return tempSession.getMeta();
     })();
 
-    const model = options.provider && options.model ? resolveModel(options) : resolveModel({
+    let model = options.provider && options.model ? resolveModel(options) : resolveModel({
       ...options,
       provider: storedMeta?.provider,
       model: storedMeta?.model,
     });
+
+    // Override base URL if provided via options or environment variable
+    const baseUrl = resolveBaseUrl(model.provider, options.baseUrl);
+    if (baseUrl) {
+      model = { ...model, baseUrl };
+    }
 
     // === Context Window Guard ===
     this.contextWindowGuard = checkContextWindow({
@@ -133,7 +180,7 @@ export class Agent {
     const compactionMode = options.compactionMode ?? "tokens"; // 默认使用 token 模式
 
     // 获取 API Key（用于 summary 模式）
-    const apiKey = compactionMode === "summary" ? resolveApiKey(model.provider) : undefined;
+    const summaryApiKey = compactionMode === "summary" ? resolveApiKey(model.provider, options.apiKey) : undefined;
 
     // 创建 SessionManager（带 context window 配置）
     this.session = new SessionManager({
@@ -147,7 +194,7 @@ export class Agent {
       minKeepMessages: options.minKeepMessages,
       // Summary 模式参数
       model: compactionMode === "summary" ? model : undefined,
-      apiKey,
+      apiKey: summaryApiKey,
       customInstructions: options.summaryInstructions,
     });
 
