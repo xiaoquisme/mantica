@@ -717,3 +717,64 @@ func TestGetRemoteDefaultBranchAmbiguousOriginReturnsEmpty(t *testing.T) {
 		t.Fatalf("getRemoteDefaultBranch = %q, want \"\" (ambiguous origin/* must not guess)", got)
 	}
 }
+
+func TestInjectToken(t *testing.T) {
+	tests := []struct {
+		name     string
+		rawURL   string
+		token    string
+		expected string
+	}{
+		{
+			name:     "empty token returns original URL",
+			rawURL:   "https://gitlab.com/org/repo.git",
+			token:    "",
+			expected: "https://gitlab.com/org/repo.git",
+		},
+		{
+			name:     "injects token into HTTPS GitLab URL",
+			rawURL:   "https://gitlab.com/org/repo.git",
+			token:    "glpat-abc123",
+			expected: "https://oauth2:glpat-abc123@gitlab.com/org/repo.git",
+		},
+		{
+			name:     "injects token into HTTPS GitHub URL",
+			rawURL:   "https://github.com/org/repo.git",
+			token:    "ghp_abc123",
+			expected: "https://oauth2:ghp_abc123@github.com/org/repo.git",
+		},
+		{
+			name:     "SSH URL is left unchanged",
+			rawURL:   "git@gitlab.com:org/repo.git",
+			token:    "glpat-abc123",
+			expected: "git@gitlab.com:org/repo.git",
+		},
+		{
+			name:     "SSH git:// URL is left unchanged",
+			rawURL:   "git://github.com/org/repo.git",
+			token:    "ghp_abc123",
+			expected: "git://github.com/org/repo.git",
+		},
+		{
+			name:     "replaces existing credentials in URL",
+			rawURL:   "https://olduser:oldpass@gitlab.com/org/repo.git",
+			token:    "newtoken",
+			expected: "https://oauth2:newtoken@gitlab.com/org/repo.git",
+		},
+		{
+			name:     "HTTP URL also gets token injected",
+			rawURL:   "http://self-hosted.gitlab.com/org/repo.git",
+			token:    "mytoken",
+			expected: "http://oauth2:mytoken@self-hosted.gitlab.com/org/repo.git",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := injectToken(tt.rawURL, tt.token)
+			if got != tt.expected {
+				t.Errorf("injectToken(%q, %q) = %q, want %q", tt.rawURL, tt.token, got, tt.expected)
+			}
+		})
+	}
+}
