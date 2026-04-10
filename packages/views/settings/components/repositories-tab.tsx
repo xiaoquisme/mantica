@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Plus, Trash2, GitBranch, Lock } from "lucide-react";
+import { Save, Plus, Trash2, GitBranch, Lock, FlaskConical, Loader2, CheckCircle2 } from "lucide-react";
 import { Input } from "@multica/ui/components/ui/input";
 import { Button } from "@multica/ui/components/ui/button";
 import { Card, CardContent } from "@multica/ui/components/ui/card";
@@ -41,6 +41,7 @@ export function RepositoriesTab() {
 
   const [repos, setRepos] = useState<WorkspaceRepo[]>(workspace?.repos ?? []);
   const [saving, setSaving] = useState(false);
+  const [testStates, setTestStates] = useState<Record<number, "idle" | "testing" | "ok" | "error">>({});
 
   const currentMember = members.find((m) => m.user_id === user?.id) ?? null;
   const canManageWorkspace = currentMember?.role === "owner" || currentMember?.role === "admin";
@@ -73,6 +74,30 @@ export function RepositoriesTab() {
 
   const handleRepoChange = (index: number, field: keyof WorkspaceRepo, value: string) => {
     setRepos(repos.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
+    if (field === "url" || field === "token") {
+      setTestStates((prev) => ({ ...prev, [index]: "idle" }));
+    }
+  };
+
+  const handleTestRepo = async (index: number) => {
+    const repo = repos[index];
+    if (!repo?.url) return;
+    setTestStates((prev) => ({ ...prev, [index]: "testing" }));
+    try {
+      const result = await api.testRepo(repo.url, repo.token || undefined);
+      if (result.ok) {
+        setTestStates((prev) => ({ ...prev, [index]: "ok" }));
+        const branchInfo = result.default_branch ? ` (default branch: ${result.default_branch})` : "";
+        toast.success(`Connected${branchInfo}`);
+      } else {
+        setTestStates((prev) => ({ ...prev, [index]: "error" }));
+        toast.error(result.error ?? "Connection failed");
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Connection failed";
+      setTestStates((prev) => ({ ...prev, [index]: "error" }));
+      toast.error(msg);
+    }
   };
 
   if (!workspace) return null;
@@ -128,16 +153,39 @@ export function RepositoriesTab() {
                     />
                   </div>
                 </div>
-                {canManageWorkspace && (
+                <div className="mt-0.5 flex shrink-0 flex-col gap-0.5">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
-                    className="mt-0.5 shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleRemoveRepo(index)}
+                    className={
+                      testStates[index] === "error"
+                        ? "text-destructive"
+                        : testStates[index] === "ok"
+                          ? "text-green-500"
+                          : "text-muted-foreground"
+                    }
+                    disabled={!repo.url || testStates[index] === "testing"}
+                    onClick={() => handleTestRepo(index)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    {testStates[index] === "testing" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : testStates[index] === "ok" ? (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <FlaskConical className="h-3.5 w-3.5" />
+                    )}
                   </Button>
-                )}
+                  {canManageWorkspace && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => handleRemoveRepo(index)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
 

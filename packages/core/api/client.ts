@@ -686,4 +686,12 @@ export class ApiClient {
   async deleteProject(id: string): Promise<void> {
     await this.fetch(`/api/projects/${id}`, { method: "DELETE" });
   }
+
+  // Repos
+  async testRepo(url: string, token?: string): Promise<{ ok: boolean; error?: string; default_branch?: string }> {
+    return this.fetch("/api/repos/test", {
+      method: "POST",
+      body: JSON.stringify({ url, token: token || undefined }),
+    });
+  }
 }
