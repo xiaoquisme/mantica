@@ -14,6 +14,24 @@ import { memberListOptions } from "@multica/core/workspace/queries";
 import { api } from "@multica/core/api";
 import type { WorkspaceRepo } from "@multica/core/types";
 
+function ProviderBadge({ url }: { url: string }) {
+  if (url.includes("github.com")) {
+    return (
+      <span className="flex h-5 w-6 shrink-0 items-center justify-center rounded bg-neutral-800 text-[10px] font-bold text-white dark:bg-neutral-200 dark:text-neutral-900">
+        GH
+      </span>
+    );
+  }
+  if (url.includes("gitlab.com")) {
+    return (
+      <span className="flex h-5 w-6 shrink-0 items-center justify-center rounded bg-orange-500 text-[10px] font-bold text-white">
+        GL
+      </span>
+    );
+  }
+  return <GitBranch className="h-4 w-4 shrink-0 text-muted-foreground" />;
+}
+
 export function RepositoriesTab() {
   const user = useAuthStore((s) => s.user);
   const workspace = useWorkspaceStore((s) => s.workspace);
@@ -73,14 +91,9 @@ export function RepositoriesTab() {
             {repos.map((repo, index) => (
               <div key={index} className="flex gap-2">
                 <div className="flex-1 space-y-1.5">
+                  {/* URL row */}
                   <div className="flex items-center gap-1.5">
-                    {repo.url.includes("github.com") ? (
-                      <span className="shrink-0 rounded bg-neutral-800 px-1 text-[10px] font-bold text-white dark:bg-neutral-200 dark:text-neutral-900">GH</span>
-                    ) : repo.url.includes("gitlab.com") ? (
-                      <span className="shrink-0 rounded bg-orange-500 px-1 text-[10px] font-bold text-white">GL</span>
-                    ) : (
-                      <GitBranch className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    )}
+                    <ProviderBadge url={repo.url} />
                     <Input
                       type="url"
                       value={repo.url}
@@ -90,16 +103,21 @@ export function RepositoriesTab() {
                       className="text-sm"
                     />
                   </div>
-                  <Input
-                    type="text"
-                    value={repo.description}
-                    onChange={(e) => handleRepoChange(index, "description", e.target.value)}
-                    disabled={!canManageWorkspace}
-                    placeholder="Description (e.g. Go backend + Next.js frontend)"
-                    className="text-sm"
-                  />
+                  {/* Description row — spacer keeps inputs left-aligned */}
                   <div className="flex items-center gap-1.5">
-                    <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <span className="w-6 shrink-0" />
+                    <Input
+                      type="text"
+                      value={repo.description}
+                      onChange={(e) => handleRepoChange(index, "description", e.target.value)}
+                      disabled={!canManageWorkspace}
+                      placeholder="Description (e.g. Go backend + Next.js frontend)"
+                      className="text-sm"
+                    />
+                  </div>
+                  {/* Token row */}
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="h-4 w-4 w-6 shrink-0 text-muted-foreground" />
                     <Input
                       type="password"
                       value={repo.token ?? ""}
