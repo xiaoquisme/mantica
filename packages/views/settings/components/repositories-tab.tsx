@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Plus, Trash2 } from "lucide-react";
+import { Save, Plus, Trash2, GitBranch } from "lucide-react";
 import { Input } from "@multica/ui/components/ui/input";
 import { Button } from "@multica/ui/components/ui/button";
 import { Card, CardContent } from "@multica/ui/components/ui/card";
@@ -67,20 +67,29 @@ export function RepositoriesTab() {
         <Card>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              GitHub repositories associated with this workspace. Agents use these to clone and work on code.
+              Git repositories associated with this workspace. Agents use these to clone and work on code. Supports GitHub, GitLab, and any git host.
             </p>
 
             {repos.map((repo, index) => (
               <div key={index} className="flex gap-2">
                 <div className="flex-1 space-y-1.5">
-                  <Input
-                    type="url"
-                    value={repo.url}
-                    onChange={(e) => handleRepoChange(index, "url", e.target.value)}
-                    disabled={!canManageWorkspace}
-                    placeholder="https://github.com/org/repo"
-                    className="text-sm"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    {repo.url.includes("github.com") ? (
+                      <span className="shrink-0 rounded bg-neutral-800 px-1 text-[10px] font-bold text-white dark:bg-neutral-200 dark:text-neutral-900">GH</span>
+                    ) : repo.url.includes("gitlab.com") ? (
+                      <span className="shrink-0 rounded bg-orange-500 px-1 text-[10px] font-bold text-white">GL</span>
+                    ) : (
+                      <GitBranch className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <Input
+                      type="url"
+                      value={repo.url}
+                      onChange={(e) => handleRepoChange(index, "url", e.target.value)}
+                      disabled={!canManageWorkspace}
+                      placeholder="https://github.com/org/repo or https://gitlab.com/org/repo"
+                      className="text-sm"
+                    />
+                  </div>
                   <Input
                     type="text"
                     value={repo.description}
