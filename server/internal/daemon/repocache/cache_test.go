@@ -605,7 +605,7 @@ func TestGitFetchRefreshesOriginHeadAfterDefaultChange(t *testing.T) {
 
 	// Fetch via the cache's code path. Without the set-head call, origin/HEAD
 	// would still point at the old default here.
-	if err := gitFetch(barePath); err != nil {
+	if err := gitFetch(barePath, ""); err != nil {
 		t.Fatalf("gitFetch failed: %v", err)
 	}
 

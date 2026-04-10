@@ -1166,7 +1166,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 func repoDataToInfo(repos []RepoData) []repocache.RepoInfo {
 	info := make([]repocache.RepoInfo, len(repos))
 	for i, r := range repos {
-		info[i] = repocache.RepoInfo{URL: r.URL, Description: r.Description}
+		info[i] = repocache.RepoInfo{URL: r.URL, Description: r.Description, Token: r.Token}
 	}
 	return info
 }

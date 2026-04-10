@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Plus, Trash2, GitBranch } from "lucide-react";
+import { Save, Plus, Trash2, GitBranch, Lock } from "lucide-react";
 import { Input } from "@multica/ui/components/ui/input";
 import { Button } from "@multica/ui/components/ui/button";
 import { Card, CardContent } from "@multica/ui/components/ui/card";
@@ -46,7 +46,7 @@ export function RepositoriesTab() {
   };
 
   const handleAddRepo = () => {
-    setRepos([...repos, { url: "", description: "" }]);
+    setRepos([...repos, { url: "", description: "", token: "" }]);
   };
 
   const handleRemoveRepo = (index: number) => {
@@ -98,6 +98,17 @@ export function RepositoriesTab() {
                     placeholder="Description (e.g. Go backend + Next.js frontend)"
                     className="text-sm"
                   />
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <Input
+                      type="password"
+                      value={repo.token ?? ""}
+                      onChange={(e) => handleRepoChange(index, "token", e.target.value)}
+                      disabled={!canManageWorkspace}
+                      placeholder="Personal access token (for private repos)"
+                      className="text-sm"
+                    />
+                  </div>
                 </div>
                 {canManageWorkspace && (
                   <Button

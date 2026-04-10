@@ -5,6 +5,7 @@ package repocache
 import (
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 type RepoInfo struct {
 	URL         string
 	Description string
+	Token       string // personal access token for private repos (optional)
 }
 
 // CachedRepo describes a cached bare clone ready for worktree creation.
@@ -75,13 +77,14 @@ func (c *Cache) Sync(workspaceID string, repos []RepoInfo) error {
 			continue
 		}
 		barePath := filepath.Join(wsDir, bareDirName(repo.URL))
+		authURL := injectToken(repo.URL, repo.Token)
 
 		repoLock := c.lockForRepo(barePath)
 		repoLock.Lock()
 		if isBareRepo(barePath) {
 			// Already cached — fetch latest.
 			c.logger.Info("repo cache: fetching", "url", repo.URL, "path", barePath)
-			if err := gitFetch(barePath); err != nil {
+			if err := gitFetch(barePath, authURL); err != nil {
 				c.logger.Warn("repo cache: fetch failed", "url", repo.URL, "error", err)
 				if firstErr == nil {
 					firstErr = err
@@ -90,7 +93,7 @@ func (c *Cache) Sync(workspaceID string, repos []RepoInfo) error {
 		} else {
 			// Not cached — bare clone.
 			c.logger.Info("repo cache: cloning", "url", repo.URL, "path", barePath)
-			if err := gitCloneBare(repo.URL, barePath); err != nil {
+			if err := gitCloneBare(authURL, barePath); err != nil {
 				c.logger.Error("repo cache: clone failed", "url", repo.URL, "error", err)
 				if firstErr == nil {
 					firstErr = err
@@ -114,7 +117,7 @@ func (c *Cache) Lookup(workspaceID, url string) string {
 
 // Fetch runs `git fetch origin` on a cached bare clone to get latest refs.
 func (c *Cache) Fetch(barePath string) error {
-	return gitFetch(barePath)
+	return gitFetch(barePath, "")
 }
 
 // bareDirName derives a directory name from a repo URL.
@@ -155,8 +158,8 @@ func isBareRepo(path string) bool {
 // refs and abort the entire fetch.
 const modernFetchRefspec = "+refs/heads/*:refs/remotes/origin/*"
 
-func gitCloneBare(url, dest string) error {
-	cmd := exec.Command("git", "clone", "--bare", url, dest)
+func gitCloneBare(cloneURL, dest string) error {
+	cmd := exec.Command("git", "clone", "--bare", cloneURL, dest)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		// Clean up partial clone.
 		os.RemoveAll(dest)
@@ -182,10 +185,32 @@ func gitCloneBare(url, dest string) error {
 // touches that symref on its own, so without this call an existing cache
 // would keep basing new worktrees on the original default branch forever
 // after the remote flipped.
-func gitFetch(barePath string) error {
+//
+// If authURL is non-empty, the remote origin URL is temporarily set to authURL
+// for the fetch (to inject credentials), then restored to the original URL.
+// This avoids persisting tokens in the git config.
+func gitFetch(barePath string, authURL string) error {
 	if err := ensureRemoteTrackingLayout(barePath); err != nil {
 		return fmt.Errorf("ensure refspec: %w", err)
 	}
+
+	// Temporarily swap remote URL if an authenticated URL is provided.
+	var origURL string
+	if authURL != "" {
+		out, err := exec.Command("git", "-C", barePath, "config", "--get", "remote.origin.url").Output()
+		if err == nil {
+			origURL = strings.TrimSpace(string(out))
+		}
+		if origURL != authURL {
+			_ = exec.Command("git", "-C", barePath, "remote", "set-url", "origin", authURL).Run()
+			defer func() {
+				if origURL != "" {
+					_ = exec.Command("git", "-C", barePath, "remote", "set-url", "origin", origURL).Run()
+				}
+			}()
+		}
+	}
+
 	if err := runGitFetch(barePath); err != nil {
 		return err
 	}
@@ -297,7 +322,7 @@ func (c *Cache) CreateWorktree(params WorktreeParams) (*WorktreeResult, error) {
 	// to the modern remote-tracking layout on first run, so subsequent fetches
 	// never collide with the refs/heads/agent/* branches that worktree creation
 	// locks in this same bare repo.
-	if err := gitFetch(barePath); err != nil {
+	if err := gitFetch(barePath, ""); err != nil {
 		// Non-fatal: preserve cached state and continue, but make the warning
 		// loud enough that it's findable in the daemon log. The agent will
 		// receive an older snapshot than the remote head.
@@ -620,6 +645,25 @@ func excludeFromGit(worktreePath, pattern string) error {
 		return fmt.Errorf("write exclude pattern: %w", err)
 	}
 	return nil
+}
+
+// injectToken returns a URL with credentials embedded for private repo access.
+// For HTTPS URLs it sets the userinfo to "oauth2:<token>". SSH URLs (git@...)
+// are returned unchanged. If token is empty the original URL is returned as-is.
+func injectToken(rawURL, token string) string {
+	if token == "" {
+		return rawURL
+	}
+	// Only inject into HTTPS URLs.
+	if !strings.HasPrefix(rawURL, "https://") && !strings.HasPrefix(rawURL, "http://") {
+		return rawURL
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	parsed.User = url.UserPassword("oauth2", token)
+	return parsed.String()
 }
 
 // repoNameFromURL extracts a short directory name from a git remote URL.
