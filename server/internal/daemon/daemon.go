@@ -482,6 +482,7 @@ func (d *Daemon) handlePing(ctx context.Context, rt Runtime, pingID string) {
 
 	backend, err := agent.New(rt.Provider, agent.Config{
 		ExecutablePath: entry.Path,
+		ExtraArgs:      entry.ExtraArgs,
 		Logger:         d.logger,
 	})
 	if err != nil {
@@ -952,6 +953,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	}
 	backend, err := agent.New(provider, agent.Config{
 		ExecutablePath: entry.Path,
+		ExtraArgs:      entry.ExtraArgs,
 		Env:            agentEnv,
 		Logger:         d.logger,
 	})
