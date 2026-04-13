@@ -24,7 +24,7 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   return (
     <DashboardGuard
-      loginPath="/"
+      loginPath="/login"
       loadingFallback={
         <div className="flex h-svh items-center justify-center">
           {loadingIndicator}
