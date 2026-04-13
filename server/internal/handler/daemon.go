@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	"github.com/multica-ai/multica/server/internal/seed"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 	"github.com/multica-ai/multica/server/pkg/redact"
 )
@@ -69,6 +70,7 @@ func (h *Handler) DaemonRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := make([]AgentRuntimeResponse, 0, len(req.Runtimes))
+	runtimesByProvider := make(map[string]pgtype.UUID, len(req.Runtimes))
 	for _, runtime := range req.Runtimes {
 		provider := strings.TrimSpace(runtime.Type)
 		if provider == "" {
@@ -112,9 +114,16 @@ func (h *Handler) DaemonRegister(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		resp = append(resp, runtimeToResponse(registered))
+		runtimesByProvider[provider] = registered.ID
 	}
 
 	slog.Info("daemon registered", "workspace_id", req.WorkspaceID, "daemon_id", req.DaemonID, "runtimes_count", len(resp))
+
+	// Seed default agents and skills if this workspace has none yet.
+	if err := seed.WorkspaceIfEmpty(r.Context(), h.Queries, parseUUID(req.WorkspaceID), member.UserID, runtimesByProvider, h.AgentConfigData); err != nil {
+		slog.Warn("seed workspace failed", "workspace_id", req.WorkspaceID, "error", err)
+		// Non-fatal — registration continues even if seed fails.
+	}
 
 	h.publish(protocol.EventDaemonRegister, req.WorkspaceID, "system", "", map[string]any{
 		"runtimes": resp,

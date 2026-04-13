@@ -45,3 +45,5 @@ _features/
 *.dmg
 *.app
 server/server
+.idea
+.air
