@@ -363,14 +363,6 @@ skills:
 # Only created when a runtime with matching provider is first registered
 # and the workspace has no existing agents.
 agents:
-  - name: CC
-    provider: claude
-    instructions: ""
-    max_concurrent_tasks: 6
-    visibility: workspace
-    skills:
-      - Arch Review
-
   - name: BA
     provider: hermes
     instructions: |
