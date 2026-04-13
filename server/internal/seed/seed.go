@@ -124,6 +124,7 @@ func WorkspaceIfEmpty(
 			OwnerID:            ownerID,
 		})
 		if err != nil {
+			slog.Error("seed: create agent failed", "agent", ag.Name, "provider", ag.Provider, "runtime_id", runtimeID, "error", err)
 			return fmt.Errorf("create agent %q: %w", ag.Name, err)
 		}
 		slog.Info("seed: agent created", "agent", created.Name, "provider", ag.Provider)
