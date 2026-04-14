@@ -17,7 +17,7 @@ func TestListTimeline_MergedAndSorted(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := newRequest("POST", "/api/issues?workspace_id="+testWorkspaceID, map[string]any{
 		"title":  "Timeline test issue",
-		"status": "todo",
+		"status": "backlog",
 	})
 	testHandler.CreateIssue(w, req)
 	if w.Code != http.StatusCreated {
@@ -96,7 +96,7 @@ func TestListTimeline_ChronologicalOrder(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := newRequest("POST", "/api/issues?workspace_id="+testWorkspaceID, map[string]any{
 		"title":  "Timeline order test issue",
-		"status": "todo",
+		"status": "backlog",
 	})
 	testHandler.CreateIssue(w, req)
 	var issue IssueResponse
@@ -124,7 +124,7 @@ func TestListTimeline_ChronologicalOrder(t *testing.T) {
 		ActorType:   strToText("member"),
 		ActorID:     parseUUID(testUserID),
 		Action:      "status_changed",
-		Details:     []byte(`{"from":"todo","to":"in_progress"}`),
+		Details:     []byte(`{"from":"backlog","to":"in_dev"}`),
 	})
 	if err != nil {
 		t.Fatalf("CreateActivity: %v", err)

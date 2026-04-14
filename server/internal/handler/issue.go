@@ -20,6 +20,22 @@ import (
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
 
+var validIssueStatuses = []string{
+	"backlog", "classifying", "ready_analyze", "in_analyze",
+	"ready_arch_design", "in_arch_design", "ready_dev", "in_dev",
+	"ready_review", "in_review", "ready_test", "in_test",
+	"done", "blocked", "cancelled",
+}
+
+func isValidIssueStatus(s string) bool {
+	for _, v := range validIssueStatuses {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
+
 // IssueResponse is the JSON response for an issue.
 type IssueResponse struct {
 	ID                 string                  `json:"id"`
@@ -337,14 +353,22 @@ func buildSearchQuery(phrase string, terms []string, queryNum int, hasNum bool, 
 
 	// Status priority: active issues first
 	statusRank := `CASE i.status
-		WHEN 'in_progress' THEN 0
-		WHEN 'in_review' THEN 1
-		WHEN 'todo' THEN 2
-		WHEN 'blocked' THEN 3
-		WHEN 'backlog' THEN 4
-		WHEN 'done' THEN 5
-		WHEN 'cancelled' THEN 6
-		ELSE 7
+		WHEN 'in_dev' THEN 0
+		WHEN 'in_analyze' THEN 1
+		WHEN 'in_arch_design' THEN 2
+		WHEN 'in_review' THEN 3
+		WHEN 'in_test' THEN 4
+		WHEN 'classifying' THEN 5
+		WHEN 'ready_dev' THEN 6
+		WHEN 'ready_arch_design' THEN 7
+		WHEN 'ready_analyze' THEN 8
+		WHEN 'ready_review' THEN 9
+		WHEN 'ready_test' THEN 10
+		WHEN 'blocked' THEN 11
+		WHEN 'backlog' THEN 12
+		WHEN 'done' THEN 13
+		WHEN 'cancelled' THEN 14
+		ELSE 15
 	END`
 
 	// --- match_source expression ---
@@ -739,6 +763,10 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 	if status == "" {
 		status = "backlog"
 	}
+	if !isValidIssueStatus(status) {
+		writeError(w, http.StatusBadRequest, "invalid status: "+status)
+		return
+	}
 	priority := req.Priority
 	if priority == "" {
 		priority = "none"
@@ -924,6 +952,10 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		params.Description = pgtype.Text{String: *req.Description, Valid: true}
 	}
 	if req.Status != nil {
+		if !isValidIssueStatus(*req.Status) {
+			writeError(w, http.StatusBadRequest, "invalid status: "+*req.Status)
+			return
+		}
 		params.Status = pgtype.Text{String: *req.Status, Valid: true}
 	}
 	if req.Priority != nil {

@@ -52,7 +52,7 @@ func TestActivityIssueCreated(t *testing.T) {
 				ID:          issueID,
 				WorkspaceID: testWorkspaceID,
 				Title:       "activity test issue",
-				Status:      "todo",
+				Status:      "backlog",
 				Priority:    "medium",
 				CreatorType: "member",
 				CreatorID:   testUserID,
@@ -93,13 +93,13 @@ func TestActivityIssueUpdated_StatusChanged(t *testing.T) {
 				ID:          issueID,
 				WorkspaceID: testWorkspaceID,
 				Title:       "activity test issue",
-				Status:      "in_progress",
+				Status:      "in_dev",
 				Priority:    "medium",
 				CreatorType: "member",
 				CreatorID:   testUserID,
 			},
 			"status_changed": true,
-			"prev_status":    "todo",
+			"prev_status":    "backlog",
 		},
 	})
 
@@ -115,11 +115,11 @@ func TestActivityIssueUpdated_StatusChanged(t *testing.T) {
 	if err := json.Unmarshal(activities[0].Details, &details); err != nil {
 		t.Fatalf("failed to unmarshal details: %v", err)
 	}
-	if details["from"] != "todo" {
-		t.Fatalf("expected from 'todo', got %q", details["from"])
+	if details["from"] != "backlog" {
+		t.Fatalf("expected from 'backlog', got %q", details["from"])
 	}
-	if details["to"] != "in_progress" {
-		t.Fatalf("expected to 'in_progress', got %q", details["to"])
+	if details["to"] != "in_dev" {
+		t.Fatalf("expected to 'in_dev', got %q", details["to"])
 	}
 }
 
@@ -149,7 +149,7 @@ func TestActivityIssueUpdated_AssigneeChanged(t *testing.T) {
 				ID:           issueID,
 				WorkspaceID:  testWorkspaceID,
 				Title:        "activity test issue",
-				Status:       "todo",
+				Status:       "backlog",
 				Priority:     "medium",
 				CreatorType:  "member",
 				CreatorID:    testUserID,
@@ -204,7 +204,7 @@ func TestActivityIssueUpdated_NoChangeFlags(t *testing.T) {
 				ID:          issueID,
 				WorkspaceID: testWorkspaceID,
 				Title:       "activity test issue",
-				Status:      "todo",
+				Status:      "backlog",
 				Priority:    "medium",
 				CreatorType: "member",
 				CreatorID:   testUserID,
@@ -242,7 +242,7 @@ func TestActivityIssueUpdated_TitleChanged(t *testing.T) {
 				ID:          issueID,
 				WorkspaceID: testWorkspaceID,
 				Title:       "renamed issue",
-				Status:      "todo",
+				Status:      "backlog",
 				Priority:    "medium",
 				CreatorType: "member",
 				CreatorID:   testUserID,

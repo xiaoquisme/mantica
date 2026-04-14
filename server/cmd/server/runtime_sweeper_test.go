@@ -33,7 +33,7 @@ func setupSweeperTestFixture(t *testing.T, taskStatus string) (string, string, s
 	var issueID string
 	err = testPool.QueryRow(ctx, `
 		INSERT INTO issue (workspace_id, title, status, priority, creator_type, creator_id, assignee_type, assignee_id)
-		SELECT $1, 'Sweeper test issue', 'todo', 'none', 'member', m.user_id, 'agent', $2
+		SELECT $1, 'Sweeper test issue', 'backlog', 'none', 'member', m.user_id, 'agent', $2
 		FROM member m WHERE m.workspace_id = $1 LIMIT 1
 		RETURNING id
 	`, testWorkspaceID, agentID).Scan(&issueID)

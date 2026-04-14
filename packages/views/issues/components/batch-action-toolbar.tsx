@@ -73,7 +73,7 @@ export function BatchActionToolbar() {
 
         {/* Status */}
         <StatusPicker
-          status="todo"
+          status="backlog"
           onUpdate={handleBatchUpdate}
           open={statusOpen}
           onOpenChange={setStatusOpen}

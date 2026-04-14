@@ -139,13 +139,21 @@ func TestResolveAssignee(t *testing.T) {
 
 func TestValidIssueStatuses(t *testing.T) {
 	expected := map[string]bool{
-		"backlog":     true,
-		"todo":        true,
-		"in_progress": true,
-		"in_review":   true,
-		"done":        true,
-		"blocked":     true,
-		"cancelled":   true,
+		"backlog":           true,
+		"classifying":       true,
+		"ready_analyze":     true,
+		"in_analyze":        true,
+		"ready_arch_design": true,
+		"in_arch_design":    true,
+		"ready_dev":         true,
+		"in_dev":            true,
+		"ready_review":      true,
+		"in_review":         true,
+		"ready_test":        true,
+		"in_test":           true,
+		"done":              true,
+		"blocked":           true,
+		"cancelled":         true,
 	}
 	for _, s := range validIssueStatuses {
 		if !expected[s] {

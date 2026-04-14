@@ -18,7 +18,7 @@ function makeIssue(overrides: Partial<Issue> = {}): Issue {
     identifier: "MUL-1",
     title: "Test",
     description: null,
-    status: "todo",
+    status: "backlog",
     priority: "medium",
     assignee_type: null,
     assignee_id: null,
@@ -35,10 +35,10 @@ function makeIssue(overrides: Partial<Issue> = {}): Issue {
 }
 
 const issues: Issue[] = [
-  makeIssue({ id: "1", status: "todo", priority: "high", assignee_type: "member", assignee_id: "u-1", creator_type: "member", creator_id: "u-1" }),
-  makeIssue({ id: "2", status: "in_progress", priority: "medium", assignee_type: "agent", assignee_id: "a-1", creator_type: "agent", creator_id: "a-1" }),
+  makeIssue({ id: "1", status: "backlog", priority: "high", assignee_type: "member", assignee_id: "u-1", creator_type: "member", creator_id: "u-1" }),
+  makeIssue({ id: "2", status: "in_dev", priority: "medium", assignee_type: "agent", assignee_id: "a-1", creator_type: "agent", creator_id: "a-1" }),
   makeIssue({ id: "3", status: "done", priority: "low", assignee_type: null, assignee_id: null, creator_type: "member", creator_id: "u-2" }),
-  makeIssue({ id: "4", status: "todo", priority: "urgent", assignee_type: "member", assignee_id: "u-2", creator_type: "member", creator_id: "u-1" }),
+  makeIssue({ id: "4", status: "backlog", priority: "urgent", assignee_type: "member", assignee_id: "u-2", creator_type: "member", creator_id: "u-1" }),
 ];
 
 describe("filterIssues", () => {
@@ -48,7 +48,7 @@ describe("filterIssues", () => {
 
   // --- Status ---
   it("filters by status", () => {
-    const result = filterIssues(issues, { ...NO_FILTER, statusFilters: ["todo"] });
+    const result = filterIssues(issues, { ...NO_FILTER, statusFilters: ["backlog"] });
     expect(result.map((i) => i.id)).toEqual(["1", "4"]);
   });
 
@@ -99,7 +99,7 @@ describe("filterIssues", () => {
   it("applies status + assignee filters together", () => {
     const result = filterIssues(issues, {
       ...NO_FILTER,
-      statusFilters: ["todo"],
+      statusFilters: ["backlog"],
       assigneeFilters: [{ type: "member", id: "u-1" }],
     });
     expect(result.map((i) => i.id)).toEqual(["1"]);
@@ -108,7 +108,7 @@ describe("filterIssues", () => {
   it("applies status + priority + creator filters together", () => {
     const result = filterIssues(issues, {
       ...NO_FILTER,
-      statusFilters: ["todo"],
+      statusFilters: ["backlog"],
       priorityFilters: ["urgent"],
       creatorFilters: [{ type: "member", id: "u-1" }],
     });

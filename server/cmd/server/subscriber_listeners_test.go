@@ -22,7 +22,7 @@ func createTestIssue(t *testing.T, workspaceID, creatorID string) string {
 	var issueID string
 	err := testPool.QueryRow(ctx, `
 		INSERT INTO issue (workspace_id, title, status, priority, creator_type, creator_id, position)
-		VALUES ($1, 'subscriber test issue', 'todo', 'medium', 'member', $2, 0)
+		VALUES ($1, 'subscriber test issue', 'backlog', 'medium', 'member', $2, 0)
 		RETURNING id
 	`, workspaceID, creatorID).Scan(&issueID)
 	if err != nil {
@@ -98,7 +98,7 @@ func TestSubscriberIssueCreated_CreatorSubscribed(t *testing.T) {
 				ID:          issueID,
 				WorkspaceID: testWorkspaceID,
 				Title:       "test issue",
-				Status:      "todo",
+				Status:      "backlog",
 				Priority:    "medium",
 				CreatorType: "member",
 				CreatorID:   testUserID,
@@ -137,7 +137,7 @@ func TestSubscriberIssueCreated_CreatorAndAssignee(t *testing.T) {
 				ID:           issueID,
 				WorkspaceID:  testWorkspaceID,
 				Title:        "test issue",
-				Status:       "todo",
+				Status:       "backlog",
 				Priority:     "medium",
 				CreatorType:  "member",
 				CreatorID:    testUserID,
@@ -179,7 +179,7 @@ func TestSubscriberIssueCreated_SelfAssign(t *testing.T) {
 				ID:           issueID,
 				WorkspaceID:  testWorkspaceID,
 				Title:        "test issue",
-				Status:       "todo",
+				Status:       "backlog",
 				Priority:     "medium",
 				CreatorType:  "member",
 				CreatorID:    testUserID,
@@ -221,7 +221,7 @@ func TestSubscriberIssueUpdated_AssigneeChanged(t *testing.T) {
 				ID:           issueID,
 				WorkspaceID:  testWorkspaceID,
 				Title:        "test issue",
-				Status:       "todo",
+				Status:       "backlog",
 				Priority:     "medium",
 				CreatorType:  "member",
 				CreatorID:    testUserID,
@@ -256,7 +256,7 @@ func TestSubscriberIssueUpdated_NoAssigneeChange(t *testing.T) {
 				ID:          issueID,
 				WorkspaceID: testWorkspaceID,
 				Title:       "test issue",
-				Status:      "in_progress",
+				Status:      "in_dev",
 				Priority:    "medium",
 				CreatorType: "member",
 				CreatorID:   testUserID,
@@ -330,7 +330,7 @@ func TestSubscriberAddedEventPublished(t *testing.T) {
 				ID:          issueID,
 				WorkspaceID: testWorkspaceID,
 				Title:       "test issue",
-				Status:      "todo",
+				Status:      "backlog",
 				Priority:    "medium",
 				CreatorType: "member",
 				CreatorID:   testUserID,

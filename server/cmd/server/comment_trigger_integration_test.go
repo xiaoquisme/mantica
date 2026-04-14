@@ -87,7 +87,7 @@ func createIssue(t *testing.T, title string) string {
 	t.Helper()
 	resp := authRequest(t, "POST", "/api/issues?workspace_id="+testWorkspaceID, map[string]any{
 		"title":  title,
-		"status": "todo",
+		"status": "backlog",
 	})
 	if resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -280,10 +280,10 @@ func TestCommentTriggerAtAllSuppression(t *testing.T) {
 func TestCommentTriggerOnAssignNoStatusGate(t *testing.T) {
 	agentID := getAgentID(t)
 
-	// Create an in_progress issue.
+	// Create an in_dev issue.
 	issueID := createIssue(t, "On-assign status gate test")
 	resp := authRequest(t, "PUT", "/api/issues/"+issueID, map[string]any{
-		"status": "in_progress",
+		"status": "in_dev",
 	})
 	resp.Body.Close()
 
@@ -306,7 +306,7 @@ func TestCommentTriggerOnAssignNoStatusGate(t *testing.T) {
 	resp.Body.Close()
 
 	if n := countPendingTasks(t, issueID); n != 1 {
-		t.Errorf("expected 1 pending task after assigning to in_progress issue, got %d", n)
+		t.Errorf("expected 1 pending task after assigning to in_dev issue, got %d", n)
 	}
 }
 

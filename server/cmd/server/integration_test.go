@@ -448,7 +448,7 @@ func TestIssuesCRUDThroughRouter(t *testing.T) {
 	// Create
 	resp := authRequest(t, "POST", "/api/issues?workspace_id="+testWorkspaceID, map[string]any{
 		"title":    "Integration test issue",
-		"status":   "todo",
+		"status":   "backlog",
 		"priority": "high",
 	})
 	if resp.StatusCode != 201 {
@@ -477,15 +477,15 @@ func TestIssuesCRUDThroughRouter(t *testing.T) {
 
 	// Update status only — should preserve title
 	resp = authRequest(t, "PUT", "/api/issues/"+issueID, map[string]any{
-		"status": "in_progress",
+		"status": "in_dev",
 	})
 	if resp.StatusCode != 200 {
 		t.Fatalf("UpdateIssue: expected 200, got %d", resp.StatusCode)
 	}
 	var updated map[string]any
 	readJSON(t, resp, &updated)
-	if updated["status"] != "in_progress" {
-		t.Fatalf("expected status 'in_progress', got '%s'", updated["status"])
+	if updated["status"] != "in_dev" {
+		t.Fatalf("expected status 'in_dev', got '%s'", updated["status"])
 	}
 	if updated["title"] != "Integration test issue" {
 		t.Fatalf("title should be preserved, got '%s'", updated["title"])
@@ -503,7 +503,7 @@ func TestIssuesCRUDThroughRouter(t *testing.T) {
 	if updated2["title"] != "Renamed integration issue" {
 		t.Fatalf("expected title 'Renamed integration issue', got '%s'", updated2["title"])
 	}
-	if updated2["status"] != "in_progress" {
+	if updated2["status"] != "in_dev" {
 		t.Fatalf("status should be preserved, got '%s'", updated2["status"])
 	}
 
@@ -761,7 +761,7 @@ func TestWebSocketIntegration(t *testing.T) {
 	// Create an issue — this should trigger a WebSocket broadcast
 	resp := authRequest(t, "POST", "/api/issues?workspace_id="+testWorkspaceID, map[string]any{
 		"title":  "WebSocket test issue",
-		"status": "todo",
+		"status": "backlog",
 	})
 	var issue map[string]any
 	readJSON(t, resp, &issue)
@@ -785,7 +785,7 @@ func TestWebSocketIntegration(t *testing.T) {
 
 	// Update the issue — should trigger another broadcast
 	resp = authRequest(t, "PUT", "/api/issues/"+issueID, map[string]any{
-		"status": "in_progress",
+		"status": "in_dev",
 	})
 	resp.Body.Close()
 

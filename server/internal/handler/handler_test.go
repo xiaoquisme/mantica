@@ -161,7 +161,7 @@ func TestIssueCRUD(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := newRequest("POST", "/api/issues?workspace_id="+testWorkspaceID, map[string]any{
 		"title":    "Test issue from Go test",
-		"status":   "todo",
+		"status":   "backlog",
 		"priority": "medium",
 	})
 	testHandler.CreateIssue(w, req)
@@ -174,8 +174,8 @@ func TestIssueCRUD(t *testing.T) {
 	if created.Title != "Test issue from Go test" {
 		t.Fatalf("CreateIssue: expected title 'Test issue from Go test', got '%s'", created.Title)
 	}
-	if created.Status != "todo" {
-		t.Fatalf("CreateIssue: expected status 'todo', got '%s'", created.Status)
+	if created.Status != "backlog" {
+		t.Fatalf("CreateIssue: expected status 'backlog', got '%s'", created.Status)
 	}
 	issueID := created.ID
 
@@ -196,7 +196,7 @@ func TestIssueCRUD(t *testing.T) {
 
 	// Update - partial (only status)
 	w = httptest.NewRecorder()
-	status := "in_progress"
+	status := "in_dev"
 	req = newRequest("PUT", "/api/issues/"+issueID, map[string]any{
 		"status": status,
 	})
@@ -208,8 +208,8 @@ func TestIssueCRUD(t *testing.T) {
 
 	var updated IssueResponse
 	json.NewDecoder(w.Body).Decode(&updated)
-	if updated.Status != "in_progress" {
-		t.Fatalf("UpdateIssue: expected status 'in_progress', got '%s'", updated.Status)
+	if updated.Status != "in_dev" {
+		t.Fatalf("UpdateIssue: expected status 'in_dev', got '%s'", updated.Status)
 	}
 	if updated.Title != "Test issue from Go test" {
 		t.Fatalf("UpdateIssue: title should be preserved, got '%s'", updated.Title)
@@ -626,7 +626,7 @@ func TestResolveActor(t *testing.T) {
 	var issueID string
 	err = testPool.QueryRow(ctx,
 		`INSERT INTO issue (workspace_id, title, status, priority, creator_type, creator_id, number, position)
-		 VALUES ($1, 'resolveActor test', 'todo', 'none', 'member', $2, 9999, 0)
+		 VALUES ($1, 'resolveActor test', 'backlog', 'none', 'member', $2, 9999, 0)
 		 RETURNING id`, testWorkspaceID, testUserID,
 	).Scan(&issueID)
 	if err != nil {

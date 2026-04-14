@@ -80,14 +80,22 @@ vi.mock("@multica/core/api", () => ({
 
 // Mock issue config
 vi.mock("@multica/core/issues/config", () => ({
-  ALL_STATUSES: ["backlog", "todo", "in_progress", "in_review", "done", "blocked", "cancelled"],
-  BOARD_STATUSES: ["backlog", "todo", "in_progress", "in_review", "done", "blocked"],
-  STATUS_ORDER: ["backlog", "todo", "in_progress", "in_review", "done", "blocked", "cancelled"],
+  ALL_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
+  BOARD_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked"],
+  STATUS_ORDER: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
   STATUS_CONFIG: {
     backlog: { label: "Backlog", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent" },
-    todo: { label: "Todo", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent" },
-    in_progress: { label: "In Progress", iconColor: "text-warning", hoverBg: "hover:bg-warning/10" },
-    in_review: { label: "In Review", iconColor: "text-success", hoverBg: "hover:bg-success/10" },
+    classifying: { label: "Classifying", iconColor: "text-orange-400", hoverBg: "hover:bg-orange-400/10" },
+    ready_analyze: { label: "Ready Analyze", iconColor: "text-yellow-500", hoverBg: "hover:bg-yellow-500/10" },
+    in_analyze: { label: "In Analyze", iconColor: "text-yellow-600", hoverBg: "hover:bg-yellow-600/10" },
+    ready_arch_design: { label: "Ready Arch Design", iconColor: "text-cyan-500", hoverBg: "hover:bg-cyan-500/10" },
+    in_arch_design: { label: "In Arch Design", iconColor: "text-cyan-600", hoverBg: "hover:bg-cyan-600/10" },
+    ready_dev: { label: "Ready Dev", iconColor: "text-blue-400", hoverBg: "hover:bg-blue-400/10" },
+    in_dev: { label: "In Dev", iconColor: "text-blue-600", hoverBg: "hover:bg-blue-600/10" },
+    ready_review: { label: "Ready Review", iconColor: "text-violet-400", hoverBg: "hover:bg-violet-400/10" },
+    in_review: { label: "In Review", iconColor: "text-violet-600", hoverBg: "hover:bg-violet-600/10" },
+    ready_test: { label: "Ready Test", iconColor: "text-rose-400", hoverBg: "hover:bg-rose-400/10" },
+    in_test: { label: "In Test", iconColor: "text-rose-600", hoverBg: "hover:bg-rose-600/10" },
     done: { label: "Done", iconColor: "text-info", hoverBg: "hover:bg-info/10" },
     blocked: { label: "Blocked", iconColor: "text-destructive", hoverBg: "hover:bg-destructive/10" },
     cancelled: { label: "Cancelled", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent" },
@@ -256,7 +264,7 @@ const mockIssues: Issue[] = [
     identifier: "TES-1",
     title: "Implement auth",
     description: "Add JWT authentication",
-    status: "todo",
+    status: "backlog",
     priority: "high",
     assignee_type: "member",
     assignee_id: "user-1",
@@ -274,7 +282,7 @@ const mockIssues: Issue[] = [
     identifier: "TES-2",
     title: "Design landing page",
     description: null,
-    status: "in_progress",
+    status: "in_dev",
     priority: "medium",
     assignee_type: "agent",
     assignee_id: "agent-1",
@@ -376,8 +384,8 @@ describe("IssuesPage (shared)", () => {
     renderWithQuery(<IssuesPage />);
 
     await screen.findByText("Backlog");
-    expect(screen.getAllByText("Todo").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("In Progress").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Classifying").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("In Dev").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows workspace breadcrumb with 'Issues' label", async () => {
