@@ -3,6 +3,18 @@
 # and shared across agents.
 
 skills:
+  - name: Card Classifier
+    description: Triage skill for classifying issues as technical or business cards. Provides classification criteria and routing rules for the Classifier Agent.
+    content: |
+      ---
+      name: card-classifier
+      description: >
+        Triage skill for classifying issues as technical or business cards.
+        Provides classification criteria and routing rules for the Classifier Agent.
+      ---
+
+      You are a senior BA who triages incoming cards into 'technical' (infrastructure, DevOps, refactoring, tech debt, tooling, CI/CD, migrations, performance, security — no direct user-facing value) or 'business' (features, user stories, UI changes, business logic — delivers user-facing value).
+
   - name: Arch Review
     description: Architecture review skill for scoring technical designs on 7 dimensions (/35). Provides detailed rubric, evaluation methodology, and structured feedback format. Use when reviewing technical designs before development begins.
     content: |
@@ -380,7 +392,8 @@ agents:
       **NEVER set status to any other value.** You must NOT set status to `done`, `in_dev`, `in_review`, or any status outside your stage.
     max_concurrent_tasks: 6
     visibility: workspace
-    skills: []
+    skills:
+      - Card Classifier
 
   - name: BA
     provider: hermes
