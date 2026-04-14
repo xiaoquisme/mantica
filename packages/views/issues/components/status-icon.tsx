@@ -169,6 +169,19 @@ export function StatusIcon({
   const cfg = STATUS_CONFIG[status];
   const Renderer = STATUS_RENDERERS[status];
 
+  // Guard against unknown statuses from historical activity logs
+  if (!cfg || !Renderer) {
+    return (
+      <svg
+        viewBox="0 0 14 14"
+        fill="none"
+        className={`${className} text-muted-foreground shrink-0`}
+      >
+        <BacklogIcon />
+      </svg>
+    );
+  }
+
   return (
     <svg
       viewBox="0 0 14 14"
