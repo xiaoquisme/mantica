@@ -45,6 +45,9 @@ const kanbanCollision: CollisionDetection = (args) => {
     // instead of the column droppable.
     const cards = pointer.filter((c) => !COLUMN_IDS.has(c.id as string));
     if (cards.length > 0) return cards;
+    // Pointer is over a column droppable (empty column) — use it directly.
+    const columns = pointer.filter((c) => COLUMN_IDS.has(c.id as string));
+    if (columns.length > 0) return columns;
   }
   // Fallback: closestCenter finds the nearest card even when
   // the pointer is in a gap between cards (common when dragging down).

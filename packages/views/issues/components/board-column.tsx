@@ -50,7 +50,10 @@ export function BoardColumn({
   );
 
   return (
-    <div className={`flex w-[280px] shrink-0 flex-col rounded-xl ${cfg.columnBg} p-2`}>
+    <div
+      ref={setNodeRef}
+      className={`flex w-[280px] shrink-0 flex-col rounded-xl ${cfg.columnBg} p-2 ${isOver ? "ring-2 ring-inset ring-border" : ""}`}
+    >
       <div className="mb-2 flex items-center justify-between px-1.5">
         {/* Left: status badge + count */}
         <div className="flex items-center gap-2">
@@ -98,10 +101,7 @@ export function BoardColumn({
         </div>
       </div>
       <div
-        ref={setNodeRef}
-        className={`min-h-[200px] flex-1 space-y-2 overflow-y-auto rounded-lg p-1 transition-colors ${
-          isOver ? "bg-accent/60" : ""
-        }`}
+        className={`min-h-[200px] flex-1 space-y-2 overflow-y-auto rounded-lg p-1`}
       >
         <SortableContext items={issueIds} strategy={verticalListSortingStrategy}>
           {resolvedIssues.map((issue) => (
