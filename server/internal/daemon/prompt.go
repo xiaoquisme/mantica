@@ -25,7 +25,11 @@ func BuildPrompt(task Task) string {
 		return buildChatPrompt(task)
 	}
 	var b strings.Builder
-	b.WriteString("You are running as a local coding agent for a Multica workspace.\n\n")
+	if task.Agent != nil && task.Agent.Name != "" {
+		fmt.Fprintf(&b, "You are %s, an AI agent working in a Multica workspace.\n\n", task.Agent.Name)
+	} else {
+		b.WriteString("You are an AI agent working in a Multica workspace.\n\n")
+	}
 	fmt.Fprintf(&b, "Your assigned issue ID is: %s\n\n", task.IssueID)
 
 	// If we know the current issue status, give explicit first-step instructions.
