@@ -34,3 +34,29 @@ func IsReadyStatus(status string) bool {
 	_, ok := Stages[status]
 	return ok
 }
+
+// AllowedAgentTransitions maps agent name to the statuses they are allowed to set.
+// This prevents agents from setting status to backlog, done, or other stages they don't own.
+var AllowedAgentTransitions = map[string][]string{
+	"Classifier":  {"ready_analyze", "ready_arch_design", "blocked"},
+	"BA":          {"ready_arch_design", "blocked"},
+	"TL":          {"ready_dev", "blocked"},
+	"DEV":         {"ready_review", "blocked"},
+	"Code Review": {"ready_test", "ready_dev", "blocked"},
+	"QA":          {"done", "ready_dev", "blocked"},
+}
+
+// IsAllowedAgentTransition checks if an agent is allowed to set a given status.
+// Returns true if the agent name is not in the map (no restriction) or the status is allowed.
+func IsAllowedAgentTransition(agentName, newStatus string) bool {
+	allowed, ok := AllowedAgentTransitions[agentName]
+	if !ok {
+		return true
+	}
+	for _, s := range allowed {
+		if s == newStatus {
+			return true
+		}
+	}
+	return false
+}

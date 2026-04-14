@@ -968,6 +968,16 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "invalid status: "+*req.Status)
 			return
 		}
+		// When an agent changes status, enforce allowed transitions.
+		agentIDHeader := r.Header.Get("X-Agent-ID")
+		if agentIDHeader != "" {
+			if ag, err := h.Queries.GetAgent(r.Context(), parseUUID(agentIDHeader)); err == nil {
+				if !pipeline.IsAllowedAgentTransition(ag.Name, *req.Status) {
+					writeError(w, http.StatusForbidden, fmt.Sprintf("agent %s is not allowed to set status to %s", ag.Name, *req.Status))
+					return
+				}
+			}
+		}
 		params.Status = pgtype.Text{String: *req.Status, Valid: true}
 	}
 	if req.Priority != nil {
@@ -1257,8 +1267,17 @@ func (h *Handler) triggerPipeline(ctx context.Context, issue db.Issue) {
 	prefix := h.getIssuePrefix(ctx, issue.WorkspaceID)
 	h.publish(protocol.EventIssueUpdated, uuidToString(issue.WorkspaceID), "system", "", issueToResponse(updatedIssue, prefix))
 
-	// Enqueue task for the new agent.
-	h.TaskService.EnqueueTaskForIssue(ctx, updatedIssue)
+	// Enqueue task for the new agent — skip if one is already active.
+	hasActive, err := h.Queries.HasActiveTaskForIssueAndAgent(ctx, db.HasActiveTaskForIssueAndAgentParams{
+		IssueID: issue.ID,
+		AgentID: targetAgent.ID,
+	})
+	if err == nil && hasActive {
+		slog.Debug("pipeline: skipping enqueue, active task already exists",
+			"issue_id", uuidToString(issue.ID), "agent", stage.AgentName)
+	} else {
+		h.TaskService.EnqueueTaskForIssue(ctx, updatedIssue)
+	}
 
 	slog.Info("pipeline: auto-assigned and advanced",
 		"issue_id", uuidToString(issue.ID),
@@ -1287,7 +1306,17 @@ func (h *Handler) advanceToClassifying(ctx context.Context, issue db.Issue, ag d
 	prefix := h.getIssuePrefix(ctx, issue.WorkspaceID)
 	h.publish(protocol.EventIssueUpdated, uuidToString(issue.WorkspaceID), "system", "", issueToResponse(updatedIssue, prefix))
 
-	h.TaskService.EnqueueTaskForIssue(ctx, updatedIssue)
+	// Enqueue task for classifier — skip if one is already active.
+	hasActive, err := h.Queries.HasActiveTaskForIssueAndAgent(ctx, db.HasActiveTaskForIssueAndAgentParams{
+		IssueID: issue.ID,
+		AgentID: ag.ID,
+	})
+	if err == nil && hasActive {
+		slog.Debug("pipeline: skipping enqueue, active task already exists",
+			"issue_id", uuidToString(issue.ID), "agent", ag.Name)
+	} else {
+		h.TaskService.EnqueueTaskForIssue(ctx, updatedIssue)
+	}
 
 	slog.Info("pipeline: backlog → classifying", "issue_id", uuidToString(issue.ID))
 }
