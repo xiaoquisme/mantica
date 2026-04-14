@@ -887,11 +887,18 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 	h.publish(protocol.EventIssueCreated, workspaceID, creatorType, actualCreatorID, map[string]any{"issue": resp})
 
 	// Only enqueue for agents on create. If the issue is in a pipeline-managed
-	// status (backlog → Classifier), let triggerPipeline handle status advance + enqueue.
+	// status (ready_*), let triggerPipeline handle status advance + enqueue.
+	// Special case: backlog + Classifier → advance to classifying.
 	// Otherwise fall back to direct enqueue.
 	if issue.AssigneeType.Valid && issue.AssigneeID.Valid {
 		if pipeline.IsReadyStatus(issue.Status) {
 			h.triggerPipeline(r.Context(), issue)
+		} else if issue.Status == "backlog" && issue.AssigneeType.String == "agent" {
+			if ag, err := h.Queries.GetAgent(r.Context(), issue.AssigneeID); err == nil && pipeline.IsClassifierAgent(ag.Name) {
+				h.advanceToClassifying(r.Context(), issue, ag)
+			} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
+				h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
+			}
 		} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
 			h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
 		}
@@ -1090,21 +1097,27 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Reconcile task queue when assignee changes.
-	// If the issue is in a pipeline-managed status (e.g. backlog → Classifier),
-	// let triggerPipeline handle enqueue + status advance.
-	// Otherwise fall back to direct enqueue for non-pipeline assignees.
+	// Special case: backlog issue assigned to Classifier → advance to classifying.
+	// For ready_* statuses: let triggerPipeline handle auto-assignment.
+	// Otherwise: direct enqueue for manual assignees.
 	if assigneeChanged {
 		h.TaskService.CancelTasksForIssue(r.Context(), issue.ID)
 
-		if pipeline.IsReadyStatus(issue.Status) {
+		if issue.Status == "backlog" && issue.AssigneeType.String == "agent" && issue.AssigneeID.Valid {
+			// Check if the new assignee is Classifier
+			if ag, err := h.Queries.GetAgent(r.Context(), issue.AssigneeID); err == nil && pipeline.IsClassifierAgent(ag.Name) {
+				h.advanceToClassifying(r.Context(), issue, ag)
+			} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
+				h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
+			}
+		} else if pipeline.IsReadyStatus(issue.Status) {
 			h.triggerPipeline(r.Context(), issue)
 		} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
 			h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
 		}
 	}
 
-	// Pipeline: when status moves to a pipeline trigger status (ready_* or backlog),
-	// auto-assign the next agent and advance to the corresponding in_* status.
+	// Pipeline: when status moves to ready_*, auto-assign the next agent.
 	// Skip if assigneeChanged already handled it above.
 	if statusChanged && !assigneeChanged && pipeline.IsReadyStatus(issue.Status) {
 		h.triggerPipeline(r.Context(), issue)
@@ -1252,6 +1265,31 @@ func (h *Handler) triggerPipeline(ctx context.Context, issue db.Issue) {
 		"agent", stage.AgentName,
 		"status", stage.InProgressStatus,
 	)
+}
+
+// advanceToClassifying handles the backlog→classifying entry point.
+// Called when a backlog issue is assigned to the Classifier agent.
+// Unlike triggerPipeline, the agent is already set — we only advance the status.
+func (h *Handler) advanceToClassifying(ctx context.Context, issue db.Issue, ag db.Agent) {
+	stage := pipeline.ClassifierStage
+
+	updatedIssue, err := h.Queries.UpdateIssue(ctx, db.UpdateIssueParams{
+		ID:           issue.ID,
+		Status:       pgtype.Text{String: stage.InProgressStatus, Valid: true},
+		AssigneeType: pgtype.Text{String: "agent", Valid: true},
+		AssigneeID:   ag.ID,
+	})
+	if err != nil {
+		slog.Warn("pipeline: failed to advance to classifying", "issue_id", uuidToString(issue.ID), "error", err)
+		return
+	}
+
+	prefix := h.getIssuePrefix(ctx, issue.WorkspaceID)
+	h.publish(protocol.EventIssueUpdated, uuidToString(issue.WorkspaceID), "system", "", issueToResponse(updatedIssue, prefix))
+
+	h.TaskService.EnqueueTaskForIssue(ctx, updatedIssue)
+
+	slog.Info("pipeline: backlog → classifying", "issue_id", uuidToString(issue.ID))
 }
 
 func (h *Handler) DeleteIssue(w http.ResponseWriter, r *http.Request) {

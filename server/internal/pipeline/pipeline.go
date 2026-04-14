@@ -6,16 +6,27 @@ type StageConfig struct {
 	InProgressStatus string // status to set when agent starts (in_*)
 }
 
-// Stages maps status values to their pipeline stage config.
-// ready_* statuses are triggered automatically when an agent sets them.
-// backlog is triggered when a user assigns the Classifier agent.
+// Stages maps ready_* status values to their pipeline stage config.
+// Triggered automatically when an agent sets status to ready_*.
+// Note: backlog is NOT here — it is handled separately on assigneeChanged
+// so users can freely move issues back to backlog without auto-triggering.
 var Stages = map[string]StageConfig{
-	"backlog":            {AgentName: "Classifier", InProgressStatus: "classifying"},
-	"ready_analyze":      {AgentName: "BA", InProgressStatus: "in_analyze"},
-	"ready_arch_design":  {AgentName: "TL", InProgressStatus: "in_arch_design"},
-	"ready_dev":          {AgentName: "DEV", InProgressStatus: "in_dev"},
-	"ready_review":       {AgentName: "Code Review", InProgressStatus: "in_review"},
-	"ready_test":         {AgentName: "QA", InProgressStatus: "in_test"},
+	"ready_analyze":     {AgentName: "BA", InProgressStatus: "in_analyze"},
+	"ready_arch_design": {AgentName: "TL", InProgressStatus: "in_arch_design"},
+	"ready_dev":         {AgentName: "DEV", InProgressStatus: "in_dev"},
+	"ready_review":      {AgentName: "Code Review", InProgressStatus: "in_review"},
+	"ready_test":        {AgentName: "QA", InProgressStatus: "in_test"},
+}
+
+// ClassifierStage is the entry stage triggered when Classifier is assigned to a backlog issue.
+var ClassifierStage = StageConfig{
+	AgentName:        "Classifier",
+	InProgressStatus: "classifying",
+}
+
+// IsClassifierAgent returns true if the given agent name is the Classifier.
+func IsClassifierAgent(name string) bool {
+	return name == ClassifierStage.AgentName
 }
 
 // IsReadyStatus returns true if the status is a pipeline trigger.
