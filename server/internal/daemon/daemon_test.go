@@ -50,38 +50,19 @@ func TestBuildPromptContainsIssueID(t *testing.T) {
 	}
 }
 
-func TestBuildPromptStatusTransition(t *testing.T) {
+func TestBuildPromptNoStatusTransition(t *testing.T) {
 	t.Parallel()
 
-	issueID := "test-issue-123"
-
-	// When IssueStatus has a transition, prompt should include the status command.
+	// Pipeline handles status transitions now — prompt should never contain
+	// status transition commands.
 	prompt := BuildPrompt(Task{
-		IssueID:     issueID,
-		IssueStatus: "ready_dev",
-	})
-	if !strings.Contains(prompt, "multica issue status "+issueID+" in_dev") {
-		t.Fatalf("prompt should contain status transition command, got:\n%s", prompt)
-	}
-	if !strings.Contains(prompt, "**FIRST**") {
-		t.Fatalf("prompt should emphasize FIRST step, got:\n%s", prompt)
-	}
-
-	// When IssueStatus is already "in_*", no transition line should appear.
-	prompt = BuildPrompt(Task{
-		IssueID:     issueID,
-		IssueStatus: "in_dev",
+		IssueID: "test-issue-123",
 	})
 	if strings.Contains(prompt, "multica issue status") {
-		t.Fatalf("prompt should NOT contain status command for in-progress status, got:\n%s", prompt)
+		t.Fatalf("prompt should NOT contain status command, got:\n%s", prompt)
 	}
-
-	// When IssueStatus is empty (legacy), no transition line should appear.
-	prompt = BuildPrompt(Task{
-		IssueID: issueID,
-	})
-	if strings.Contains(prompt, "multica issue status") {
-		t.Fatalf("prompt should NOT contain status command when IssueStatus is empty, got:\n%s", prompt)
+	if strings.Contains(prompt, "**FIRST**") {
+		t.Fatalf("prompt should NOT contain FIRST step, got:\n%s", prompt)
 	}
 }
 

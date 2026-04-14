@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/logger"
+	"github.com/multica-ai/multica/server/internal/pipeline"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
@@ -1094,6 +1095,12 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Pipeline: when status moves to ready_*, auto-assign the next agent
+	// and advance to the corresponding in_* status.
+	if statusChanged && pipeline.IsReadyStatus(issue.Status) {
+		h.triggerPipeline(r.Context(), issue)
+	}
+
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -1174,6 +1181,68 @@ func (h *Handler) isAgentAssigneeReady(ctx context.Context, issue db.Issue) bool
 	}
 
 	return true
+}
+
+// triggerPipeline auto-assigns the next agent and advances the issue status
+// from ready_* to the corresponding in_* when a pipeline stage is triggered.
+func (h *Handler) triggerPipeline(ctx context.Context, issue db.Issue) {
+	stage, ok := pipeline.Stages[issue.Status]
+	if !ok {
+		return
+	}
+
+	// Find the target agent by name in this workspace.
+	agents, err := h.Queries.ListAgents(ctx, issue.WorkspaceID)
+	if err != nil {
+		slog.Warn("pipeline: failed to list agents", "issue_id", uuidToString(issue.ID), "error", err)
+		return
+	}
+
+	var targetAgent *db.Agent
+	for i := range agents {
+		if agents[i].Name == stage.AgentName && !agents[i].ArchivedAt.Valid {
+			targetAgent = &agents[i]
+			break
+		}
+	}
+
+	if targetAgent == nil {
+		slog.Warn("pipeline: no agent found for stage", "issue_id", uuidToString(issue.ID), "status", issue.Status, "agent_name", stage.AgentName)
+		return
+	}
+
+	if !targetAgent.RuntimeID.Valid {
+		slog.Warn("pipeline: agent has no runtime", "agent_name", stage.AgentName)
+		return
+	}
+
+	// Cancel any existing tasks for this issue.
+	h.TaskService.CancelTasksForIssue(ctx, issue.ID)
+
+	// Advance status to in_* and assign the agent.
+	updatedIssue, err := h.Queries.UpdateIssue(ctx, db.UpdateIssueParams{
+		ID:           issue.ID,
+		Status:       pgtype.Text{String: stage.InProgressStatus, Valid: true},
+		AssigneeType: pgtype.Text{String: "agent", Valid: true},
+		AssigneeID:   targetAgent.ID,
+	})
+	if err != nil {
+		slog.Warn("pipeline: failed to update issue status/assignee", "error", err)
+		return
+	}
+
+	// Broadcast the issue update.
+	prefix := h.getIssuePrefix(ctx, issue.WorkspaceID)
+	h.publish(protocol.EventIssueUpdated, uuidToString(issue.WorkspaceID), "system", "", issueToResponse(updatedIssue, prefix))
+
+	// Enqueue task for the new agent.
+	h.TaskService.EnqueueTaskForIssue(ctx, updatedIssue)
+
+	slog.Info("pipeline: auto-assigned and advanced",
+		"issue_id", uuidToString(issue.ID),
+		"agent", stage.AgentName,
+		"status", stage.InProgressStatus,
+	)
 }
 
 func (h *Handler) DeleteIssue(w http.ResponseWriter, r *http.Request) {

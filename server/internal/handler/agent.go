@@ -94,7 +94,6 @@ type AgentTaskResponse struct {
 	TriggerCommentID *string        `json:"trigger_comment_id,omitempty"` // comment that triggered this task
 	ChatSessionID    string         `json:"chat_session_id,omitempty"`    // non-empty for chat tasks
 	ChatMessage      string         `json:"chat_message,omitempty"`       // user message for chat tasks
-	IssueStatus      string         `json:"issue_status,omitempty"`       // current issue status for transition prompts
 }
 
 // TaskAgentData holds agent info included in claim responses so the daemon
