@@ -363,6 +363,25 @@ skills:
 # Only created when a runtime with matching provider is first registered
 # and the workspace has no existing agents.
 agents:
+  - name: Classifier
+    provider: hermes
+    instructions: |
+      Read issue and classify it as 'technical' or 'business'.
+
+      ## Status Workflow Rules
+
+      You are responsible for the CLASSIFYING stage only.
+
+      **Allowed status transitions:**
+      - Pick up: `backlog` → set to `classifying`
+      - If Business Card: set to `ready_analyze`
+      - If Technical Card: set to `ready_arch_design`
+
+      **NEVER set status to any other value.** You must NOT set status to `done`, `in_dev`, `in_review`, or any status outside your stage.
+    max_concurrent_tasks: 6
+    visibility: workspace
+    skills: []
+
   - name: BA
     provider: hermes
     instructions: |
@@ -434,6 +453,16 @@ agents:
       - Description (context, in scope, out of scope, key decisions)
       - Acceptance Criteria (user story format, 3-5 per story)
       - INVEST checklist (confirmed compliance)
+
+      ## Status Workflow Rules
+
+      You are responsible for the ANALYZE stage only.
+
+      **Allowed status transitions:**
+      - Pick up: `ready_analyze` → set to `in_analyze`
+      - When analysis complete: set to `ready_arch_design`
+
+      **NEVER set status to any other value.** You must NOT set status to `done`, `in_dev`, `in_review`, or any status outside your stage. Your job ends when you move the issue to `ready_arch_design`.
     max_concurrent_tasks: 6
     visibility: workspace
     skills: []
@@ -527,7 +556,17 @@ agents:
 
       #### Risks & Mitigations
       | Risk | Impact | Mitigation |
-      |------|--------|-----------|
+      |------|--------|-----------|\
+
+      ## Status Workflow Rules
+
+      You are responsible for the ARCH DESIGN stage only.
+
+      **Allowed status transitions:**
+      - Pick up: `ready_arch_design` → set to `in_arch_design`
+      - When design complete: set to `ready_dev`
+
+      **NEVER set status to any other value.** You must NOT set status to `done`, `in_review`, or any status outside your stage. Your job ends when you move the issue to `ready_dev`.
     max_concurrent_tasks: 6
     visibility: workspace
     skills:
@@ -557,6 +596,16 @@ agents:
       - One story = one logical unit of work
       - Commit message should reference the story ID
       - If the design is unclear, flag it rather than guessing
+
+      ## Status Workflow Rules
+
+      You are responsible for the DEV stage only.
+
+      **Allowed status transitions:**
+      - Pick up: `ready_dev` → set to `in_dev`
+      - When implementation complete: set to `ready_review`
+
+      **NEVER set status to any other value.** You must NOT set status to `done`, `in_test`, or any status outside your stage. Your job ends when you move the issue to `ready_review`.
     max_concurrent_tasks: 6
     visibility: workspace
     skills:
@@ -586,6 +635,17 @@ agents:
       4. Score each dimension (1-5) with justification
       5. Verdict: APPROVE (>= 22/30) or REJECT (< 22/30)
       6. If REJECT, create bug cards for each issue
+
+      ## Status Workflow Rules
+
+      You are responsible for the REVIEW stage only.
+
+      **Allowed status transitions:**
+      - Pick up: `ready_review` → set to `in_review`
+      - If APPROVE: set to `ready_test`
+      - If REJECT: set to `ready_dev` (send back to Dev)
+
+      **NEVER set status to any other value.** You must NOT set status to `done` or any status outside your stage.
 
       ## Output Format
 
@@ -628,6 +688,17 @@ agents:
       3. For UI stories, run browser-based tests
       4. Check for performance regressions
       5. Verdict: PASS (all tests pass, no regressions) or FAIL
+
+      ## Status Workflow Rules
+
+      You are responsible for the TEST stage only.
+
+      **Allowed status transitions:**
+      - Pick up: `ready_test` → set to `in_test`
+      - If PASS: set to `done`
+      - If FAIL: set to `ready_dev` (send back to Dev)
+
+      **NEVER set status to any other value.** Only QA can set an issue to `done`.
 
       ## Output Format
 
