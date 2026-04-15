@@ -27,6 +27,7 @@ type S3Storage struct {
 // Environment variables:
 //   - S3_BUCKET (required)
 //   - S3_REGION (default: us-west-2)
+//   - S3_ENDPOINT (optional; set for MinIO or other S3-compatible stores, enables path-style access)
 //   - AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (optional; falls back to default credential chain)
 func NewS3StorageFromEnv() *S3Storage {
 	bucket := os.Getenv("S3_BUCKET")
@@ -59,10 +60,19 @@ func NewS3StorageFromEnv() *S3Storage {
 	}
 
 	cdnDomain := os.Getenv("CLOUDFRONT_DOMAIN")
+	endpoint := os.Getenv("S3_ENDPOINT")
 
-	slog.Info("S3 storage initialized", "bucket", bucket, "region", region, "cdn_domain", cdnDomain)
+	clientOpts := []func(*s3.Options){}
+	if endpoint != "" {
+		clientOpts = append(clientOpts, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(endpoint)
+			o.UsePathStyle = true // required for MinIO and other path-style S3-compatible stores
+		})
+	}
+
+	slog.Info("S3 storage initialized", "bucket", bucket, "region", region, "cdn_domain", cdnDomain, "endpoint", endpoint)
 	return &S3Storage{
-		client:    s3.NewFromConfig(cfg),
+		client:    s3.NewFromConfig(cfg, clientOpts...),
 		bucket:    bucket,
 		cdnDomain: cdnDomain,
 	}
