@@ -9,6 +9,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { issueListOptions } from "@multica/core/issues/queries";
 import { useQuery } from "@tanstack/react-query";
 import { taskStatusConfig } from "../../config";
+import { AppLink } from "../../../navigation";
 
 export function TasksTab({ agent }: { agent: Agent }) {
   const [tasks, setTasks] = useState<AgentTask[]>([]);
@@ -102,9 +103,13 @@ export function TasksTab({ agent }: { agent: Agent }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     {issue && (
-                      <span className="shrink-0 text-xs font-mono text-muted-foreground">
+                      <AppLink
+                        href={`/issues/${issue.id}`}
+                        className="shrink-0 text-xs font-mono text-muted-foreground hover:text-foreground hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {issue.identifier}
-                      </span>
+                      </AppLink>
                     )}
                     <span className={`text-sm truncate ${isActive ? "font-medium" : ""}`}>
                       {issue?.title ?? `Issue ${task.issue_id.slice(0, 8)}...`}
