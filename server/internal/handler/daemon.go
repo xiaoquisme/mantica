@@ -125,6 +125,28 @@ func (h *Handler) DaemonRegister(w http.ResponseWriter, r *http.Request) {
 		// Non-fatal — registration continues even if seed fails.
 	}
 
+	// Bring agents online now that their runtime is registered.
+	for _, runtimeID := range runtimesByProvider {
+		if err := h.Queries.SetAgentStatusByRuntime(r.Context(), db.SetAgentStatusByRuntimeParams{
+			RuntimeID: runtimeID,
+			Status:    "idle",
+		}); err != nil {
+			slog.Warn("daemon register: failed to set agents idle", "runtime_id", runtimeID, "error", err)
+			continue
+		}
+		agents, err := h.Queries.ListAgentsByRuntime(r.Context(), runtimeID)
+		if err != nil {
+			slog.Warn("daemon register: failed to list agents", "runtime_id", runtimeID, "error", err)
+			continue
+		}
+		for _, a := range agents {
+			h.publish(protocol.EventAgentStatus, req.WorkspaceID, "system", "", map[string]any{
+				"agent_id": uuidToString(a.ID),
+				"status":   "idle",
+			})
+		}
+	}
+
 	h.publish(protocol.EventDaemonRegister, req.WorkspaceID, "system", "", map[string]any{
 		"runtimes": resp,
 	})
@@ -172,7 +194,26 @@ func (h *Handler) DaemonDeregister(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		affectedWorkspaces[uuidToString(rt.WorkspaceID)] = true
+		// Take agents offline when their runtime deregisters.
+		wsID := uuidToString(rt.WorkspaceID)
+		if err := h.Queries.SetAgentStatusByRuntime(r.Context(), db.SetAgentStatusByRuntimeParams{
+			RuntimeID: parseUUID(rid),
+			Status:    "offline",
+		}); err != nil {
+			slog.Warn("deregister: failed to set agents offline", "runtime_id", rid, "error", err)
+		} else {
+			agents, err := h.Queries.ListAgentsByRuntime(r.Context(), parseUUID(rid))
+			if err == nil {
+				for _, a := range agents {
+					h.publish(protocol.EventAgentStatus, wsID, "system", "", map[string]any{
+						"agent_id": uuidToString(a.ID),
+						"status":   "offline",
+					})
+				}
+			}
+		}
+
+		affectedWorkspaces[wsID] = true
 	}
 
 	// Notify frontend clients so they re-fetch runtime list.

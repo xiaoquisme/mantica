@@ -191,3 +191,10 @@ ORDER BY created_at DESC;
 UPDATE agent SET status = $2, updated_at = now()
 WHERE id = $1
 RETURNING *;
+
+-- name: ListAgentsByRuntime :many
+SELECT * FROM agent WHERE runtime_id = $1 AND archived_at IS NULL;
+
+-- name: SetAgentStatusByRuntime :exec
+UPDATE agent SET status = $2, updated_at = now()
+WHERE runtime_id = $1 AND archived_at IS NULL;

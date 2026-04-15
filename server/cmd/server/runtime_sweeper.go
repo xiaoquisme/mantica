@@ -76,6 +76,31 @@ func sweepStaleRuntimes(ctx context.Context, queries *db.Queries, bus *events.Bu
 		broadcastFailedTasks(ctx, queries, bus, failedTasks)
 	}
 
+	// Take agents offline for each stale runtime.
+	for _, row := range staleRows {
+		wsID := util.UUIDToString(row.WorkspaceID)
+		if err := queries.SetAgentStatusByRuntime(ctx, db.SetAgentStatusByRuntimeParams{
+			RuntimeID: row.ID,
+			Status:    "offline",
+		}); err != nil {
+			slog.Warn("runtime sweeper: failed to set agents offline", "runtime_id", util.UUIDToString(row.ID), "error", err)
+			continue
+		}
+		agents, err := queries.ListAgentsByRuntime(ctx, row.ID)
+		if err != nil {
+			slog.Warn("runtime sweeper: failed to list agents", "runtime_id", util.UUIDToString(row.ID), "error", err)
+			continue
+		}
+		for _, a := range agents {
+			bus.Publish(events.Event{
+				Type:        protocol.EventAgentStatus,
+				WorkspaceID: wsID,
+				ActorType:   "system",
+				Payload:     map[string]any{"agent_id": util.UUIDToString(a.ID), "status": "offline"},
+			})
+		}
+	}
+
 	// Notify frontend clients so they re-fetch runtime list.
 	for wsID := range workspaces {
 		bus.Publish(events.Event{

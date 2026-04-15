@@ -714,6 +714,48 @@ func (q *Queries) ListAgents(ctx context.Context, workspaceID pgtype.UUID) ([]Ag
 	return items, nil
 }
 
+const listAgentsByRuntime = `-- name: ListAgentsByRuntime :many
+SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by FROM agent WHERE runtime_id = $1 AND archived_at IS NULL
+`
+
+func (q *Queries) ListAgentsByRuntime(ctx context.Context, runtimeID pgtype.UUID) ([]Agent, error) {
+	rows, err := q.db.Query(ctx, listAgentsByRuntime, runtimeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Agent{}
+	for rows.Next() {
+		var i Agent
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.AvatarUrl,
+			&i.RuntimeMode,
+			&i.RuntimeConfig,
+			&i.Visibility,
+			&i.Status,
+			&i.MaxConcurrentTasks,
+			&i.OwnerID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Description,
+			&i.RuntimeID,
+			&i.Instructions,
+			&i.ArchivedAt,
+			&i.ArchivedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllAgents = `-- name: ListAllAgents :many
 SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by FROM agent
 WHERE workspace_id = $1
@@ -875,6 +917,21 @@ func (q *Queries) RestoreAgent(ctx context.Context, id pgtype.UUID) (Agent, erro
 		&i.ArchivedBy,
 	)
 	return i, err
+}
+
+const setAgentStatusByRuntime = `-- name: SetAgentStatusByRuntime :exec
+UPDATE agent SET status = $2, updated_at = now()
+WHERE runtime_id = $1 AND archived_at IS NULL
+`
+
+type SetAgentStatusByRuntimeParams struct {
+	RuntimeID pgtype.UUID `json:"runtime_id"`
+	Status    string      `json:"status"`
+}
+
+func (q *Queries) SetAgentStatusByRuntime(ctx context.Context, arg SetAgentStatusByRuntimeParams) error {
+	_, err := q.db.Exec(ctx, setAgentStatusByRuntime, arg.RuntimeID, arg.Status)
+	return err
 }
 
 const startAgentTask = `-- name: StartAgentTask :one
