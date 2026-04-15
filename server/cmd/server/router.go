@@ -232,6 +232,9 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 				})
 			})
 
+			// Config apply
+			r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Post("/api/config/apply", h.ApplyConfig)
+
 			// Skills
 			r.Route("/api/skills", func(r chi.Router) {
 				r.Get("/", h.ListSkills)
