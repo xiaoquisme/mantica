@@ -16,9 +16,11 @@ import (
 )
 
 type S3Storage struct {
-	client    *s3.Client
-	bucket    string
-	cdnDomain string // if set, returned URLs use this instead of bucket name
+	client         *s3.Client
+	bucket         string
+	cdnDomain      string // if set, returned URLs use this instead of bucket name
+	endpoint       string // custom S3 endpoint (MinIO, etc.)
+	customEndpoint bool   // true when using MinIO or other S3-compatible stores
 }
 
 // NewS3StorageFromEnv creates an S3Storage from environment variables.
@@ -72,9 +74,11 @@ func NewS3StorageFromEnv() *S3Storage {
 
 	slog.Info("S3 storage initialized", "bucket", bucket, "region", region, "cdn_domain", cdnDomain, "endpoint", endpoint)
 	return &S3Storage{
-		client:    s3.NewFromConfig(cfg, clientOpts...),
-		bucket:    bucket,
-		cdnDomain: cdnDomain,
+		client:         s3.NewFromConfig(cfg, clientOpts...),
+		bucket:         bucket,
+		cdnDomain:      cdnDomain,
+		endpoint:       endpoint,
+		customEndpoint: endpoint != "",
 	}
 }
 
@@ -149,15 +153,19 @@ func (s *S3Storage) Upload(ctx context.Context, key string, data []byte, content
 	if isInlineContentType(contentType) {
 		disposition = "inline"
 	}
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+	input := &s3.PutObjectInput{
 		Bucket:             aws.String(s.bucket),
 		Key:                aws.String(key),
 		Body:               bytes.NewReader(data),
 		ContentType:        aws.String(contentType),
 		ContentDisposition: aws.String(fmt.Sprintf(`%s; filename="%s"`, disposition, safe)),
 		CacheControl:       aws.String("max-age=432000,public"),
-		StorageClass:       types.StorageClassIntelligentTiering,
-	})
+	}
+	// MinIO and other S3-compatible stores don't support INTELLIGENT_TIERING.
+	if !s.customEndpoint {
+		input.StorageClass = types.StorageClassIntelligentTiering
+	}
+	_, err := s.client.PutObject(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("s3 PutObject: %w", err)
 	}
@@ -166,6 +174,12 @@ func (s *S3Storage) Upload(ctx context.Context, key string, data []byte, content
 	if s.cdnDomain != "" {
 		domain = s.cdnDomain
 	}
-	link := fmt.Sprintf("https://%s/%s", domain, key)
+	var link string
+	if s.customEndpoint {
+		// MinIO / S3-compatible: use endpoint + bucket path style URL
+		link = fmt.Sprintf("%s/%s/%s", strings.TrimRight(s.endpoint, "/"), s.bucket, key)
+	} else {
+		link = fmt.Sprintf("https://%s/%s", domain, key)
+	}
 	return link, nil
 }
