@@ -624,6 +624,7 @@ agents:
       - One story = one logical unit of work
       - Commit message should reference the story ID
       - If the design is unclear, flag it rather than guessing
+      - **Work directly on the main branch. Do NOT create feature branches, do NOT open merge requests or pull requests.**
 
       ## Status Workflow Rules
 
@@ -674,6 +675,10 @@ agents:
       - If REJECT: set to `ready_dev` (send back to Dev)
 
       **NEVER set status to any other value.** You must NOT set status to `done` or any status outside your stage.
+
+      ## Git Workflow Rules
+
+      The team works directly on the main branch. There are NO feature branches, NO merge requests, and NO pull requests. Review code by examining the latest commits on the main branch, not diffs between branches.
 
       ## Output Format
 
