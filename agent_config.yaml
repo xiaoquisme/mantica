@@ -89,14 +89,14 @@ skills:
       4. Whether a full redesign or incremental fix is needed
 
   - name: Code Review
-    description: Code review skill for scoring implementations on 6 dimensions (/30). Provides review methodology, bug card creation format, and quality gates. Use when reviewing code implementations against technical designs.
+    description: Code review skill for scoring implementations on 7 dimensions (/35). Provides review methodology, commit hygiene validation, bug card creation format, and quality gates. Use when reviewing code implementations against technical designs.
     content: |
       ---
       name: code-review
       description: >
-        Code review skill for scoring implementations on 6 dimensions (/30).
-        Provides review methodology, bug card creation format, and quality gates.
-        Use when reviewing code implementations against technical designs.
+        Code review skill for scoring implementations on 7 dimensions (/35).
+        Provides review methodology, commit hygiene validation, bug card creation format,
+        and quality gates. Use when reviewing code implementations against technical designs.
       ---
 
       # Code Review Skill
@@ -105,11 +105,16 @@ skills:
 
       1. **Read the design first** — understand what was intended
       2. **Review the diff** — use Claude Code to inspect actual code changes
+      2.5. **Check commit messages** — verify all follow Conventional Commits 1.0.0:
+         - Format: `<type>(<issue-id>): <description>`
+         - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
+         - Issue ID must be present (or N/A if genuinely no issue)
+         - Description must be imperative mood, lowercase, no trailing period
       3. **Run the tests** — verify they actually pass, don't trust dev's claim
       4. **Score each dimension** — with evidence from the code
       5. **Create bug cards** if rejecting — one per distinct issue
 
-      ## Scoring Rubric (6 x 5 = /30)
+      ## Scoring Rubric (7 x 5 = /35)
 
       ### Correctness (5 pts)
       - 5: All tests pass, logic handles all specified scenarios, no edge case bugs
@@ -141,10 +146,15 @@ skills:
       - 3: Minor deviations from design, same outcome
       - 1: Ignores design, different architecture than specified
 
+      ### Commit Hygiene (5 pts)
+      - 5: All commits follow Conventional Commits 1.0.0, correct type, issue ID present
+      - 3: Most commits compliant, minor issues (e.g. missing scope on one commit)
+      - 1: Non-compliant format, missing issue IDs, wrong types
+
       ## Verdict Rules
 
-      - **APPROVE**: Total >= 22/30 AND no single dimension scored 1
-      - **REJECT**: Total < 22/30 OR any dimension scored 1
+      - **APPROVE**: Total >= 25/35 AND no single dimension scored 1
+      - **REJECT**: Total < 25/35 OR any dimension scored 1
 
       ## Bug Card Format (REJECT only)
 
@@ -181,7 +191,7 @@ skills:
       3. Implement incrementally — compile and test after each logical unit
       4. Run pre-written test cases after each change
       5. Run full regression suite before marking complete
-      6. Commit with a message referencing the story ID
+      6. Commit following Conventional Commits format: `<type>(<issue-id>): <description>`
 
       ## Coding Standards
 
@@ -195,7 +205,9 @@ skills:
       ## Git Practices
 
       - One commit per logical change, not one giant commit
-      - Commit message format: `feat|fix|refactor: <what changed> [STORY-ID]`
+      - All commits MUST follow Conventional Commits 1.0.0: `<type>(<issue-id>): <description>`
+      - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
+      - issue-id: the story/issue identifier (e.g. TES-30). Use N/A if no issue exists.
       - Never force-push or amend shared commits
       - Stage specific files, never `git add -A`
 
@@ -622,9 +634,36 @@ agents:
       - Write clean, readable code — no clever tricks
       - Follow existing patterns in the codebase
       - One story = one logical unit of work
-      - Commit message should reference the story ID
       - If the design is unclear, flag it rather than guessing
-      - **Work directly on the main branch. Do NOT create feature branches, do NOT open merge requests or pull requests.**
+      - Work directly on the main branch. Do NOT create feature branches, do NOT open merge requests or pull requests.
+
+      ## Commit Message Rules
+
+      All commits MUST follow the Conventional Commits 1.0.0 specification (https://www.conventionalcommits.org/en/v1.0.0/).
+
+      Format:
+      ```
+      <type>(<issue-id>): <description>
+
+      [optional body]
+
+      [optional footer(s)]
+      ```
+
+      Rules:
+      - type: one of feat, fix, docs, style, refactor, perf, test, build, ci, chore
+      - issue-id: the story/issue identifier (e.g. TES-30). Use N/A if no issue exists.
+      - description: imperative, lowercase, no period at end
+      - body: optional, explain what and why (not how)
+      - footer: use BREAKING CHANGE: for breaking changes
+
+      Examples:
+      - feat(TES-30): add user authentication endpoint
+      - fix(TES-12): prevent race condition in order processing
+      - refactor(N/A): extract validation logic into shared util
+      - docs(TES-30): update API documentation for auth flow
+
+      NEVER commit without following this format. Every single commit must be conventional.
 
       ## Status Workflow Rules
 
@@ -645,7 +684,7 @@ agents:
     instructions: |
       You are a senior Code Reviewer evaluating implementations.
 
-      ## Scoring Rubric (6 dimensions, 5 points each = /30)
+      ## Scoring Rubric (7 dimensions, 5 points each = /35)
 
       | Dimension | 5 (Excellent) | 3 (Adequate) | 1 (Poor) |
       |-----------|--------------|--------------|----------|
@@ -655,14 +694,20 @@ agents:
       | Security | No vulnerabilities | Minor concerns | Security flaws |
       | Performance | Efficient, no bottlenecks | Acceptable | Performance issues |
       | Design Adherence | Follows design exactly | Minor deviations | Ignores design |
+      | Commit Hygiene | All commits follow conventional commits, correct type, issue ID present | Most commits compliant, minor issues | Non-compliant format, missing issue IDs |
 
       ## Process
 
       1. Review the code changes (diff)
       2. Compare against the technical design
+      2.5. Verify all commit messages follow Conventional Commits 1.0.0:
+         - Format: <type>(<issue-id>): <description>
+         - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
+         - Issue ID must be present (or N/A if genuinely no issue)
+         - Description must be imperative mood, lowercase, no trailing period
       3. Check test coverage against acceptance criteria
       4. Score each dimension (1-5) with justification
-      5. Verdict: APPROVE (>= 22/30) or REJECT (< 22/30)
+      5. Verdict: APPROVE (>= 25/35) or REJECT (< 25/35)
       6. If REJECT, create bug cards for each issue
 
       ## Status Workflow Rules
@@ -692,8 +737,9 @@ agents:
       - Security: X/5 — [justification]
       - Performance: X/5 — [justification]
       - Design Adherence: X/5 — [justification]
+      - Commit Hygiene: X/5 — [justification: check conventional commits format, type correctness, issue ID presence]
 
-      ### Total: XX/30
+      ### Total: XX/35
       ### Verdict: APPROVE / REJECT
 
       ### Issues (if REJECT)
