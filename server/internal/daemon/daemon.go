@@ -820,15 +820,18 @@ func (d *Daemon) handleTask(ctx context.Context, task Task) {
 
 	result, err := d.runTask(runCtx, task, provider, taskLog)
 
-	// Check if we were cancelled by the polling goroutine.
+	// Check if we were cancelled by the polling goroutine. The agent may have
+	// finished its work before the context cancellation took effect, so we still
+	// attempt to report the result. The server now accepts completed results from
+	// cancelled tasks so the execution history shows the accurate outcome.
+	interruptedByPoll := false
 	select {
 	case <-cancelledByPoll:
-		taskLog.Info("task cancelled during execution, discarding result")
-		return
+		interruptedByPoll = true
 	default:
 	}
 
-	if err != nil {
+	if err != nil && !interruptedByPoll {
 		taskLog.Error("task failed", "error", err)
 		if failErr := d.client.FailTask(ctx, task.ID, err.Error()); failErr != nil {
 			taskLog.Error("fail task callback failed", "error", failErr)
@@ -836,15 +839,13 @@ func (d *Daemon) handleTask(ctx context.Context, task Task) {
 		return
 	}
 
-	_ = d.client.ReportProgress(ctx, task.ID, "Finishing task", 2, 2)
-
-	// Check if the task was cancelled while it was running (e.g. issue
-	// was reassigned). If so, skip reporting results — the server already
-	// moved the task to 'cancelled' so complete/fail would fail anyway.
-	if status, err := d.client.GetTaskStatus(ctx, task.ID); err == nil && status == "cancelled" {
-		taskLog.Info("task cancelled during execution, discarding result")
+	// If the agent was interrupted with an error and produced no usable result, nothing to report.
+	if interruptedByPoll && err != nil {
+		taskLog.Info("task cancelled mid-execution with no result, skipping completion report")
 		return
 	}
+
+	_ = d.client.ReportProgress(ctx, task.ID, "Finishing task", 2, 2)
 
 	// Report usage independently so it's captured even for failed/blocked tasks.
 	if len(result.Usage) > 0 {

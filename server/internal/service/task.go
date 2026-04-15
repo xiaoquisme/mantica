@@ -251,7 +251,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 	if err != nil {
 		// Log the current task state to help debug why the update matched no rows.
 		if existing, lookupErr := s.Queries.GetAgentTask(ctx, taskID); lookupErr == nil {
-			slog.Warn("complete task failed: task not in running state",
+			slog.Warn("complete task failed: task not in running or cancelled state",
 				"task_id", util.UUIDToString(taskID),
 				"current_status", existing.Status,
 				"issue_id", util.UUIDToString(existing.IssueID),

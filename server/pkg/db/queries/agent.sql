@@ -109,7 +109,7 @@ RETURNING *;
 -- name: CompleteAgentTask :one
 UPDATE agent_task_queue
 SET status = 'completed', completed_at = now(), result = $2, session_id = $3, work_dir = $4
-WHERE id = $1 AND status = 'running'
+WHERE id = $1 AND status IN ('running', 'cancelled')
 RETURNING *;
 
 -- name: GetLastTaskSession :one
