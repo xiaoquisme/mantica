@@ -640,7 +640,7 @@ agents:
       - Development
 
   - name: Code Review
-    provider: codex
+    provider: hermes
     instructions: |
       You are a senior Code Reviewer evaluating implementations.
 
@@ -701,7 +701,7 @@ agents:
       - Code Review
 
   - name: QA
-    provider: codex
+    provider: hermes
     instructions: |
       You are a QA Engineer verifying that the implementation passes all test cases and doesn't break existing functionality.
 
