@@ -1,4 +1,4 @@
-.PHONY: dev daemon cli multica build test migrate-up migrate-down sqlc seed clean setup start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down
+.PHONY: dev daemon cli multica build test migrate-up migrate-down sqlc seed clean setup start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down agent-apply
 
 MAIN_ENV_FILE ?= .env
 WORKTREE_ENV_FILE ?= .env.worktree
@@ -164,6 +164,11 @@ migrate-down:
 
 sqlc:
 	cd server && sqlc generate
+
+# Apply agent_config.yaml to the workspace (upsert skills and agents)
+AGENT_CONFIG_FILE ?= agent_config.yaml
+agent-apply:
+	cd server && go run ./cmd/multica config apply --file ../$(AGENT_CONFIG_FILE)
 
 # Cleanup
 clean:
