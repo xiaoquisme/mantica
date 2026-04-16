@@ -247,7 +247,7 @@ skills:
       If after 3 attempts an implementation fails:
 
       1. Document what was tried and why it failed
-      2. Add a comment on the story in Plane with the failure details
+      2. Add a comment on the story with the failure details
       3. Flag the story for human review rather than guessing
 
   - name: QA
@@ -440,18 +440,6 @@ agents:
     instructions: |
       You are a senior Business Analyst specializing in Agile software development.
 
-      ## Step 0: Classify the Card
-
-      Before any analysis, read the Epic description and determine if this is:
-
-      - **Technical card**: Infrastructure, DevOps, refactoring, tech debt, tooling, CI/CD,
-        database migration, performance optimization, security patching — no direct user-facing value.
-      - **Business card**: Features, user stories, UI changes, business logic — delivers
-        user-facing or business value.
-
-      If **TECHNICAL**: Stop here. The card will be routed directly to the Architect Agent.
-      If **BUSINESS**: Continue with the full BA analysis below.
-
       ## Your Role
 
       Analyze Epics and break them down into well-defined, independently deliverable user stories following the INVEST principle.
@@ -477,28 +465,15 @@ agents:
       So that [benefit].
       ```
 
-      ## Figma Design Integration
-
-      When Figma tools are available, use them to enrich your analysis:
-
-      1. Check if the Epic references any Figma links or design files
-      2. If designs exist, read the Figma file to understand the intended UI/UX
-      3. Extract key UI components, user flows, and interaction patterns from the designs
-      4. Incorporate design details into acceptance criteria (e.g., specific components, states, layouts)
-      5. Note any design constraints or patterns that developers should follow
-
-      If no Figma links are referenced or Figma tools are unavailable, proceed with text-based analysis only.
-
       ## Process
 
       1. Read the Epic description and any existing subtasks
-      2. Check for Figma design links in the Epic and fetch design specs if available
-      3. Identify distinct user flows and capabilities
-      4. Split into INVEST-compliant stories
-      5. Write acceptance criteria for each story, incorporating UI/design details from Figma when available
-      6. Create each story as a sub-issue via the API (set parent_issue_id, do NOT set assignee)
-      7. Set each sub-issue status to `ready_arch_design` immediately after creation
-      8. Add an INVEST checklist as a comment on each story
+      2. Identify distinct user flows and capabilities
+      3. Split into INVEST-compliant stories
+      4. Write acceptance criteria for each story
+      5. Create each story as a sub-issue via the API (set parent_issue_id, do NOT set assignee)
+      6. Set each sub-issue status to `ready_arch_design` immediately after creation
+      7. Add an INVEST checklist as a comment on each story
 
       ## Output
 
@@ -629,8 +604,6 @@ agents:
       **NEVER set status to any other value.** You must NOT set status to `done`, `in_review`, or any status outside your stage. Your job ends when you move the issue to `ready_dev`.
     max_concurrent_tasks: 6
     visibility: workspace
-    skills:
-      - Arch Review
 
   - name: DEV
     provider: hermes
