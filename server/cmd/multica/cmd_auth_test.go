@@ -1,9 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"github.com/multica-ai/multica/server/internal/cli"
 )
 
 // testCmd returns a minimal cobra.Command with the --profile persistent flag
@@ -12,6 +17,23 @@ func testCmd() *cobra.Command {
 	cmd := &cobra.Command{}
 	cmd.PersistentFlags().String("profile", "", "")
 	return cmd
+}
+
+// writeTestConfig saves a CLIConfig JSON file into the given home directory so
+// that LoadCLIConfigForProfile picks it up during tests.
+func writeTestConfig(t *testing.T, home string, cfg cli.CLIConfig) {
+	t.Helper()
+	dir := filepath.Join(home, ".multica")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", dir, err)
+	}
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("marshal config: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), data, 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
 }
 
 func TestResolveAppURL(t *testing.T) {
@@ -32,6 +54,33 @@ func TestResolveAppURL(t *testing.T) {
 
 		if got := resolveAppURL(cmd); got != "http://localhost:13026" {
 			t.Fatalf("resolveAppURL() = %q, want %q", got, "http://localhost:13026")
+		}
+	})
+
+	t.Run("falls back to server_url from config when no app_url set", func(t *testing.T) {
+		t.Setenv("MULTICA_APP_URL", "")
+		t.Setenv("FRONTEND_ORIGIN", "")
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		writeTestConfig(t, home, cli.CLIConfig{ServerURL: "http://localhost:8080"})
+
+		if got := resolveAppURL(cmd); got != "http://localhost:8080" {
+			t.Fatalf("resolveAppURL() = %q, want %q", got, "http://localhost:8080")
+		}
+	})
+
+	t.Run("prefers app_url from config over server_url", func(t *testing.T) {
+		t.Setenv("MULTICA_APP_URL", "")
+		t.Setenv("FRONTEND_ORIGIN", "")
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		writeTestConfig(t, home, cli.CLIConfig{
+			ServerURL: "http://localhost:8080",
+			AppURL:    "http://localhost:3000",
+		})
+
+		if got := resolveAppURL(cmd); got != "http://localhost:3000" {
+			t.Fatalf("resolveAppURL() = %q, want %q", got, "http://localhost:3000")
 		}
 	})
 
