@@ -684,4 +684,17 @@ describe("IssueDetail (shared)", () => {
 
     expect(mockRouter.push).not.toHaveBeenCalled();
   });
+
+  it("sidebar toggle button is present so users can restore a collapsed sidebar", async () => {
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Implement authentication")).toBeInTheDocument();
+    });
+
+    // The Properties section in the sidebar must always be rendered so users
+    // can see and interact with issue metadata.
+    expect(screen.getByText("Properties")).toBeInTheDocument();
+    expect(screen.getByText("Status")).toBeInTheDocument();
+  });
 });

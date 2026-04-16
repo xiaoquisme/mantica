@@ -212,7 +212,15 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
     id: layoutId,
   });
   const sidebarRef = usePanelRef();
-  const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
+  // Derive initial open state from persisted layout so the toggle button
+  // reflects reality when the user returns to a previously collapsed sidebar.
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (defaultLayout !== undefined) {
+      const storedSize = (defaultLayout as Record<string, number>)["sidebar"];
+      return storedSize !== 0;
+    }
+    return defaultSidebarOpen;
+  });
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertiesOpen, setPropertiesOpen] = useState(true);
