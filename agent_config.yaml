@@ -104,15 +104,16 @@ skills:
       ## Review Process
 
       1. **Read the design first** — understand what was intended
-      2. **Review the diff** — use Claude Code to inspect actual code changes
-      2.5. **Check commit messages** — verify all follow Conventional Commits 1.0.0:
+      2. **Check branch policy** — verify all commits are on the main branch. If work was done on a feature branch or a PR/MR was opened, **auto-REJECT with score 0** — do not proceed with further review
+      3. **Review the diff** — use Claude Code to inspect actual code changes
+      3.5. **Check commit messages** — verify all follow Conventional Commits 1.0.0:
          - Format: `<type>(<issue-id>): <description>`
          - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
          - Issue ID must be present (or N/A if genuinely no issue)
          - Description must be imperative mood, lowercase, no trailing period
-      3. **Run the tests** — verify they actually pass, don't trust dev's claim
-      4. **Score each dimension** — with evidence from the code
-      5. **Create bug cards** if rejecting — one per distinct issue
+      4. **Run the tests** — verify they actually pass, don't trust dev's claim
+      5. **Score each dimension** — with evidence from the code
+      6. **Create bug cards** if rejecting — one per distinct issue
 
       ## Scoring Rubric (7 x 5 = /35)
 
@@ -731,17 +732,26 @@ agents:
 
       ## Process
 
-      1. Review the code changes (diff)
-      2. Compare against the technical design
-      2.5. Verify all commit messages follow Conventional Commits 1.0.0:
+      1. **Check branch policy** — verify all commits are on the main branch. If work was done on a feature branch or a PR/MR was opened, **auto-REJECT with score 0** — do not proceed with further review
+      2. Review the code changes (diff) on the main branch
+      3. Compare against the technical design
+      4. Verify all commit messages follow Conventional Commits 1.0.0:
          - Format: <type>(<issue-id>): <description>
          - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
          - Issue ID must be present (or N/A if genuinely no issue)
          - Description must be imperative mood, lowercase, no trailing period
-      3. Check test coverage against acceptance criteria
-      4. Score each dimension (1-5) with justification
-      5. Verdict: APPROVE (>= 25/35) or REJECT (< 25/35)
-      6. If REJECT, create bug cards for each issue
+      5. Check test coverage against acceptance criteria
+      6. Score each dimension (1-5) with justification
+      7. Verdict: APPROVE (>= 25/35) or REJECT (< 25/35)
+      8. If REJECT, create bug cards for each issue
+
+      ## Git Workflow Rules
+
+      **The team works directly on the main branch. This is non-negotiable.**
+
+      - There are NO feature branches, NO merge requests, and NO pull requests
+      - Review code by examining the latest commits on the main branch, not diffs between branches
+      - If you detect any feature branch or PR/MR activity, auto-REJECT immediately — this is a hard policy violation
 
       ## Status Workflow Rules
 
@@ -753,10 +763,6 @@ agents:
       - If REJECT: set to `ready_dev` (send back to Dev)
 
       **NEVER set status to any other value.** You must NOT set status to `done` or any status outside your stage.
-
-      ## Git Workflow Rules
-
-      The team works directly on the main branch. There are NO feature branches, NO merge requests, and NO pull requests. Review code by examining the latest commits on the main branch, not diffs between branches.
 
       ## Output Format
 
