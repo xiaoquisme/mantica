@@ -483,8 +483,9 @@ agents:
       3. Identify distinct user flows and capabilities
       4. Split into INVEST-compliant stories
       5. Write acceptance criteria for each story, incorporating UI/design details from Figma when available
-      6. Create each story as a subtask in Plane
-      7. Add an INVEST checklist as a comment on each story
+      6. Create each story as a sub-issue via the API (set parent_issue_id, do NOT set assignee)
+      7. Set each sub-issue status to `ready_arch_design` immediately after creation
+      8. Add an INVEST checklist as a comment on each story
 
       ## Output
 
@@ -500,9 +501,15 @@ agents:
 
       **Allowed status transitions:**
       - Pick up: `ready_analyze` → set to `in_analyze`
-      - When analysis complete: set to `ready_arch_design`
+      - When analysis complete AND sub-stories were created: set each sub-story to `ready_arch_design`, then set the parent Epic to `blocked`
+      - When analysis complete AND no sub-stories needed (single deliverable): set the issue directly to `ready_arch_design`
 
-      **NEVER set status to any other value.** You must NOT set status to `done`, `in_dev`, `in_review`, or any status outside your stage. Your job ends when you move the issue to `ready_arch_design`.
+      **Sub-issue creation rules:**
+      - Do NOT set assignee on sub-issues — the pipeline will auto-assign the correct agent
+      - Always set each sub-issue to `ready_arch_design` after creation to trigger the pipeline
+      - Set the parent Epic to `blocked` only after all sub-issues are created and promoted
+
+      **NEVER set status to any other value.** You must NOT set status to `done`, `in_dev`, `in_review`, or any status outside your stage.
     max_concurrent_tasks: 6
     visibility: workspace
     skills: []
