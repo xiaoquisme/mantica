@@ -7,11 +7,19 @@ import type { AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import type { Issue, UpdateIssueRequest } from "@multica/core/types";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, FolderKanban, MoreHorizontal } from "lucide-react";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { useUpdateIssue } from "@multica/core/issues/mutations";
 import { PriorityIcon } from "./priority-icon";
-import { PriorityPicker, AssigneePicker, DueDatePicker } from "./pickers";
+import { PriorityPicker, AssigneePicker, DueDatePicker, StatusPicker } from "./pickers";
+import { ProjectPicker } from "../../projects/components/project-picker";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@multica/ui/components/ui/dropdown-menu";
 import { PRIORITY_CONFIG } from "@multica/core/issues/config";
 import { useViewStore } from "@multica/core/issues/stores/view-store-context";
 import { ProgressRing } from "./progress-ring";
@@ -54,7 +62,10 @@ export const BoardCardContent = memo(function BoardCardContent({
     (updates: Partial<UpdateIssueRequest>) => {
       updateIssueMutation.mutate(
         { id: issue.id, ...updates },
-        { onError: () => toast.error("Failed to update issue") },
+        {
+          onSuccess: () => toast.success("Issue updated"),
+          onError: () => toast.error("Failed to update issue"),
+        },
       );
     },
     [issue.id, updateIssueMutation],
@@ -66,7 +77,86 @@ export const BoardCardContent = memo(function BoardCardContent({
   const showDueDate = storeProperties.dueDate && issue.due_date;
 
   return (
-    <div className="rounded-lg border bg-card p-3.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] transition-shadow group-hover:shadow-sm">
+    <div className="relative rounded-lg border bg-card p-3.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] transition-shadow group-hover:shadow-sm">
+      {/* More button - only show when editable */}
+      {editable && (
+        <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
+          <PickerWrapper>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                onClick={(e) => e.preventDefault()}
+                aria-label="More actions"
+              >
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem className="p-0">
+                  <PickerWrapper>
+                    <StatusPicker
+                      status={issue.status}
+                      onUpdate={handleUpdate}
+                      triggerRender={
+                        <div className="w-full px-2 py-1.5 text-sm">Status</div>
+                      }
+                    />
+                  </PickerWrapper>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="p-0">
+                  <PickerWrapper>
+                    <PriorityPicker
+                      priority={issue.priority}
+                      onUpdate={handleUpdate}
+                      triggerRender={
+                        <div className="w-full px-2 py-1.5 text-sm">Priority</div>
+                      }
+                    />
+                  </PickerWrapper>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="p-0">
+                  <PickerWrapper>
+                    <AssigneePicker
+                      assigneeType={issue.assignee_type}
+                      assigneeId={issue.assignee_id}
+                      onUpdate={handleUpdate}
+                      triggerRender={
+                        <div className="w-full px-2 py-1.5 text-sm">Assignee</div>
+                      }
+                    />
+                  </PickerWrapper>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="p-0">
+                  <PickerWrapper>
+                    <DueDatePicker
+                      dueDate={issue.due_date}
+                      onUpdate={handleUpdate}
+                      triggerRender={
+                        <div className="w-full px-2 py-1.5 text-sm">Due Date</div>
+                      }
+                    />
+                  </PickerWrapper>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="p-0">
+                  <PickerWrapper>
+                    <ProjectPicker
+                      projectId={issue.project_id}
+                      onUpdate={handleUpdate}
+                      triggerRender={
+                        <div className="flex w-full items-center gap-1.5 px-2 py-1.5 text-sm">
+                          <FolderKanban className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span>Project</span>
+                        </div>
+                      }
+                    />
+                  </PickerWrapper>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </PickerWrapper>
+        </div>
+      )}
+
       {/* Row 1: Identifier */}
       <p className="text-xs text-muted-foreground">{issue.identifier}</p>
 
