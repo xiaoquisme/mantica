@@ -52,7 +52,6 @@ function formatDate(date: string): string {
 function PickerWrapper({ children }: { children: React.ReactNode }) {
   const stop = (e: React.SyntheticEvent) => {
     e.stopPropagation();
-    e.preventDefault();
   };
   return (
     <div onClick={stop} onMouseDown={stop} onPointerDown={stop}>
