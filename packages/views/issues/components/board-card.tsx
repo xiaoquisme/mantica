@@ -42,13 +42,20 @@ function formatDate(date: string): string {
   });
 }
 
-/** Stops event from bubbling to Link/drag handlers */
+/** Stops event from bubbling to AppLink/drag handlers */
 function PickerWrapper({ children }: { children: React.ReactNode }) {
-  const stop = (e: React.SyntheticEvent) => {
+  const stopAndPrevent = (e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
+  const stopOnly = (e: React.SyntheticEvent) => {
     e.stopPropagation();
   };
   return (
-    <div onClick={stop} onMouseDown={stop} onPointerDown={stop}>
+    // onClick: preventDefault blocks native <a> navigation when this element is
+    // nested inside AppLink (board card). onPointerDown/onMouseDown: stopPropagation
+    // only so @base-ui Menu.Trigger can still open on pointerDown.
+    <div onClick={stopAndPrevent} onMouseDown={stopOnly} onPointerDown={stopOnly}>
       {children}
     </div>
   );
