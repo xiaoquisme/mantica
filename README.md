@@ -152,10 +152,20 @@ For contributors working on the Multica codebase, see the [Contributing Guide](C
 **Prerequisites:** [Node.js](https://nodejs.org/) v20+, [pnpm](https://pnpm.io/) v10.28+, [Go](https://go.dev/) v1.26+, [Docker](https://www.docker.com/)
 
 ```bash
-pnpm install
-cp .env.example .env
-make setup
-make start
-```
+ pnpm install
+ cp .env.example .env
+ make setup
+ make start
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow, worktree support, testing, and troubleshooting.
+ See CONTRIBUTING.md for the full development workflow, worktree support, testing,
+ and troubleshooting.
+
+## Commands
+
+ make setup          # First-time: install deps, start DB, run migrations
+ make start          # Start backend + frontend together
+ make stop           # Stop app processes
+ make test           # Run all tests (Go + TypeScript)
+ make check          # Full verification: typecheck + unit tests + Go tests + E2E
+ make agent-apply    # Apply agent_config.yaml to the workspace (upsert skills and agents)
+                     # Use AGENT_CONFIG_FILE=path/to/file.yaml to specify a different file
