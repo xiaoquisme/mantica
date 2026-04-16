@@ -478,3 +478,43 @@
   font-weight: 500;
   color: color-mix(in srgb, var(--brand) 60%, transparent);
 }
+
+/* ---------------------------------------------------------------------------
+   Mermaid diagram blocks (rendered via MermaidBlock in ReadonlyContent)
+   --------------------------------------------------------------------------- */
+
+/* Rendered SVG container — scrollable horizontally if diagram is wide */
+.rich-text-editor .mermaid-diagram {
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+.rich-text-editor .mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Error fallback — raw code + amber warning badge */
+.rich-text-editor .mermaid-error {
+  position: relative;
+}
+
+.rich-text-editor .mermaid-error-hint {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: oklch(0.65 0.15 60); /* amber */
+}
+
+/* Loading skeleton while mermaid.js chunk is fetched */
+.rich-text-editor .mermaid-loading {
+  height: 120px;
+  background: var(--muted);
+  border-radius: 0.375rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

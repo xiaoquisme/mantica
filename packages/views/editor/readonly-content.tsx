@@ -32,6 +32,7 @@ import { cn } from "@multica/ui/lib/utils";
 import { useNavigation } from "../navigation";
 import { IssueMentionCard } from "../issues/components/issue-mention-card";
 import { ImageLightbox } from "./extensions/image-view";
+import { MermaidBlock } from "./extensions/mermaid-block";
 import { preprocessMarkdown } from "./utils/preprocess";
 import "./content-editor.css";
 
@@ -201,8 +202,13 @@ const components: Partial<Components> = {
       return <code {...props}>{children}</code>;
     }
 
-    // Block code — highlight with lowlight, output hljs classes
+    // Mermaid diagram — lazy-rendered client-side (AC1, AC2, AC3)
     const code = String(children).replace(/\n$/, "");
+    if (lang === "mermaid") {
+      return <MermaidBlock code={code} />;
+    }
+
+    // Block code — highlight with lowlight, output hljs classes
     try {
       const tree = lang
         ? lowlight.highlight(lang, code)
