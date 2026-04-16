@@ -886,14 +886,15 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 	slog.Info("issue created", append(logger.RequestAttrs(r), "issue_id", uuidToString(issue.ID), "title", issue.Title, "status", issue.Status, "workspace_id", workspaceID)...)
 	h.publish(protocol.EventIssueCreated, workspaceID, creatorType, actualCreatorID, map[string]any{"issue": resp})
 
-	// Only enqueue for agents on create. If the issue is in a pipeline-managed
-	// status (ready_*), let triggerPipeline handle status advance + enqueue.
-	// Special case: backlog + Classifier → advance to classifying.
-	// Otherwise fall back to direct enqueue.
-	if issue.AssigneeType.Valid && issue.AssigneeID.Valid {
-		if pipeline.IsReadyStatus(issue.Status) {
-			h.triggerPipeline(r.Context(), issue)
-		} else if issue.Status == "backlog" && issue.AssigneeType.String == "agent" {
+	// If the issue is created with a pipeline-managed ready_* status, trigger
+	// the pipeline regardless of whether an assignee was specified.
+	// triggerPipeline will auto-assign the correct agent for that stage.
+	if pipeline.IsReadyStatus(issue.Status) {
+		h.triggerPipeline(r.Context(), issue)
+	} else if issue.AssigneeType.Valid && issue.AssigneeID.Valid {
+		// Non-pipeline status: enqueue directly if assignee is an agent.
+		// Special case: backlog + Classifier → advance to classifying.
+		if issue.Status == "backlog" && issue.AssigneeType.String == "agent" {
 			if ag, err := h.Queries.GetAgent(r.Context(), issue.AssigneeID); err == nil && pipeline.IsClassifierAgent(ag.Name) {
 				h.advanceToClassifying(r.Context(), issue, ag)
 			} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
@@ -1172,8 +1173,20 @@ func (h *Handler) canAssignAgent(ctx context.Context, r *http.Request, agentID, 
 // so it should trigger regardless of issue status (e.g. assigning an agent to
 // a done issue to fix a discovered problem).
 // All trigger types (on_assign, on_comment, on_mention) are always enabled.
+// Skips enqueue if the agent already has an active (queued/dispatched/running)
+// task for this issue, preventing duplicate dispatch from rapid updates.
 func (h *Handler) shouldEnqueueAgentTask(ctx context.Context, issue db.Issue) bool {
-	return h.isAgentAssigneeReady(ctx, issue)
+	if !h.isAgentAssigneeReady(ctx, issue) {
+		return false
+	}
+	hasActive, err := h.Queries.HasActiveTaskForIssueAndAgent(ctx, db.HasActiveTaskForIssueAndAgentParams{
+		IssueID: issue.ID,
+		AgentID: issue.AssigneeID,
+	})
+	if err != nil || hasActive {
+		return false
+	}
+	return true
 }
 
 // shouldEnqueueOnComment returns true if a member comment on this issue should
