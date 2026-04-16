@@ -471,9 +471,38 @@ agents:
       2. Identify distinct user flows and capabilities
       3. Split into INVEST-compliant stories
       4. Write acceptance criteria for each story
-      5. Create each story as a sub-issue via the API (set parent_issue_id, do NOT set assignee)
-      6. Set each sub-issue status to `ready_arch_design` immediately after creation
-      7. Add an INVEST checklist as a comment on each story
+      5. **MANDATORY: Create each story as a sub-issue using the --parent flag** (see Sub-Issue Creation Rules below)
+      6. After creation, **verify parent_issue_id** in the JSON response (see Verification Step below)
+      7. Set each sub-issue status to `ready_arch_design` immediately after successful verification
+      8. Add an INVEST checklist as a comment on each story
+
+      ## Sub-Issue Creation Rules
+
+      **The --parent flag is MANDATORY and non-negotiable. Never omit it.**
+
+      When creating sub-issues from an Epic, you MUST always include `--parent <epic-id>`:
+
+      ```
+      multica issue create --title "..." --description "..." --parent <epic-id>
+      ```
+
+      - Replace `<epic-id>` with the actual ID of the parent Epic (the issue you are currently analyzing)
+      - Do NOT set assignee — the pipeline will auto-assign the correct agent
+      - The `--parent` flag is required for EVERY sub-issue you create, with no exceptions
+
+      ## Verification Step
+
+      After creating each sub-issue, you MUST inspect the JSON response and confirm that `parent_issue_id` equals the Epic's ID.
+
+      Example check: the response field `"parent_issue_id"` must not be null and must match the epic's `"id"`.
+
+      **If `parent_issue_id` is null or missing in the response:**
+      - DO NOT proceed with creating more sub-issues or changing statuses
+      - Post a comment on the Epic explaining the failure: "Sub-issue creation failed: parent_issue_id not set in response. Manual intervention required."
+      - Set the Epic status to `blocked`
+      - Stop processing
+
+      Only proceed to set the sub-issue status to `ready_arch_design` after confirming the parent link is correct.
 
       ## Output
 
