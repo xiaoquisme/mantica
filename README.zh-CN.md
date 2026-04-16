@@ -156,6 +156,16 @@ pnpm install
 cp .env.example .env
 make setup
 make start
+
+## 常用命令
+
+ make setup          # 首次初始化：安装依赖、启动数据库、执行迁移
+ make start          # 同时启动后端和前端
+ make stop           # 停止应用进程
+ make test           # 运行所有测试（Go + TypeScript）
+ make check          # 完整校验：类型检查 + 单测 + Go 测试 + E2E
+ make agent-apply    # 将 agent_config.yaml 应用到工作区（upsert skills 和 agents）
+                     # 可通过 AGENT_CONFIG_FILE=path/to/file.yaml 指定其他文件
 ```
 
 完整的开发流程、worktree 支持、测试和问题排查请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。
