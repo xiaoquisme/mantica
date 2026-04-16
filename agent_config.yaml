@@ -184,14 +184,34 @@ skills:
 
       # Development Skill
 
+      ## Branch Policy
+
+      **Always work on the main branch. This is non-negotiable.**
+
+      - NEVER create feature branches
+      - NEVER open merge requests or pull requests
+      - Before starting, run `git pull --rebase origin main` to ensure you are up to date
+      - Push directly to main after each commit
+
       ## Implementation Workflow
 
-      1. Read story, design, and test cases thoroughly before writing code
-      2. Identify the minimal set of files to change
-      3. Implement incrementally — compile and test after each logical unit
-      4. Run pre-written test cases after each change
-      5. Run full regression suite before marking complete
-      6. Commit following Conventional Commits format: `<type>(<issue-id>): <description>`
+      1. Run `git pull --rebase origin main` — always start from the latest main
+      2. Read ALL pre-written test cases before writing any code — understand what each test validates
+      3. Identify the minimal set of files to change
+      4. For each test case (in priority order — P0 first):
+         a. Write the simplest code that makes this test pass
+         b. Compile and run the test to confirm it passes
+         c. Ensure no previously passing tests regressed
+         d. Commit with Conventional Commits format
+      5. After all test cases pass, run the full regression suite
+      6. Push to main
+
+      ## Test-Driven Rules
+
+      - Read ALL pre-written test cases first — understand the full scope before writing any code
+      - Implement the simplest code that makes each failing test pass — no over-engineering
+      - Do NOT modify pre-written tests unless they contain bugs (document why if you do)
+      - Add additional tests only if you discover gaps in coverage
 
       ## Coding Standards
 
@@ -204,7 +224,7 @@ skills:
 
       ## Git Practices
 
-      - One commit per logical change, not one giant commit
+      - One commit per logical change — not one giant commit at the end
       - All commits MUST follow Conventional Commits 1.0.0: `<type>(<issue-id>): <description>`
       - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
       - issue-id: the story/issue identifier (e.g. TES-30). Use N/A if no issue exists.
@@ -220,14 +240,6 @@ skills:
       - For multi-file changes, describe the full scope in one prompt rather than multiple small ones
       - If a command fails, read the error before retrying with a different approach
       - Maximum 3 retries per task — escalate if still failing
-
-      ## Test-Driven Approach
-
-      - Read ALL pre-written test cases before writing any code
-      - Understand what each test validates
-      - Implement the simplest code that makes failing tests pass
-      - Do not modify pre-written tests unless they contain bugs
-      - Add additional tests only if gaps are discovered
 
       ## Error Escalation
 
@@ -628,13 +640,27 @@ agents:
 
       Implement the story according to its technical design and make all pre-written test cases pass.
 
+      ## Branch Policy
+
+      **Always work on the main branch. This is non-negotiable.**
+
+      - NEVER create feature branches
+      - NEVER open merge requests or pull requests
+      - Before starting, run `git pull --rebase origin main` to ensure you are up to date
+      - Push directly to main after each commit
+
       ## Process
 
-      1. Read the story, design document, and test cases
-      2. Implement the solution following the design
-      3. Run the test suite to verify all tests pass
-      4. Ensure no existing tests break (regression)
-      5. Follow the project's code style and conventions
+      1. Run `git pull --rebase origin main` — always start from the latest main
+      2. Read the story, design document, and ALL pre-written test cases before writing any code
+      3. Identify the minimal set of files to change
+      4. For each test case (P0 first):
+         a. Write the simplest code that makes this test pass
+         b. Compile and run the test to confirm it passes
+         c. Ensure no previously passing tests regressed
+         d. Commit with Conventional Commits format
+      5. After all test cases pass, run the full regression suite
+      6. Push to main
 
       ## Guidelines
 
@@ -642,7 +668,7 @@ agents:
       - Follow existing patterns in the codebase
       - One story = one logical unit of work
       - If the design is unclear, flag it rather than guessing
-      - Work directly on the main branch. Do NOT create feature branches, do NOT open merge requests or pull requests.
+      - Do NOT modify pre-written tests unless they contain bugs (document why if you do)
 
       ## Commit Message Rules
 
