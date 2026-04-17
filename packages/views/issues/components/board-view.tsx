@@ -43,7 +43,24 @@ import type { ChildProgress } from "./list-row";
 
 const COLUMN_IDS = new Set<string>(ALL_STATUSES);
 
+/**
+ * Combined collision detection for board with both column and card drag.
+ *
+ * When dragging a column (type='column'), use closestCenter on column droppables.
+ * When dragging a card, prefer card collisions over column collisions.
+ */
 const kanbanCollision: CollisionDetection = (args) => {
+  const isColumnDrag = args.active.data.current?.type === "column";
+  if (isColumnDrag) {
+    // For column drag, only consider other column droppables
+    return closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter(
+        (c) => COLUMN_IDS.has(c.id as string)
+      ),
+    });
+  }
+
   const pointer = pointerWithin(args);
   if (pointer.length > 0) {
     // Prefer card collisions over column collisions so that
@@ -104,7 +121,7 @@ function findColumn(
 }
 
 /** Derive ordered visible statuses: respect saved columnOrder, appending any unordered ones. */
-function deriveOrderedStatuses(
+export function deriveOrderedStatuses(
   visibleStatuses: IssueStatus[],
   columnOrder: IssueStatus[],
 ): IssueStatus[] {
@@ -117,15 +134,15 @@ function deriveOrderedStatuses(
 const EMPTY_PROGRESS_MAP = new Map<string, ChildProgress>();
 
 /**
- * SortableBoardColumn — thin wrapper that calls useSortable inside the outer
- * column DndContext and forwards sortable props into BoardColumn.
+ * SortableBoardColumn — thin wrapper that calls useSortable inside the single
+ * shared DndContext and forwards sortable props into BoardColumn.
  *
- * BoardColumn itself must NOT call useSortable: @dnd-kit resolves useSortable
- * to the nearest enclosing DndContext via React context. Since BoardColumn
- * renders inside the inner card DndContext tree, calling useSortable there
- * would register with the card context, not the column context. By lifting
- * useSortable here (outside the inner DndContext), the hook correctly
- * registers with the outer column DndContext.
+ * useSortable is called with data.type = 'column' so that drag handlers can
+ * differentiate column drag from card drag within the same DndContext.
+ *
+ * @dnd-kit resolves useSortable to the nearest enclosing DndContext via React
+ * context. Since there is only one DndContext here, there is no nested context
+ * ambiguity — useSortable always registers with the single combined DndContext.
  */
 function SortableBoardColumn({
   status,
@@ -149,7 +166,7 @@ function SortableBoardColumn({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: status });
+  } = useSortable({ id: status, data: { type: "column" } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -204,7 +221,7 @@ export function BoardView({
     [visibleStatuses, columnOrder],
   );
 
-  // --- Column drag state (outer DndContext) ---
+  // --- Column drag state ---
   const [activeColumnStatus, setActiveColumnStatus] = useState<IssueStatus | null>(null);
   const [localColumnOrder, setLocalColumnOrder] = useState<IssueStatus[]>(() => orderedVisibleStatuses);
   const isColumnDraggingRef = useRef(false);
@@ -216,7 +233,7 @@ export function BoardView({
     }
   }, [orderedVisibleStatuses]);
 
-  // --- Card drag state (inner DndContext) ---
+  // --- Card drag state ---
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const isDraggingRef = useRef(false);
 
@@ -260,154 +277,148 @@ export function BoardView({
     issueMapRef.current = issueMap;
   }
 
-  // Separate sensors instances for outer (column) and inner (card) DndContexts.
-  // Using separate sensor instances makes the nested context boundary explicit
-  // and avoids any future ambiguity around activation races.
-  const columnSensors = useSensors(
+  const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
     })
   );
 
-  const cardSensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    })
-  );
-
-  // --- Column drag handlers ---
-  const handleColumnDragStart = useCallback((event: DragStartEvent) => {
-    isColumnDraggingRef.current = true;
-    setActiveColumnStatus(event.active.id as IssueStatus);
-  }, []);
-
-  const handleColumnDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setLocalColumnOrder((prev) => {
-      const oldIndex = prev.indexOf(active.id as IssueStatus);
-      const newIndex = prev.indexOf(over.id as IssueStatus);
-      if (oldIndex === -1 || newIndex === -1) return prev;
-      return arrayMove(prev, oldIndex, newIndex);
-    });
-  }, []);
-
-  const handleColumnDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      isColumnDraggingRef.current = false;
-      setActiveColumnStatus(null);
-
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
-
-      // Compute the new order once and use it for both local state and the store.
-      setLocalColumnOrder((prev) => {
-        const oldIndex = prev.indexOf(active.id as IssueStatus);
-        const newIndex = prev.indexOf(over.id as IssueStatus);
-        if (oldIndex === -1 || newIndex === -1) return prev;
-        const newOrder = arrayMove(prev, oldIndex, newIndex);
-        viewStoreApi.getState().setColumnOrder(newOrder);
-        return newOrder;
-      });
-    },
-    [viewStoreApi],
-  );
-
-  // --- Card drag handlers ---
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
+  // --- Combined drag start handler ---
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const isColumn = event.active.data.current?.type === "column";
+    if (isColumn) {
+      isColumnDraggingRef.current = true;
+      setActiveColumnStatus(event.active.id as IssueStatus);
+    } else {
       isDraggingRef.current = true;
       const issue = issueMapRef.current.get(event.active.id as string) ?? null;
       setActiveIssue(issue);
-    },
-    [],
-  );
+    }
+  }, []);
 
+  // --- Combined drag over handler ---
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
       const { active, over } = event;
-      if (!over || recentlyMovedRef.current) return;
+      if (!over) return;
 
-      const activeId = active.id as string;
-      const overId = over.id as string;
+      const isColumn = active.data.current?.type === "column";
 
-      setColumns((prev) => {
-        const activeCol = findColumn(prev, activeId, visibleStatuses);
-        const overCol = findColumn(prev, overId, visibleStatuses);
-        if (!activeCol || !overCol || activeCol === overCol) return prev;
+      if (isColumn) {
+        // Column reorder: optimistic local update
+        if (active.id === over.id) return;
+        setLocalColumnOrder((prev) => {
+          const oldIndex = prev.indexOf(active.id as IssueStatus);
+          const newIndex = prev.indexOf(over.id as IssueStatus);
+          if (oldIndex === -1 || newIndex === -1) return prev;
+          return arrayMove(prev, oldIndex, newIndex);
+        });
+      } else {
+        // Card cross-column move
+        if (recentlyMovedRef.current) return;
 
-        recentlyMovedRef.current = true;
-        const oldIds = prev[activeCol]!.filter((id) => id !== activeId);
-        const newIds = [...prev[overCol]!];
-        const overIndex = newIds.indexOf(overId);
-        const insertIndex = overIndex >= 0 ? overIndex : newIds.length;
-        newIds.splice(insertIndex, 0, activeId);
-        return { ...prev, [activeCol]: oldIds, [overCol]: newIds };
-      });
+        const activeId = active.id as string;
+        const overId = over.id as string;
+
+        setColumns((prev) => {
+          const activeCol = findColumn(prev, activeId, visibleStatuses);
+          const overCol = findColumn(prev, overId, visibleStatuses);
+          if (!activeCol || !overCol || activeCol === overCol) return prev;
+
+          recentlyMovedRef.current = true;
+          const oldIds = prev[activeCol]!.filter((id) => id !== activeId);
+          const newIds = [...prev[overCol]!];
+          const overIndex = newIds.indexOf(overId);
+          const insertIndex = overIndex >= 0 ? overIndex : newIds.length;
+          newIds.splice(insertIndex, 0, activeId);
+          return { ...prev, [activeCol]: oldIds, [overCol]: newIds };
+        });
+      }
     },
     [visibleStatuses],
   );
 
+  // --- Combined drag end handler ---
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
-      isDraggingRef.current = false;
-      setActiveIssue(null);
+      const isColumn = active.data.current?.type === "column";
 
-      const resetColumns = () =>
-        setColumns(buildColumns(issues, visibleStatuses, sortBy, sortDirection));
+      if (isColumn) {
+        // Finalize column order
+        isColumnDraggingRef.current = false;
+        setActiveColumnStatus(null);
 
-      if (!over) {
-        resetColumns();
-        return;
-      }
+        if (!over || active.id === over.id) return;
 
-      const activeId = active.id as string;
-      const overId = over.id as string;
+        setLocalColumnOrder((prev) => {
+          const oldIndex = prev.indexOf(active.id as IssueStatus);
+          const newIndex = prev.indexOf(over.id as IssueStatus);
+          if (oldIndex === -1 || newIndex === -1) return prev;
+          const newOrder = arrayMove(prev, oldIndex, newIndex);
+          viewStoreApi.getState().setColumnOrder(newOrder);
+          return newOrder;
+        });
+      } else {
+        // Finalize card move
+        isDraggingRef.current = false;
+        setActiveIssue(null);
 
-      const cols = columnsRef.current;
-      const activeCol = findColumn(cols, activeId, visibleStatuses);
-      const overCol = findColumn(cols, overId, visibleStatuses);
-      if (!activeCol || !overCol) {
-        resetColumns();
-        return;
-      }
+        const resetColumns = () =>
+          setColumns(buildColumns(issues, visibleStatuses, sortBy, sortDirection));
 
-      // Same-column reorder
-      let finalColumns = cols;
-      if (activeCol === overCol) {
-        const ids = cols[activeCol]!;
-        const oldIndex = ids.indexOf(activeId);
-        const newIndex = ids.indexOf(overId);
-        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          const reordered = arrayMove(ids, oldIndex, newIndex);
-          finalColumns = { ...cols, [activeCol]: reordered };
-          setColumns(finalColumns);
+        if (!over) {
+          resetColumns();
+          return;
         }
+
+        const activeId = active.id as string;
+        const overId = over.id as string;
+
+        const cols = columnsRef.current;
+        const activeCol = findColumn(cols, activeId, visibleStatuses);
+        const overCol = findColumn(cols, overId, visibleStatuses);
+        if (!activeCol || !overCol) {
+          resetColumns();
+          return;
+        }
+
+        // Same-column reorder
+        let finalColumns = cols;
+        if (activeCol === overCol) {
+          const ids = cols[activeCol]!;
+          const oldIndex = ids.indexOf(activeId);
+          const newIndex = ids.indexOf(overId);
+          if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+            const reordered = arrayMove(ids, oldIndex, newIndex);
+            finalColumns = { ...cols, [activeCol]: reordered };
+            setColumns(finalColumns);
+          }
+        }
+
+        const finalCol = findColumn(finalColumns, activeId, visibleStatuses);
+        if (!finalCol) {
+          resetColumns();
+          return;
+        }
+
+        const map = issueMapRef.current;
+        const finalIds = finalColumns[finalCol]!;
+        const newPosition = computePosition(finalIds, activeId, map);
+        const currentIssue = map.get(activeId);
+
+        if (
+          currentIssue &&
+          currentIssue.status === finalCol &&
+          currentIssue.position === newPosition
+        ) {
+          return;
+        }
+
+        onMoveIssue(activeId, finalCol, newPosition);
       }
-
-      const finalCol = findColumn(finalColumns, activeId, visibleStatuses);
-      if (!finalCol) {
-        resetColumns();
-        return;
-      }
-
-      const map = issueMapRef.current;
-      const finalIds = finalColumns[finalCol]!;
-      const newPosition = computePosition(finalIds, activeId, map);
-      const currentIssue = map.get(activeId);
-
-      if (
-        currentIssue &&
-        currentIssue.status === finalCol &&
-        currentIssue.position === newPosition
-      ) {
-        return;
-      }
-
-      onMoveIssue(activeId, finalCol, newPosition);
     },
-    [issues, visibleStatuses, sortBy, sortDirection, onMoveIssue],
+    [issues, visibleStatuses, sortBy, sortDirection, onMoveIssue, viewStoreApi],
   );
 
   // Ghost column header shown in DragOverlay during column drag
@@ -415,63 +426,55 @@ export function BoardView({
 
   return (
     <DndContext
-      sensors={columnSensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleColumnDragStart}
-      onDragOver={handleColumnDragOver}
-      onDragEnd={handleColumnDragEnd}
+      sensors={sensors}
+      collisionDetection={kanbanCollision}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
     >
+      {/*
+        SortableContext provides the column ordering context so useSortable
+        in SortableBoardColumn can compute sortable transforms/transitions.
+        horizontalListSortingStrategy is used for column reorder.
+
+        Card sortable contexts (verticalListSortingStrategy) live inside
+        BoardColumn for per-column card ordering. Both column and card
+        sortable contexts share the same single DndContext above, which
+        handles both drag types via active.data.current.type discrimination.
+      */}
       <SortableContext items={localColumnOrder} strategy={horizontalListSortingStrategy}>
-        {/*
-          The inner DndContext for card drag lives here, BELOW SortableContext.
-          SortableBoardColumn (which calls useSortable) is rendered OUTSIDE the
-          inner DndContext, so useSortable correctly registers with the outer
-          column DndContext via React context resolution.
-        */}
-        <DndContext
-          sensors={cardSensors}
-          collisionDetection={kanbanCollision}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex flex-1 min-h-0 gap-4 overflow-x-auto p-4">
-            {localColumnOrder.map((status) => (
-              <SortableBoardColumn
-                key={status}
-                status={status}
-                issueIds={columns[status] ?? []}
-                issueMap={issueMapRef.current}
-                childProgressMap={childProgressMap}
-                totalCount={status === "done" ? doneTotal : undefined}
-                footer={
-                  status === "done" && hasMore ? (
-                    <InfiniteScrollSentinel onVisible={loadMore} loading={loadingMore} />
-                  ) : undefined
-                }
-              />
-            ))}
+        <div className="flex flex-1 min-h-0 gap-4 overflow-x-auto p-4">
+          {localColumnOrder.map((status) => (
+            <SortableBoardColumn
+              key={status}
+              status={status}
+              issueIds={columns[status] ?? []}
+              issueMap={issueMapRef.current}
+              childProgressMap={childProgressMap}
+              totalCount={status === "done" ? doneTotal : undefined}
+              footer={
+                status === "done" && hasMore ? (
+                  <InfiniteScrollSentinel onVisible={loadMore} loading={loadingMore} />
+                ) : undefined
+              }
+            />
+          ))}
 
-            {hiddenStatuses.length > 0 && (
-              <HiddenColumnsPanel
-                hiddenStatuses={hiddenStatuses}
-                issues={allIssues}
-              />
-            )}
-          </div>
-
-          <DragOverlay dropAnimation={null}>
-            {activeIssue ? (
-              <div className="w-[280px] rotate-2 scale-105 cursor-grabbing opacity-90 shadow-lg shadow-black/10">
-                <BoardCardContent issue={activeIssue} childProgress={childProgressMap.get(activeIssue.id)} />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+          {hiddenStatuses.length > 0 && (
+            <HiddenColumnsPanel
+              hiddenStatuses={hiddenStatuses}
+              issues={allIssues}
+            />
+          )}
+        </div>
       </SortableContext>
 
       <DragOverlay dropAnimation={null}>
-        {activeColumnStatus && activeColumnCfg ? (
+        {activeIssue ? (
+          <div className="w-[280px] rotate-2 scale-105 cursor-grabbing opacity-90 shadow-lg shadow-black/10">
+            <BoardCardContent issue={activeIssue} childProgress={childProgressMap.get(activeIssue.id)} />
+          </div>
+        ) : activeColumnStatus && activeColumnCfg ? (
           <div
             className={`flex w-[280px] shrink-0 flex-col rounded-xl ${activeColumnCfg.columnBg} p-2 rotate-1 scale-[1.02] opacity-90 shadow-lg cursor-grabbing`}
           >
