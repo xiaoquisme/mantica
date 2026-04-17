@@ -73,10 +73,27 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	agents := map[string]AgentEntry{}
 	claudePath := envOrDefault("MULTICA_CLAUDE_PATH", "claude")
 	if _, err := exec.LookPath(claudePath); err == nil {
-		agents["claude"] = AgentEntry{
+		claudeEntry := AgentEntry{
 			Path:  claudePath,
 			Model: strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_MODEL")),
 		}
+		// Explicitly inject ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL if configured
+		// via MULTICA_CLAUDE_* env vars. This is necessary when the daemon runs as a
+		// service (launchd, systemd) where ANTHROPIC_* vars may not be in the environment.
+		// MULTICA_CLAUDE_* takes precedence over any ANTHROPIC_* already in the env.
+		if apiKey := strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_API_KEY")); apiKey != "" {
+			if claudeEntry.Env == nil {
+				claudeEntry.Env = map[string]string{}
+			}
+			claudeEntry.Env["ANTHROPIC_API_KEY"] = apiKey
+		}
+		if baseURL := strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_BASE_URL")); baseURL != "" {
+			if claudeEntry.Env == nil {
+				claudeEntry.Env = map[string]string{}
+			}
+			claudeEntry.Env["ANTHROPIC_BASE_URL"] = baseURL
+		}
+		agents["claude"] = claudeEntry
 	}
 	codexPath := envOrDefault("MULTICA_CODEX_PATH", "codex")
 	if _, err := exec.LookPath(codexPath); err == nil {
