@@ -7,12 +7,12 @@ import type { AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import type { Issue, UpdateIssueRequest } from "@multica/core/types";
-import { CalendarDays, MoreHorizontal, UserMinus, Calendar, FolderKanban, Check } from "lucide-react";
+import { CalendarDays, MoreHorizontal, UserMinus, Calendar, FolderKanban, Tag, Check } from "lucide-react";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { useUpdateIssue } from "@multica/core/issues/mutations";
 import { PriorityIcon } from "./priority-icon";
 import { StatusIcon } from "./status-icon";
-import { PriorityPicker, AssigneePicker, DueDatePicker } from "./pickers";
+import { PriorityPicker, AssigneePicker, DueDatePicker, LabelPicker } from "./pickers";
 import { canAssignAgent } from "./pickers";
 import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
 import { useViewStore } from "@multica/core/issues/stores/view-store-context";
@@ -277,6 +277,20 @@ function BoardCardContextMenu({
                 No projects yet
               </div>
             )}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+
+        {/* Labels */}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Tag className="h-3.5 w-3.5" />
+            Labels
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <LabelPicker
+              issueId={issue.id}
+              currentLabels={issue.labels ?? []}
+            />
           </DropdownMenuSubContent>
         </DropdownMenuSub>
       </DropdownMenuContent>
