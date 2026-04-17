@@ -77,10 +77,25 @@ func LoadConfig(overrides Overrides) (Config, error) {
 			Path:  claudePath,
 			Model: strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_MODEL")),
 		}
-		// Explicitly inject ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL if configured
-		// via MULTICA_CLAUDE_* env vars. This is necessary when the daemon runs as a
-		// service (launchd, systemd) where ANTHROPIC_* vars may not be in the environment.
-		// MULTICA_CLAUDE_* takes precedence over any ANTHROPIC_* already in the env.
+		// Inject env vars for the claude process in two complementary ways:
+		//
+		// 1. Named shorthands (kept for backward compat):
+		//    MULTICA_CLAUDE_API_KEY  → ANTHROPIC_API_KEY
+		//    MULTICA_CLAUDE_BASE_URL → ANTHROPIC_BASE_URL
+		//
+		// 2. Generic passthrough prefix — any env var of the form
+		//    MULTICA_CLAUDE_ENV_<NAME>=value is forwarded to the claude process
+		//    as <NAME>=value.  This covers Vertex AI mode and any other auth
+		//    scheme without requiring new named shorthands:
+		//      MULTICA_CLAUDE_ENV_ANTHROPIC_AUTH_TOKEN=...
+		//      MULTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_BASE_URL=...
+		//      MULTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_PROJECT_ID=...
+		//      MULTICA_CLAUDE_ENV_CLAUDE_CODE_USE_VERTEX=1
+		//      MULTICA_CLAUDE_ENV_CLAUDE_CODE_SKIP_VERTEX_AUTH=1
+		//    etc.
+		//
+		// All of these take precedence over whatever the daemon process inherited,
+		// so credentials always reach the agent CLI even when it runs as a service.
 		if apiKey := strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_API_KEY")); apiKey != "" {
 			if claudeEntry.Env == nil {
 				claudeEntry.Env = map[string]string{}
@@ -92,6 +107,25 @@ func LoadConfig(overrides Overrides) (Config, error) {
 				claudeEntry.Env = map[string]string{}
 			}
 			claudeEntry.Env["ANTHROPIC_BASE_URL"] = baseURL
+		}
+		const claudeEnvPrefix = "MULTICA_CLAUDE_ENV_"
+		for _, kv := range os.Environ() {
+			if !strings.HasPrefix(kv, claudeEnvPrefix) {
+				continue
+			}
+			eq := strings.IndexByte(kv, '=')
+			if eq < 0 {
+				continue
+			}
+			targetKey := kv[len(claudeEnvPrefix):eq]
+			targetVal := kv[eq+1:]
+			if targetKey == "" {
+				continue
+			}
+			if claudeEntry.Env == nil {
+				claudeEntry.Env = map[string]string{}
+			}
+			claudeEntry.Env[targetKey] = targetVal
 		}
 		agents["claude"] = claudeEntry
 	}
