@@ -11,6 +11,13 @@ JOIN issue_to_label itl ON itl.label_id = il.id
 WHERE itl.issue_id = $1
 ORDER BY il.name ASC;
 
+-- name: GetLabelsByIssueIDs :many
+SELECT itl.issue_id, il.id, il.workspace_id, il.name, il.color
+FROM issue_label il
+JOIN issue_to_label itl ON itl.label_id = il.id
+WHERE itl.issue_id = ANY($1::uuid[])
+ORDER BY il.name ASC;
+
 -- name: DeleteIssueLabels :exec
 DELETE FROM issue_to_label WHERE issue_id = $1;
 

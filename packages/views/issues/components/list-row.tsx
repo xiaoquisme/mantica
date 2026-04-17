@@ -8,6 +8,7 @@ import { useIssueSelectionStore } from "@multica/core/issues/stores/selection-st
 import { PriorityIcon } from "./priority-icon";
 import { StatusIcon } from "./status-icon";
 import { ProgressRing } from "./progress-ring";
+import { LabelBadge } from "./label-badge";
 import { useUpdateIssue } from "@multica/core/issues/mutations";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -346,6 +347,18 @@ export const ListRow = memo(function ListRow({
             </span>
           )}
         </span>
+        {issue.labels && issue.labels.length > 0 && (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {issue.labels.slice(0, 3).map((l) => (
+              <LabelBadge key={l.id} label={l} />
+            ))}
+            {issue.labels.length > 3 && (
+              <span className="text-xs text-muted-foreground">
+                +{issue.labels.length - 3}
+              </span>
+            )}
+          </div>
+        )}
         {issue.due_date && (
           <span className="shrink-0 text-xs text-muted-foreground">
             {formatDate(issue.due_date)}
