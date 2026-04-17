@@ -1168,11 +1168,14 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
               {/* Parent issue */}
               <PropRow label="Parent">
                 {parentIssue ? (
-                  <div className="flex items-center gap-1.5 overflow-hidden">
+                  <AppLink
+                    href={`/issues/${parentIssue.id}`}
+                    className="flex items-center gap-1.5 overflow-hidden hover:text-foreground transition-colors group"
+                  >
                     <StatusIcon status={parentIssue.status} className="h-3.5 w-3.5 shrink-0" />
                     <span className="text-muted-foreground shrink-0">{parentIssue.identifier}</span>
-                    <span className="truncate">{parentIssue.title}</span>
-                  </div>
+                    <span className="truncate group-hover:text-foreground">{parentIssue.title}</span>
+                  </AppLink>
                 ) : (
                   <span className="text-muted-foreground">No parent</span>
                 )}
