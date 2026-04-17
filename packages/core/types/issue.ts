@@ -43,7 +43,6 @@ export interface Issue {
   creator_id: string;
   parent_issue_id: string | null;
   project_id: string | null;
-  swimlane_id: string | null;
   position: number;
   due_date: string | null;
   reactions?: IssueReaction[];

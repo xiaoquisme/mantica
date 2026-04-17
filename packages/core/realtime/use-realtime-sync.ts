@@ -9,7 +9,6 @@ import type { WorkspaceStore } from "../workspace/store";
 import { createLogger } from "../logger";
 import { issueKeys } from "../issues/queries";
 import { projectKeys } from "../projects/queries";
-import { swimlaneKeys } from "../swimlanes/queries";
 import { runtimeKeys } from "../runtimes/queries";
 import {
   onIssueCreated,
@@ -97,10 +96,6 @@ export function useRealtimeSync(
       project: () => {
         const wsId = workspaceStore.getState().workspace?.id;
         if (wsId) qc.invalidateQueries({ queryKey: projectKeys.all(wsId) });
-      },
-      swimlane: () => {
-        const wsId = workspaceStore.getState().workspace?.id;
-        if (wsId) qc.invalidateQueries({ queryKey: swimlaneKeys.all(wsId) });
       },
       daemon: () => {
         const wsId = workspaceStore.getState().workspace?.id;
@@ -312,7 +307,6 @@ export function useRealtimeSync(
           qc.invalidateQueries({ queryKey: workspaceKeys.members(wsId) });
           qc.invalidateQueries({ queryKey: workspaceKeys.skills(wsId) });
           qc.invalidateQueries({ queryKey: projectKeys.all(wsId) });
-          qc.invalidateQueries({ queryKey: swimlaneKeys.all(wsId) });
           qc.invalidateQueries({ queryKey: runtimeKeys.all(wsId) });
         }
         qc.invalidateQueries({ queryKey: workspaceKeys.list() });

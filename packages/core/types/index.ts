@@ -33,4 +33,3 @@ export type { Attachment } from "./attachment";
 export type { ChatSession, ChatMessage, SendChatMessageResponse } from "./chat";
 export type { StorageAdapter } from "./storage";
 export type { Project, ProjectStatus, ProjectPriority, CreateProjectRequest, UpdateProjectRequest, ListProjectsResponse } from "./project";
-export type { Swimlane, CreateSwimlaneRequest, UpdateSwimlaneRequest, ListSwimlanesResponse } from "./swimlane";

@@ -44,10 +44,6 @@ import type {
   CreateProjectRequest,
   UpdateProjectRequest,
   ListProjectsResponse,
-  Swimlane,
-  CreateSwimlaneRequest,
-  UpdateSwimlaneRequest,
-  ListSwimlanesResponse,
 } from "../types";
 import { type Logger, noopLogger } from "../logger";
 
@@ -689,33 +685,6 @@ export class ApiClient {
 
   async deleteProject(id: string): Promise<void> {
     await this.fetch(`/api/projects/${id}`, { method: "DELETE" });
-  }
-
-  // Swimlanes
-  async listSwimlanes(): Promise<ListSwimlanesResponse> {
-    return this.fetch("/api/swimlanes");
-  }
-
-  async getSwimlane(id: string): Promise<Swimlane> {
-    return this.fetch(`/api/swimlanes/${id}`);
-  }
-
-  async createSwimlane(data: CreateSwimlaneRequest): Promise<Swimlane> {
-    return this.fetch("/api/swimlanes", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateSwimlane(id: string, data: UpdateSwimlaneRequest): Promise<Swimlane> {
-    return this.fetch(`/api/swimlanes/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteSwimlane(id: string): Promise<void> {
-    await this.fetch(`/api/swimlanes/${id}`, { method: "DELETE" });
   }
 
   // Repos

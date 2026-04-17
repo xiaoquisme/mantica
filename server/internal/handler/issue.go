@@ -53,7 +53,6 @@ type IssueResponse struct {
 	CreatorID          string                  `json:"creator_id"`
 	ParentIssueID      *string                 `json:"parent_issue_id"`
 	ProjectID          *string                 `json:"project_id"`
-	SwimlaneID         *string                 `json:"swimlane_id"`
 	Position           float64                 `json:"position"`
 	DueDate            *string                 `json:"due_date"`
 	CreatedAt          string                  `json:"created_at"`
@@ -79,7 +78,6 @@ func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
 		CreatorID:     uuidToString(i.CreatorID),
 		ParentIssueID: uuidToPtr(i.ParentIssueID),
 		ProjectID:     uuidToPtr(i.ProjectID),
-		SwimlaneID:    uuidToPtr(i.SwimlaneID),
 		Position:      i.Position,
 		DueDate:       timestampToPtr(i.DueDate),
 		CreatedAt:     timestampToString(i.CreatedAt),
@@ -104,7 +102,6 @@ func issueListRowToResponse(i db.ListIssuesRow, issuePrefix string) IssueRespons
 		CreatorID:     uuidToString(i.CreatorID),
 		ParentIssueID: uuidToPtr(i.ParentIssueID),
 		ProjectID:     uuidToPtr(i.ProjectID),
-		SwimlaneID:    uuidToPtr(i.SwimlaneID),
 		Position:      i.Position,
 		DueDate:       timestampToPtr(i.DueDate),
 		CreatedAt:     timestampToString(i.CreatedAt),
@@ -128,7 +125,6 @@ func openIssueRowToResponse(i db.ListOpenIssuesRow, issuePrefix string) IssueRes
 		CreatorID:     uuidToString(i.CreatorID),
 		ParentIssueID: uuidToPtr(i.ParentIssueID),
 		ProjectID:     uuidToPtr(i.ProjectID),
-		SwimlaneID:    uuidToPtr(i.SwimlaneID),
 		Position:      i.Position,
 		DueDate:       timestampToPtr(i.DueDate),
 		CreatedAt:     timestampToString(i.CreatedAt),
@@ -450,7 +446,7 @@ func buildSearchQuery(phrase string, terms []string, queryNum int, hasNum bool, 
 	query := fmt.Sprintf(`SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
 		i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
 		i.parent_issue_id, i.acceptance_criteria, i.context_refs, i.position,
-		i.due_date, i.created_at, i.updated_at, i.number, i.project_id, i.swimlane_id,
+		i.due_date, i.created_at, i.updated_at, i.number, i.project_id,
 		COUNT(*) OVER() AS total_count,
 		%s AS match_source,
 		%s AS matched_comment_content
@@ -540,7 +536,6 @@ func (h *Handler) SearchIssues(w http.ResponseWriter, r *http.Request) {
 			&sr.issue.UpdatedAt,
 			&sr.issue.Number,
 			&sr.issue.ProjectID,
-			&sr.issue.SwimlaneID,
 			&sr.totalCount,
 			&sr.matchSource,
 			&sr.matchedCommentContent,

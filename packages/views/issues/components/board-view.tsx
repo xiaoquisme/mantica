@@ -21,7 +21,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Eye, GripVertical, MoreHorizontal, Plus } from "lucide-react";
+import { Eye, GripVertical, MoreHorizontal } from "lucide-react";
 import type { Issue, IssueStatus } from "@multica/core/types";
 import { Button } from "@multica/ui/components/ui/button";
 import { useLoadMoreDoneIssues } from "@multica/core/issues/mutations";
@@ -40,9 +40,6 @@ import { BoardColumn } from "./board-column";
 import { BoardCardContent } from "./board-card";
 import { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
 import type { ChildProgress } from "./list-row";
-import { useSwimlanes } from "@multica/core/swimlanes";
-import { SwimlaneColumn } from "./swimlane-column";
-import { CreateSwimlaneDialog } from "./create-swimlane-dialog";
 
 const COLUMN_IDS = new Set<string>(ALL_STATUSES);
 
@@ -217,9 +214,6 @@ export function BoardView({
   const columnOrder = useViewStore((s) => s.columnOrder);
   const viewStoreApi = useViewStoreApi();
   const { loadMore, hasMore, isLoading: loadingMore, doneTotal } = useLoadMoreDoneIssues();
-  const { data: swimlanes = [] } = useSwimlanes();
-  const [showCreateSwimlane, setShowCreateSwimlane] = useState(false);
-
   // --- Ordered visible statuses (respects persisted column order) ---
   const orderedVisibleStatuses = useMemo(
     () => deriveOrderedStatuses(visibleStatuses, columnOrder),
@@ -473,18 +467,6 @@ export function BoardView({
             />
           )}
 
-          {/* + New Swimlane button */}
-          <div className="flex shrink-0 items-start pt-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-muted-foreground"
-              onClick={() => setShowCreateSwimlane(true)}
-            >
-              <Plus className="size-3.5" />
-              New Swimlane
-            </Button>
-          </div>
         </div>
       </SortableContext>
 
@@ -510,31 +492,6 @@ export function BoardView({
       </DragOverlay>
     </DndContext>
 
-    {/* Swimlane section — rendered below status columns */}
-    {swimlanes.length > 0 && (
-      <div className="flex flex-col gap-3 px-4 pb-4">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
-          Swimlanes
-        </div>
-        {swimlanes.map((swimlane) => {
-          const swimlaneIssues = issues.filter(
-            (i) => i.swimlane_id === swimlane.id
-          );
-          return (
-            <SwimlaneColumn
-              key={swimlane.id}
-              swimlane={swimlane}
-              issues={swimlaneIssues}
-              childProgressMap={childProgressMap}
-            />
-          );
-        })}
-      </div>
-    )}
-
-    {showCreateSwimlane && (
-      <CreateSwimlaneDialog onClose={() => setShowCreateSwimlane(false)} />
-    )}
   </>
   );
 }
