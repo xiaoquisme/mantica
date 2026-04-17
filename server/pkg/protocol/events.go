@@ -67,6 +67,11 @@ const (
 	EventProjectUpdated = "project:updated"
 	EventProjectDeleted = "project:deleted"
 
+	// Swimlane events
+	EventSwimlaneCreated = "swimlane:created"
+	EventSwimlaneUpdated = "swimlane:updated"
+	EventSwimlaneDeleted = "swimlane:deleted"
+
 	// Daemon events
 	EventDaemonHeartbeat = "daemon:heartbeat"
 	EventDaemonRegister  = "daemon:register"
