@@ -59,6 +59,7 @@ type IssueResponse struct {
 	UpdatedAt          string                  `json:"updated_at"`
 	Reactions          []IssueReactionResponse `json:"reactions,omitempty"`
 	Attachments        []AttachmentResponse    `json:"attachments,omitempty"`
+	Labels             []LabelResponse         `json:"labels,omitempty"`
 }
 
 func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
@@ -700,6 +701,15 @@ func (h *Handler) GetIssue(w http.ResponseWriter, r *http.Request) {
 		resp.Attachments = make([]AttachmentResponse, len(attachments))
 		for i, a := range attachments {
 			resp.Attachments[i] = h.attachmentToResponse(a)
+		}
+	}
+
+	// Fetch issue labels.
+	labels, err := h.Queries.GetIssueLabels(r.Context(), issue.ID)
+	if err == nil && len(labels) > 0 {
+		resp.Labels = make([]LabelResponse, len(labels))
+		for i, l := range labels {
+			resp.Labels[i] = labelToResponse(l)
 		}
 	}
 
