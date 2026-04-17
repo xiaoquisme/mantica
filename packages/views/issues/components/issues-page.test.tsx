@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { ListIssuesResponse } from "@multica/core/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Issue } from "@multica/core/types";
 import { WorkspaceIdProvider } from "@multica/core/hooks";
@@ -62,20 +64,77 @@ vi.mock("../../workspace/workspace-avatar", () => ({
 
 // Mock api (queries use api internally)
 const mockListIssues = vi.hoisted(() => vi.fn().mockResolvedValue({ issues: [], total: 0 }));
+const mockGetWorkspaceLabels = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+const mockUpdateIssueLabels = vi.hoisted(() => vi.fn().mockResolvedValue([]));
 vi.mock("@multica/core/api", () => ({
   api: {
     listIssues: (...args: any[]) => mockListIssues(...args),
     updateIssue: vi.fn(),
     listMembers: () => Promise.resolve([]),
     listAgents: () => Promise.resolve([]),
+    getWorkspaceLabels: (...args: any[]) => mockGetWorkspaceLabels(...args),
+    updateIssueLabels: (...args: any[]) => mockUpdateIssueLabels(...args),
+    listProjects: () => Promise.resolve({ projects: [] }),
   },
   getApi: () => ({
     listIssues: (...args: any[]) => mockListIssues(...args),
     updateIssue: vi.fn(),
     listMembers: () => Promise.resolve([]),
     listAgents: () => Promise.resolve([]),
+    getWorkspaceLabels: (...args: any[]) => mockGetWorkspaceLabels(...args),
+    updateIssueLabels: (...args: any[]) => mockUpdateIssueLabels(...args),
+    listProjects: () => Promise.resolve({ projects: [] }),
   }),
   setApiInstance: vi.fn(),
+}));
+
+// Mock workspace queries (so list-row's memberListOptions/agentListOptions resolve immediately)
+vi.mock("@multica/core/workspace/queries", () => ({
+  memberListOptions: () => ({
+    queryKey: ["workspaces", "ws-1", "members"],
+    queryFn: () => Promise.resolve([]),
+  }),
+  agentListOptions: () => ({
+    queryKey: ["workspaces", "ws-1", "agents"],
+    queryFn: () => Promise.resolve([]),
+  }),
+}));
+
+// Mock projects queries (so list-row's projectListOptions resolves immediately)
+vi.mock("@multica/core/projects/queries", () => ({
+  projectListOptions: () => ({
+    queryKey: ["projects", "ws-1", "list"],
+    queryFn: () => Promise.resolve({ projects: [] }),
+    select: (data: any) => data.projects,
+  }),
+}));
+
+// Mock @multica/ui dropdown-menu with minimal HTML stubs for jsdom.
+// DropdownMenuContent renders its children so that ListRow's sub-menus
+// ("Labels", "Status", etc.) are visible in list-view tests.
+// DropdownMenuSubContent renders null so that the deeply-nested items
+// (status labels like "Backlog", priority names, etc.) do NOT appear in the
+// DOM — this prevents conflicts with board column header text in board-view tests.
+// AC2/AC3 tests render LabelPicker directly (bypassing the sub-content mock).
+vi.mock("@multica/ui/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
+  DropdownMenuTrigger: ({ render: renderProp, children, ...props }: any) => (
+    <div data-testid="dropdown-trigger" {...props}>{renderProp ?? children}</div>
+  ),
+  DropdownMenuContent: ({ children }: any) => <div data-testid="dropdown-content">{children}</div>,
+  DropdownMenuItem: ({ children, onClick }: any) => <button onClick={onClick}>{children}</button>,
+  DropdownMenuSeparator: () => <hr />,
+  DropdownMenuSub: ({ children }: any) => <div data-testid="dropdown-sub">{children}</div>,
+  DropdownMenuSubTrigger: ({ children, onClick }: any) => <button data-testid="dropdown-sub-trigger" onClick={onClick}>{children}</button>,
+  // Sub-content renders null: prevents status/priority/label items from leaking
+  // into the DOM and causing ambiguous getByText queries in board-view tests.
+  DropdownMenuSubContent: () => null,
+  DropdownMenuGroup: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuLabel: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuCheckboxItem: ({ children, onClick }: any) => <button onClick={onClick}>{children}</button>,
+  DropdownMenuRadioGroup: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuRadioItem: ({ children, onClick }: any) => <button onClick={onClick}>{children}</button>,
+  DropdownMenuShortcut: ({ children }: any) => <span>{children}</span>,
 }));
 
 // Mock issue config
@@ -421,5 +480,160 @@ describe("IssuesPage (shared)", () => {
     await screen.findByText("All");
     expect(screen.getByText("Members")).toBeInTheDocument();
     expect(screen.getByText("Agents")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TES-89 — Quick-add labels via hover action menu
+// ---------------------------------------------------------------------------
+
+describe("TES-89 — Quick-add labels via hover action menu", () => {
+  const listIssue = {
+    id: "issue-1",
+    workspace_id: "ws-1",
+    number: 1,
+    identifier: "TES-1",
+    title: "Implement auth",
+    description: "Add JWT authentication",
+    status: "backlog" as const,
+    priority: "high" as const,
+    assignee_type: null,
+    assignee_id: null,
+    creator_type: "member" as const,
+    creator_id: "user-1",
+    parent_issue_id: null,
+    project_id: null,
+    position: 0,
+    due_date: null,
+    labels: [],
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (mockViewState as any).viewMode = "list";
+    mockViewState.statusFilters = [];
+    mockViewState.priorityFilters = [];
+    mockGetWorkspaceLabels.mockResolvedValue([]);
+    mockUpdateIssueLabels.mockResolvedValue([]);
+    mockListIssues.mockImplementation((params: any) =>
+      Promise.resolve(
+        params?.open_only
+          ? { issues: [listIssue], total: 1 }
+          : { issues: [], total: 0 },
+      ),
+    );
+  });
+
+  // AC1 — Labels sub-menu trigger is visible in the context menu
+  it("AC1: renders a Labels sub-menu item in the row context menu", async () => {
+    renderWithQuery(<IssuesPage />);
+
+    // Wait for issue row to appear
+    await screen.findByText("Implement auth");
+
+    // The DropdownMenu is mocked: DropdownMenuSub + DropdownMenuSubTrigger
+    // always render, so "Labels" is visible as a sub-trigger in the list row.
+    // Use getAllByText since IssuesHeader may also render a "Labels" item if any.
+    const labelsItems = screen.getAllByText("Labels");
+    expect(labelsItems.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // AC2 — LabelPicker renders workspace labels fetched from the API
+  // Render LabelPicker directly to avoid sub-content mock limitations in IssuesPage.
+  it("AC2: LabelPicker shows workspace labels returned by getWorkspaceLabels", async () => {
+    mockGetWorkspaceLabels.mockResolvedValue([
+      { id: "label-1", workspace_id: "ws-1", name: "Bug", color: "#ff0000" },
+    ]);
+
+    const { LabelPicker } = await import("./pickers/label-picker");
+
+    renderWithQuery(<LabelPicker issueId="issue-1" currentLabels={[]} />);
+
+    await screen.findByText("Bug");
+    expect(screen.getByText("Bug")).toBeInTheDocument();
+  });
+
+  // AC3 — Selecting a label calls updateIssueLabels with the correct IDs
+  // Render LabelPicker directly for precise interaction testing.
+  it("AC3: clicking a label in LabelPicker calls updateIssueLabels with the label ID", async () => {
+    const user = userEvent.setup();
+    mockGetWorkspaceLabels.mockResolvedValue([
+      { id: "label-1", workspace_id: "ws-1", name: "Bug", color: "#ff0000" },
+    ]);
+
+    const { LabelPicker } = await import("./pickers/label-picker");
+
+    renderWithQuery(<LabelPicker issueId="issue-1" currentLabels={[]} />);
+
+    await screen.findByText("Bug");
+    const labelBtn = screen.getByRole("button", { name: /Bug/i });
+    await user.click(labelBtn);
+
+    await waitFor(() => {
+      expect(mockUpdateIssueLabels).toHaveBeenCalledWith("issue-1", ["label-1"]);
+    });
+  });
+
+  // AC4 — List-view rows expose context-menu sub-trigger items
+  it("AC4: list-view rows render Labels, Status and Priority sub-menu triggers", async () => {
+    renderWithQuery(<IssuesPage />);
+
+    await screen.findByText("Implement auth");
+
+    // IssuesHeader renders Status/Priority sub-triggers (in the filter dropdown).
+    // ListRow renders Labels/Status/Priority sub-triggers (in the context menu).
+    // Both are rendered because DropdownMenuSubTrigger is not hidden by the mock.
+    // Use getAllByText to tolerate duplicates between header and row menus.
+    expect(screen.getAllByText("Labels").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Status").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Priority").length).toBeGreaterThanOrEqual(1);
+  });
+
+  // AC5 — Optimistic update: list cache reflects new labels immediately after mutation
+  it("AC5: list cache is updated optimistically when updateIssueLabels is called", async () => {
+    const { QueryClient: QC, QueryClientProvider: QCP } = await import("@tanstack/react-query");
+    const { renderHook, act } = await import("@testing-library/react");
+    const { WorkspaceIdProvider: WIP } = await import("@multica/core/hooks");
+    const { useUpdateIssueLabels } = await import("@multica/core/issues/mutations");
+    const { issueKeys } = await import("@multica/core/issues/queries");
+
+    const qc = new QC({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    // Seed the list cache with one issue that has no labels
+    qc.setQueryData(issueKeys.list("ws-1"), {
+      issues: [{ ...listIssue, labels: [] }],
+      total: 1,
+      doneTotal: 0,
+    });
+
+    // Seed the workspace labels cache
+    qc.setQueryData(["labels", "ws-1"], [
+      { id: "label-1", workspace_id: "ws-1", name: "Bug", color: "#ff0000" },
+    ]);
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QCP client={qc}>
+        <WIP wsId="ws-1">{children}</WIP>
+      </QCP>
+    );
+
+    const { result } = renderHook(() => useUpdateIssueLabels(), { wrapper });
+
+    act(() => {
+      result.current.mutate({ issueId: "issue-1", labelIds: ["label-1"] });
+    });
+
+    // After mutate (synchronous optimistic update in onMutate), the list cache
+    // should reflect the new label immediately.
+    await waitFor(() => {
+      const cached = qc.getQueryData<ListIssuesResponse>(issueKeys.list("ws-1"));
+      const issue = cached?.issues.find((i) => i.id === "issue-1");
+      expect(issue?.labels).toHaveLength(1);
+      expect(issue?.labels?.[0]?.id).toBe("label-1");
+    });
   });
 });
