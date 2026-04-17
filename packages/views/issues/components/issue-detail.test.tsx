@@ -272,7 +272,6 @@ const mockIssue: Issue = {
   creator_id: "user-1",
   parent_issue_id: null,
   project_id: null,
-    swimlane_id: null,
   position: 0,
   due_date: "2026-06-01T00:00:00Z",
   created_at: "2026-01-15T00:00:00Z",
@@ -476,7 +475,6 @@ describe("IssueDetail (shared)", () => {
       creator_id: "user-1",
       parent_issue_id: null,
       project_id: null,
-      swimlane_id: null,
       position: 0,
       due_date: null,
       created_at: "2026-01-10T00:00:00Z",
@@ -498,7 +496,7 @@ describe("IssueDetail (shared)", () => {
     const parentLinks = screen
       .getAllByText("Parent Feature")
       .map((el) => el.closest("a"))
-      .filter((a): a is HTMLElement => a !== null);
+      .filter((a): a is HTMLAnchorElement => a !== null);
     expect(parentLinks.length).toBeGreaterThan(0);
     parentLinks.forEach((link) => expect(link).toHaveAttribute("href", "/issues/parent-issue-1"));
   });
