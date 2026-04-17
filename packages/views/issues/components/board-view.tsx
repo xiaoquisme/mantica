@@ -14,8 +14,8 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
-import { Eye, MoreHorizontal } from "lucide-react";
+import { arrayMove, SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { Eye, GripVertical, MoreHorizontal } from "lucide-react";
 import type { Issue, IssueStatus } from "@multica/core/types";
 import { Button } from "@multica/ui/components/ui/button";
 import { useLoadMoreDoneIssues } from "@multica/core/issues/mutations";
@@ -97,6 +97,17 @@ function findColumn(
   return null;
 }
 
+/** Derive ordered visible statuses: respect saved columnOrder, appending any unordered ones. */
+function deriveOrderedStatuses(
+  visibleStatuses: IssueStatus[],
+  columnOrder: IssueStatus[],
+): IssueStatus[] {
+  if (columnOrder.length === 0) return visibleStatuses;
+  const ordered = columnOrder.filter((s) => visibleStatuses.includes(s));
+  const unordered = visibleStatuses.filter((s) => !columnOrder.includes(s));
+  return [...ordered, ...unordered];
+}
+
 const EMPTY_PROGRESS_MAP = new Map<string, ChildProgress>();
 
 export function BoardView({
@@ -120,15 +131,33 @@ export function BoardView({
 }) {
   const sortBy = useViewStore((s) => s.sortBy);
   const sortDirection = useViewStore((s) => s.sortDirection);
+  const columnOrder = useViewStore((s) => s.columnOrder);
+  const viewStoreApi = useViewStoreApi();
   const { loadMore, hasMore, isLoading: loadingMore, doneTotal } = useLoadMoreDoneIssues();
 
-  // --- Drag state ---
+  // --- Ordered visible statuses (respects persisted column order) ---
+  const orderedVisibleStatuses = useMemo(
+    () => deriveOrderedStatuses(visibleStatuses, columnOrder),
+    [visibleStatuses, columnOrder],
+  );
+
+  // --- Column drag state (outer DndContext) ---
+  const [activeColumnStatus, setActiveColumnStatus] = useState<IssueStatus | null>(null);
+  const [localColumnOrder, setLocalColumnOrder] = useState<IssueStatus[]>(() => orderedVisibleStatuses);
+  const isColumnDraggingRef = useRef(false);
+
+  // Sync localColumnOrder from store when not dragging
+  useEffect(() => {
+    if (!isColumnDraggingRef.current) {
+      setLocalColumnOrder(orderedVisibleStatuses);
+    }
+  }, [orderedVisibleStatuses]);
+
+  // --- Card drag state (inner DndContext) ---
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const isDraggingRef = useRef(false);
 
   // --- Local columns state ---
-  // Between drags: follows TQ via useEffect.
-  // During drag: local-only, driven by onDragOver/onDragEnd.
   const [columns, setColumns] = useState<Record<IssueStatus, string[]>>(() =>
     buildColumns(issues, visibleStatuses, sortBy, sortDirection),
   );
@@ -141,9 +170,6 @@ export function BoardView({
     }
   }, [issues, visibleStatuses, sortBy, sortDirection]);
 
-  // After a cross-column move, lock for one animation frame so dnd-kit's
-  // collision detection can stabilize before processing the next move.
-  // Without this, collision oscillates: A→B→A→B… until React bails out.
   const recentlyMovedRef = useRef(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -153,8 +179,6 @@ export function BoardView({
   }, [columns]);
 
   // --- Issue map ---
-  // Frozen during drag so BoardColumn/DraggableBoardCard props stay
-  // referentially stable even if a TQ refetch lands mid-drag.
   const issueMap = useMemo(() => {
     const map = new Map<string, Issue>();
     for (const issue of issues) map.set(issue.id, issue);
@@ -172,6 +196,44 @@ export function BoardView({
     })
   );
 
+  // --- Column drag handlers ---
+  const handleColumnDragStart = useCallback((event: DragStartEvent) => {
+    isColumnDraggingRef.current = true;
+    setActiveColumnStatus(event.active.id as IssueStatus);
+  }, []);
+
+  const handleColumnDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setLocalColumnOrder((prev) => {
+      const oldIndex = prev.indexOf(active.id as IssueStatus);
+      const newIndex = prev.indexOf(over.id as IssueStatus);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }, []);
+
+  const handleColumnDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      isColumnDraggingRef.current = false;
+      setActiveColumnStatus(null);
+
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      setLocalColumnOrder((prev) => {
+        const oldIndex = prev.indexOf(active.id as IssueStatus);
+        const newIndex = prev.indexOf(over.id as IssueStatus);
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        const newOrder = arrayMove(prev, oldIndex, newIndex);
+        viewStoreApi.getState().setColumnOrder(newOrder);
+        return newOrder;
+      });
+    },
+    [viewStoreApi],
+  );
+
+  // --- Card drag handlers ---
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       isDraggingRef.current = true;
@@ -268,43 +330,73 @@ export function BoardView({
     [issues, visibleStatuses, sortBy, sortDirection, onMoveIssue],
   );
 
+  // Ghost column header shown in DragOverlay during column drag
+  const activeColumnCfg = activeColumnStatus ? STATUS_CONFIG[activeColumnStatus] : null;
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={kanbanCollision}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
+      collisionDetection={closestCenter}
+      onDragStart={handleColumnDragStart}
+      onDragOver={handleColumnDragOver}
+      onDragEnd={handleColumnDragEnd}
     >
-      <div className="flex flex-1 min-h-0 gap-4 overflow-x-auto p-4">
-        {visibleStatuses.map((status) => (
-          <BoardColumn
-            key={status}
-            status={status}
-            issueIds={columns[status] ?? []}
-            issueMap={issueMapRef.current}
-            childProgressMap={childProgressMap}
-            totalCount={status === "done" ? doneTotal : undefined}
-            footer={
-              status === "done" && hasMore ? (
-                <InfiniteScrollSentinel onVisible={loadMore} loading={loadingMore} />
-              ) : undefined
-            }
-          />
-        ))}
+      <SortableContext items={localColumnOrder} strategy={horizontalListSortingStrategy}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={kanbanCollision}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex flex-1 min-h-0 gap-4 overflow-x-auto p-4">
+            {localColumnOrder.map((status) => (
+              <BoardColumn
+                key={status}
+                status={status}
+                issueIds={columns[status] ?? []}
+                issueMap={issueMapRef.current}
+                childProgressMap={childProgressMap}
+                totalCount={status === "done" ? doneTotal : undefined}
+                footer={
+                  status === "done" && hasMore ? (
+                    <InfiniteScrollSentinel onVisible={loadMore} loading={loadingMore} />
+                  ) : undefined
+                }
+              />
+            ))}
 
-        {hiddenStatuses.length > 0 && (
-          <HiddenColumnsPanel
-            hiddenStatuses={hiddenStatuses}
-            issues={allIssues}
-          />
-        )}
-      </div>
+            {hiddenStatuses.length > 0 && (
+              <HiddenColumnsPanel
+                hiddenStatuses={hiddenStatuses}
+                issues={allIssues}
+              />
+            )}
+          </div>
+
+          <DragOverlay dropAnimation={null}>
+            {activeIssue ? (
+              <div className="w-[280px] rotate-2 scale-105 cursor-grabbing opacity-90 shadow-lg shadow-black/10">
+                <BoardCardContent issue={activeIssue} childProgress={childProgressMap.get(activeIssue.id)} />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </SortableContext>
 
       <DragOverlay dropAnimation={null}>
-        {activeIssue ? (
-          <div className="w-[280px] rotate-2 scale-105 cursor-grabbing opacity-90 shadow-lg shadow-black/10">
-            <BoardCardContent issue={activeIssue} childProgress={childProgressMap.get(activeIssue.id)} />
+        {activeColumnStatus && activeColumnCfg ? (
+          <div
+            className={`flex w-[280px] shrink-0 flex-col rounded-xl ${activeColumnCfg.columnBg} p-2 rotate-1 scale-[1.02] opacity-90 shadow-lg cursor-grabbing`}
+          >
+            <div className="mb-2 flex items-center gap-2 px-1.5">
+              <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-semibold ${activeColumnCfg.badgeBg} ${activeColumnCfg.badgeText}`}>
+                <StatusIcon status={activeColumnStatus} className="h-3 w-3" inheritColor />
+                {activeColumnCfg.label}
+              </span>
+            </div>
+            <div className="min-h-[200px] flex-1 rounded-lg bg-muted/30 p-1" />
           </div>
         ) : null}
       </DragOverlay>
