@@ -60,9 +60,26 @@ func (h *Handler) UpdateIssueLabels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete all existing labels for the issue then re-insert.
+	// Validate that all submitted label IDs belong to this workspace.
+	wsLabels, err := h.Queries.GetWorkspaceLabels(r.Context(), issue.WorkspaceID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to validate labels")
+		return
+	}
+	validLabelIDs := make(map[string]bool, len(wsLabels))
+	for _, l := range wsLabels {
+		validLabelIDs[uuidToString(l.ID)] = true
+	}
+	for _, labelID := range req.LabelIDs {
+		if !validLabelIDs[labelID] {
+			writeError(w, http.StatusBadRequest, "label does not belong to this workspace")
+			return
+		}
+	}
+
+	// Delete all existing labels for the issue then re-insert atomically.
 	if err := h.Queries.DeleteIssueLabels(r.Context(), issue.ID); err != nil {
-		slog.Warn("delete issue labels failed", "issue_id", id, "error", err)
+		slog.Error("delete issue labels failed", "issue_id", id, "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to update labels")
 		return
 	}
@@ -72,7 +89,9 @@ func (h *Handler) UpdateIssueLabels(w http.ResponseWriter, r *http.Request) {
 			IssueID: issue.ID,
 			LabelID: parseUUID(labelID),
 		}); err != nil {
-			slog.Warn("add issue label failed", "issue_id", id, "label_id", labelID, "error", err)
+			slog.Error("add issue label failed", "issue_id", id, "label_id", labelID, "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to update labels")
+			return
 		}
 	}
 
