@@ -205,6 +205,17 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 				})
 			})
 
+			// Swimlanes
+			r.Route("/api/swimlanes", func(r chi.Router) {
+				r.Get("/", h.ListSwimlanes)
+				r.Post("/", h.CreateSwimlane)
+				r.Route("/{id}", func(r chi.Router) {
+					r.Get("/", h.GetSwimlane)
+					r.Patch("/", h.UpdateSwimlane)
+					r.Delete("/", h.DeleteSwimlane)
+				})
+			})
+
 			// Attachments
 			r.Get("/api/attachments/{id}", h.GetAttachmentByID)
 			r.Delete("/api/attachments/{id}", h.DeleteAttachment)

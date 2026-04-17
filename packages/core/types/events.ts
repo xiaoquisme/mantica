@@ -5,6 +5,7 @@ import type { Comment, Reaction } from "./comment";
 import type { TimelineEntry } from "./activity";
 import type { Workspace, MemberWithUser } from "./workspace";
 import type { Project } from "./project";
+import type { Swimlane } from "./swimlane";
 
 // WebSocket event types (matching Go server protocol/events.go)
 export type WSEventType =
@@ -50,7 +51,10 @@ export type WSEventType =
   | "chat:done"
   | "project:created"
   | "project:updated"
-  | "project:deleted";
+  | "project:deleted"
+  | "swimlane:created"
+  | "swimlane:updated"
+  | "swimlane:deleted";
 
 export interface WSMessage<T = unknown> {
   type: WSEventType;
@@ -247,4 +251,16 @@ export interface ProjectUpdatedPayload {
 
 export interface ProjectDeletedPayload {
   project_id: string;
+}
+
+export interface SwimlaneCreatedPayload {
+  swimlane: Swimlane;
+}
+
+export interface SwimlaneUpdatedPayload {
+  swimlane: Swimlane;
+}
+
+export interface SwimlaneDeletedPayload {
+  swimlane_id: string;
 }
