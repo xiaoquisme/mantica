@@ -510,6 +510,6 @@ describe("IssueDetail (shared)", () => {
       expect(screen.getByText("Implement authentication")).toBeInTheDocument();
     });
 
-    expect(screen.queryByText("Parent issue")).not.toBeInTheDocument();
+    expect(screen.queryByText("Parent Feature")).not.toBeInTheDocument();
   });
 });
