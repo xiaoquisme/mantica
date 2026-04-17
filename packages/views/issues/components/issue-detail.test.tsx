@@ -1,6 +1,7 @@
 import { forwardRef, useRef, useState, useImperativeHandle } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Issue, TimelineEntry } from "@multica/core/types";
 import { WorkspaceIdProvider } from "@multica/core/hooks";
@@ -172,6 +173,8 @@ const mockApiObj = vi.hoisted(() => ({
   removeCommentReaction: vi.fn(),
   listMembers: vi.fn().mockResolvedValue([{ user_id: "user-1", name: "Test User", email: "test@test.com", role: "admin" }]),
   listAgents: vi.fn().mockResolvedValue([]),
+  getWorkspaceLabels: vi.fn().mockResolvedValue([]),
+  updateIssueLabels: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@multica/core/api", () => ({
@@ -353,6 +356,8 @@ describe("IssueDetail (shared)", () => {
       { user_id: "user-1", name: "Test User", email: "test@test.com", role: "admin" },
     ]);
     mockApiObj.listAgents.mockResolvedValue([]);
+    mockApiObj.getWorkspaceLabels.mockResolvedValue([]);
+    mockApiObj.updateIssueLabels.mockResolvedValue([]);
   });
 
   it("shows loading skeleton while data is loading", () => {
@@ -509,5 +514,150 @@ describe("IssueDetail (shared)", () => {
     });
 
     expect(screen.queryByText("Parent Feature")).not.toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC1 & AC5 — Display assigned labels with their configured colors
+  // ---------------------------------------------------------------------------
+
+  it("renders Labels field in the properties panel", async () => {
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("Labels")).toBeInTheDocument();
+    });
+  });
+
+  it("displays each assigned label name as a badge (AC1)", async () => {
+    const mockLabels = [
+      { id: "label-1", workspace_id: "ws-1", name: "Bug", color: "#ef4444" },
+      { id: "label-2", workspace_id: "ws-1", name: "Feature", color: "#3b82f6" },
+    ];
+    mockApiObj.getIssue.mockResolvedValue({ ...mockIssue, labels: mockLabels });
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("Bug")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Feature")).toBeInTheDocument();
+  });
+
+  it("shows 'No labels' placeholder when issue has no labels (AC1)", async () => {
+    mockApiObj.getIssue.mockResolvedValue({ ...mockIssue, labels: [] });
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("No labels")).toBeInTheDocument();
+    });
+  });
+
+  it("renders label badges with color-derived styles (AC5)", async () => {
+    const mockLabels = [
+      { id: "label-1", workspace_id: "ws-1", name: "Critical", color: "#ef4444" },
+    ];
+    mockApiObj.getIssue.mockResolvedValue({ ...mockIssue, labels: mockLabels });
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      const badge = screen.getByText("Critical");
+      expect(badge).toBeInTheDocument();
+      // Badge uses inline color style derived from label.color
+      expect(badge).toHaveStyle({ color: "#ef4444" });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC2 — Clicking the Labels field opens the picker listing available labels
+  // ---------------------------------------------------------------------------
+
+  it("opens label picker showing workspace labels when Labels field is clicked (AC2)", async () => {
+    const allLabels = [
+      { id: "label-1", workspace_id: "ws-1", name: "Bug", color: "#ef4444" },
+      { id: "label-2", workspace_id: "ws-1", name: "Enhancement", color: "#22c55e" },
+    ];
+    mockApiObj.getWorkspaceLabels.mockResolvedValue(allLabels);
+    mockApiObj.getIssue.mockResolvedValue({ ...mockIssue, labels: [] });
+
+    const { container: _c } = renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("No labels")).toBeInTheDocument();
+    });
+
+    // Click the trigger to open picker
+    const user = userEvent.setup();
+    await user.click(screen.getByText("No labels"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Bug")).toBeInTheDocument();
+      expect(screen.getByText("Enhancement")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // AC3 — Selecting/deselecting a label in the picker calls updateIssueLabels
+  // ---------------------------------------------------------------------------
+
+  it("calls updateIssueLabels when a label is toggled in the picker (AC3)", async () => {
+    const allLabels = [
+      { id: "label-1", workspace_id: "ws-1", name: "Bug", color: "#ef4444" },
+    ];
+    mockApiObj.getWorkspaceLabels.mockResolvedValue(allLabels);
+    mockApiObj.getIssue.mockResolvedValue({ ...mockIssue, labels: [] });
+    mockApiObj.updateIssueLabels.mockResolvedValue(allLabels);
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("No labels")).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText("No labels"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Bug")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Bug"));
+
+    await waitFor(() => {
+      expect(mockApiObj.updateIssueLabels).toHaveBeenCalledWith("issue-1", ["label-1"]);
+    });
+  });
+
+  it("calls updateIssueLabels with empty array when selected label is deselected (AC3)", async () => {
+    const mockLabels = [
+      { id: "label-1", workspace_id: "ws-1", name: "Bug", color: "#ef4444" },
+    ];
+    mockApiObj.getWorkspaceLabels.mockResolvedValue(mockLabels);
+    mockApiObj.getIssue.mockResolvedValue({ ...mockIssue, labels: mockLabels });
+    mockApiObj.updateIssueLabels.mockResolvedValue([]);
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Bug").length).toBeGreaterThan(0);
+    });
+
+    const user = userEvent.setup();
+    // Click the badge area to open picker
+    await user.click(screen.getAllByText("Bug")[0]!);
+
+    await waitFor(() => {
+      // Picker should be open showing Bug as a selectable item
+      expect(mockApiObj.getWorkspaceLabels).toHaveBeenCalled();
+    });
+
+    // After picker opens, find and click Bug to deselect
+    const bugItems = screen.getAllByText("Bug");
+    await user.click(bugItems[bugItems.length - 1]!);
+
+    await waitFor(() => {
+      expect(mockApiObj.updateIssueLabels).toHaveBeenCalledWith("issue-1", []);
+    });
   });
 });

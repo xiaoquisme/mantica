@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
-import { issueKeys, CLOSED_PAGE_SIZE } from "./queries";
+import { issueKeys, labelKeys, CLOSED_PAGE_SIZE } from "./queries";
 import { useWorkspaceId } from "../hooks";
 import type { Issue, IssueReaction, Label } from "../types";
 import type {
@@ -441,13 +441,17 @@ export function useUpdateIssueLabels() {
       api.updateIssueLabels(issueId, labelIds),
     onMutate: ({ issueId, labelIds }) => {
       const prevDetail = qc.getQueryData<Issue>(issueKeys.detail(wsId, issueId));
-      // We need the full label objects for the optimistic update; use the current
-      // labels list to filter, and fall back to keeping existing labels if unknown.
+      // Build label lookup from both the issue's current labels and the full
+      // workspace label cache so newly-added labels (not yet on the issue) resolve.
+      const workspaceLabels = qc.getQueryData<Label[]>(labelKeys.all(wsId)) ?? [];
       qc.setQueryData<Issue>(issueKeys.detail(wsId, issueId), (old) => {
         if (!old) return old;
-        const existingById = new Map((old.labels ?? []).map((l) => [l.id, l]));
+        const allById = new Map<string, Label>([
+          ...workspaceLabels.map((l): [string, Label] => [l.id, l]),
+          ...(old.labels ?? []).map((l): [string, Label] => [l.id, l]),
+        ]);
         const optimisticLabels = labelIds
-          .map((id) => existingById.get(id))
+          .map((id) => allById.get(id))
           .filter((l): l is Label => !!l);
         return { ...old, labels: optimisticLabels };
       });
