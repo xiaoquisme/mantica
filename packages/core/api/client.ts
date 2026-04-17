@@ -1,5 +1,6 @@
 import type {
   Issue,
+  Label,
   CreateIssueRequest,
   UpdateIssueRequest,
   ListIssuesResponse,
@@ -686,6 +687,20 @@ export class ApiClient {
   async deleteProject(id: string): Promise<void> {
     await this.fetch(`/api/projects/${id}`, { method: "DELETE" });
   }
+
+
+  // Labels
+  async getWorkspaceLabels(workspaceId: string): Promise<Label[]> {
+    return this.fetch(`/api/workspaces/${workspaceId}/labels`);
+  }
+
+  async updateIssueLabels(issueId: string, labelIds: string[]): Promise<Label[]> {
+    return this.fetch(`/api/issues/${issueId}/labels`, {
+      method: "PUT",
+      body: JSON.stringify({ label_ids: labelIds }),
+    });
+  }
+
 
   // Repos
   async testRepo(url: string, token?: string): Promise<{ ok: boolean; error?: string; default_branch?: string }> {
