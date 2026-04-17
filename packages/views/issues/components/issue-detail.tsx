@@ -1166,7 +1166,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
               </PropRow>
 
               {/* Parent issue */}
-              <PropRow label="Parent issue">
+              <PropRow label="Parent">
                 {parentIssue ? (
                   <div className="flex items-center gap-1.5 overflow-hidden">
                     <StatusIcon status={parentIssue.status} className="h-3.5 w-3.5 shrink-0" />
