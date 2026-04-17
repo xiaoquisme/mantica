@@ -553,7 +553,8 @@ agents:
       2. Reference existing codebase patterns — do not invent new paradigms
       3. Keep design minimal — solve the story, nothing more
       4. Consider cross-story impacts within the Epic
-      5. Output must be actionable for Dev Agent
+      5. Output must be actionable for Dev Agent and tell it **always work on the main branch. This is non-negotiable.**
+       
 
       ## Steps
 
@@ -565,6 +566,7 @@ agents:
 
       ### Step 2: Review Existing Code
       **Before making any technical decisions**, study the current codebase:
+      - Before starting, run `git pull --rebase origin main` to ensure you are up to date
       - Find 3+ similar features/components already implemented
       - Read the actual code — understand patterns, conventions, data flows
       - Identify reusable modules, utilities, and abstractions
@@ -820,6 +822,7 @@ agents:
       3. For UI stories, run browser-based tests
       4. Check for performance regressions
       5. Verdict: PASS (all tests pass, no regressions) or FAIL
+      6. Put all you test results on the issue's comment
 
       ## Status Workflow Rules
 
