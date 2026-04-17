@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo, type ReactNode, type CSSProperties } from "react";
 import { EyeOff, GripVertical, MoreHorizontal, Plus } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
-import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { useDroppable, type DraggableAttributes, type DraggableSyntheticListeners } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { Issue, IssueStatus } from "@multica/core/types";
 import { Button } from "@multica/ui/components/ui/button";
 import {
@@ -28,6 +27,12 @@ export function BoardColumn({
   childProgressMap,
   totalCount,
   footer,
+  // Sortable props injected by SortableBoardColumn in the outer DndContext
+  sortableRef,
+  sortableStyle,
+  sortableAttributes,
+  sortableListeners,
+  isDragging,
 }: {
   status: IssueStatus;
   issueIds: string[];
@@ -35,24 +40,14 @@ export function BoardColumn({
   childProgressMap?: Map<string, ChildProgress>;
   totalCount?: number;
   footer?: ReactNode;
+  sortableRef?: (node: HTMLElement | null) => void;
+  sortableStyle?: CSSProperties;
+  sortableAttributes?: DraggableAttributes;
+  sortableListeners?: DraggableSyntheticListeners;
+  isDragging?: boolean;
 }) {
   const cfg = STATUS_CONFIG[status];
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: status });
-  const viewStoreApi = useViewStoreApi();
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setSortableRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: status });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
 
   // Resolve IDs to Issue objects, preserving parent-provided order
   const resolvedIssues = useMemo(
@@ -64,27 +59,31 @@ export function BoardColumn({
     [issueIds, issueMap],
   );
 
+  const viewStoreApi = useViewStoreApi();
+
   return (
     <div
       ref={(node) => {
-        setSortableRef(node);
+        sortableRef?.(node);
         setDropRef(node);
       }}
-      style={style}
+      style={sortableStyle}
       className={`flex w-[280px] shrink-0 flex-col rounded-xl ${cfg.columnBg} p-2 ${isOver ? "ring-2 ring-inset ring-border" : ""} ${isDragging ? "opacity-30" : ""}`}
     >
       <div className="mb-2 flex items-center justify-between px-1.5">
         {/* Left: drag handle + status badge + count */}
         <div className="flex items-center gap-2">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
-            aria-label="Drag to reorder column"
-            tabIndex={0}
-          >
-            <GripVertical className="h-3.5 w-3.5" />
-          </button>
+          {sortableListeners && (
+            <button
+              {...(sortableAttributes ?? {})}
+              {...(sortableListeners ?? {})}
+              className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+              aria-label="Drag to reorder column"
+              tabIndex={0}
+            >
+              <GripVertical className="h-3.5 w-3.5" />
+            </button>
+          )}
           <span className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-semibold ${cfg.badgeBg} ${cfg.badgeText}`}>
             <StatusIcon status={status} className="h-3 w-3" inheritColor />
             {cfg.label}

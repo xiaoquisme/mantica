@@ -14,7 +14,13 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core";
-import { arrayMove, SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Eye, GripVertical, MoreHorizontal } from "lucide-react";
 import type { Issue, IssueStatus } from "@multica/core/types";
 import { Button } from "@multica/ui/components/ui/button";
@@ -110,6 +116,63 @@ function deriveOrderedStatuses(
 
 const EMPTY_PROGRESS_MAP = new Map<string, ChildProgress>();
 
+/**
+ * SortableBoardColumn — thin wrapper that calls useSortable inside the outer
+ * column DndContext and forwards sortable props into BoardColumn.
+ *
+ * BoardColumn itself must NOT call useSortable: @dnd-kit resolves useSortable
+ * to the nearest enclosing DndContext via React context. Since BoardColumn
+ * renders inside the inner card DndContext tree, calling useSortable there
+ * would register with the card context, not the column context. By lifting
+ * useSortable here (outside the inner DndContext), the hook correctly
+ * registers with the outer column DndContext.
+ */
+function SortableBoardColumn({
+  status,
+  issueIds,
+  issueMap,
+  childProgressMap,
+  totalCount,
+  footer,
+}: {
+  status: IssueStatus;
+  issueIds: string[];
+  issueMap: Map<string, Issue>;
+  childProgressMap?: Map<string, ChildProgress>;
+  totalCount?: number;
+  footer?: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: status });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <BoardColumn
+      status={status}
+      issueIds={issueIds}
+      issueMap={issueMap}
+      childProgressMap={childProgressMap}
+      totalCount={totalCount}
+      footer={footer}
+      sortableRef={setNodeRef}
+      sortableStyle={style}
+      sortableAttributes={attributes}
+      sortableListeners={listeners}
+      isDragging={isDragging}
+    />
+  );
+}
+
 export function BoardView({
   issues,
   allIssues,
@@ -158,6 +221,8 @@ export function BoardView({
   const isDraggingRef = useRef(false);
 
   // --- Local columns state ---
+  // Between drags: follows TQ via useEffect.
+  // During drag: local-only, driven by onDragOver/onDragEnd.
   const [columns, setColumns] = useState<Record<IssueStatus, string[]>>(() =>
     buildColumns(issues, visibleStatuses, sortBy, sortDirection),
   );
@@ -170,6 +235,9 @@ export function BoardView({
     }
   }, [issues, visibleStatuses, sortBy, sortDirection]);
 
+  // After a cross-column move, lock for one animation frame so dnd-kit's
+  // collision detection can stabilize before processing the next move.
+  // Without this, collision oscillates: A→B→A→B… until React bails out.
   const recentlyMovedRef = useRef(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -179,6 +247,8 @@ export function BoardView({
   }, [columns]);
 
   // --- Issue map ---
+  // Frozen during drag so BoardColumn/DraggableBoardCard props stay
+  // referentially stable even if a TQ refetch lands mid-drag.
   const issueMap = useMemo(() => {
     const map = new Map<string, Issue>();
     for (const issue of issues) map.set(issue.id, issue);
@@ -190,7 +260,16 @@ export function BoardView({
     issueMapRef.current = issueMap;
   }
 
-  const sensors = useSensors(
+  // Separate sensors instances for outer (column) and inner (card) DndContexts.
+  // Using separate sensor instances makes the nested context boundary explicit
+  // and avoids any future ambiguity around activation races.
+  const columnSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  );
+
+  const cardSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
     })
@@ -221,6 +300,7 @@ export function BoardView({
       const { active, over } = event;
       if (!over || active.id === over.id) return;
 
+      // Compute the new order once and use it for both local state and the store.
       setLocalColumnOrder((prev) => {
         const oldIndex = prev.indexOf(active.id as IssueStatus);
         const newIndex = prev.indexOf(over.id as IssueStatus);
@@ -335,15 +415,21 @@ export function BoardView({
 
   return (
     <DndContext
-      sensors={sensors}
+      sensors={columnSensors}
       collisionDetection={closestCenter}
       onDragStart={handleColumnDragStart}
       onDragOver={handleColumnDragOver}
       onDragEnd={handleColumnDragEnd}
     >
       <SortableContext items={localColumnOrder} strategy={horizontalListSortingStrategy}>
+        {/*
+          The inner DndContext for card drag lives here, BELOW SortableContext.
+          SortableBoardColumn (which calls useSortable) is rendered OUTSIDE the
+          inner DndContext, so useSortable correctly registers with the outer
+          column DndContext via React context resolution.
+        */}
         <DndContext
-          sensors={sensors}
+          sensors={cardSensors}
           collisionDetection={kanbanCollision}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
@@ -351,7 +437,7 @@ export function BoardView({
         >
           <div className="flex flex-1 min-h-0 gap-4 overflow-x-auto p-4">
             {localColumnOrder.map((status) => (
-              <BoardColumn
+              <SortableBoardColumn
                 key={status}
                 status={status}
                 issueIds={columns[status] ?? []}
