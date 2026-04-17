@@ -1164,28 +1164,21 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                   onUpdate={handleUpdateField}
                 />
               </PropRow>
+
+              {/* Parent issue */}
+              <PropRow label="Parent issue">
+                {parentIssue ? (
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <StatusIcon status={parentIssue.status} className="h-3.5 w-3.5 shrink-0" />
+                    <span className="text-muted-foreground shrink-0">{parentIssue.identifier}</span>
+                    <span className="truncate">{parentIssue.title}</span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">No parent</span>
+                )}
+              </PropRow>
             </div>}
           </div>
-
-          {/* Parent issue */}
-          {parentIssue && (
-            <div>
-              <div className="text-xs font-medium mb-2 flex items-center gap-1">
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground rotate-90" />
-                Parent issue
-              </div>
-              <div className="pl-2">
-                <AppLink
-                  href={`/issues/${parentIssue.id}`}
-                  className="flex items-center gap-1.5 rounded-md px-2 py-1.5 -mx-2 text-xs hover:bg-accent/50 transition-colors group"
-                >
-                  <StatusIcon status={parentIssue.status} className="h-3.5 w-3.5 shrink-0" />
-                  <span className="text-muted-foreground shrink-0">{parentIssue.identifier}</span>
-                  <span className="truncate group-hover:text-foreground">{parentIssue.title}</span>
-                </AppLink>
-              </div>
-            </div>
-          )}
 
           {/* Details section */}
           <div>
