@@ -952,6 +952,13 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	if env.CodexHome != "" {
 		agentEnv["CODEX_HOME"] = env.CodexHome
 	}
+	// Merge provider-specific env vars (e.g. ANTHROPIC_API_KEY for claude).
+	// These take precedence over whatever the daemon process inherited, so that
+	// credentials configured via MULTICA_CLAUDE_* always reach the agent CLI —
+	// even when the daemon runs as a service without ANTHROPIC_* in its env.
+	for k, v := range entry.Env {
+		agentEnv[k] = v
+	}
 	backend, err := agent.New(provider, agent.Config{
 		ExecutablePath: entry.Path,
 		ExtraArgs:      entry.ExtraArgs,
