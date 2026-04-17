@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
-import { EyeOff, MoreHorizontal, Plus } from "lucide-react";
+import { EyeOff, GripVertical, MoreHorizontal, Plus } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { Issue, IssueStatus } from "@multica/core/types";
 import { Button } from "@multica/ui/components/ui/button";
 import {
@@ -36,8 +37,22 @@ export function BoardColumn({
   footer?: ReactNode;
 }) {
   const cfg = STATUS_CONFIG[status];
-  const { setNodeRef, isOver } = useDroppable({ id: status });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: status });
   const viewStoreApi = useViewStoreApi();
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: status });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   // Resolve IDs to Issue objects, preserving parent-provided order
   const resolvedIssues = useMemo(
@@ -51,12 +66,25 @@ export function BoardColumn({
 
   return (
     <div
-      ref={setNodeRef}
-      className={`flex w-[280px] shrink-0 flex-col rounded-xl ${cfg.columnBg} p-2 ${isOver ? "ring-2 ring-inset ring-border" : ""}`}
+      ref={(node) => {
+        setSortableRef(node);
+        setDropRef(node);
+      }}
+      style={style}
+      className={`flex w-[280px] shrink-0 flex-col rounded-xl ${cfg.columnBg} p-2 ${isOver ? "ring-2 ring-inset ring-border" : ""} ${isDragging ? "opacity-30" : ""}`}
     >
       <div className="mb-2 flex items-center justify-between px-1.5">
-        {/* Left: status badge + count */}
+        {/* Left: drag handle + status badge + count */}
         <div className="flex items-center gap-2">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+            aria-label="Drag to reorder column"
+            tabIndex={0}
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
           <span className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-semibold ${cfg.badgeBg} ${cfg.badgeText}`}>
             <StatusIcon status={status} className="h-3 w-3" inheritColor />
             {cfg.label}
