@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 import { issueKeys, CLOSED_PAGE_SIZE } from "./queries";
 import { useWorkspaceId } from "../hooks";
-import type { Issue, IssueReaction } from "../types";
+import type { Issue, IssueReaction, Label } from "../types";
 import type {
   CreateIssueRequest,
   UpdateIssueRequest,
@@ -428,6 +428,41 @@ export function useToggleIssueReaction(issueId: string) {
 // ---------------------------------------------------------------------------
 // Issue Subscribers
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Issue Labels
+// ---------------------------------------------------------------------------
+
+export function useUpdateIssueLabels() {
+  const qc = useQueryClient();
+  const wsId = useWorkspaceId();
+  return useMutation({
+    mutationFn: ({ issueId, labelIds }: { issueId: string; labelIds: string[] }) =>
+      api.updateIssueLabels(issueId, labelIds),
+    onMutate: ({ issueId, labelIds }) => {
+      const prevDetail = qc.getQueryData<Issue>(issueKeys.detail(wsId, issueId));
+      // We need the full label objects for the optimistic update; use the current
+      // labels list to filter, and fall back to keeping existing labels if unknown.
+      qc.setQueryData<Issue>(issueKeys.detail(wsId, issueId), (old) => {
+        if (!old) return old;
+        const existingById = new Map((old.labels ?? []).map((l) => [l.id, l]));
+        const optimisticLabels = labelIds
+          .map((id) => existingById.get(id))
+          .filter((l): l is Label => !!l);
+        return { ...old, labels: optimisticLabels };
+      });
+      return { prevDetail, issueId };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prevDetail) {
+        qc.setQueryData(issueKeys.detail(wsId, ctx.issueId), ctx.prevDetail);
+      }
+    },
+    onSettled: (_data, _err, vars) => {
+      qc.invalidateQueries({ queryKey: issueKeys.detail(wsId, vars.issueId) });
+    },
+  });
+}
 
 export function useToggleIssueSubscriber(issueId: string) {
   const qc = useQueryClient();

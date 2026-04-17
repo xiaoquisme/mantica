@@ -58,6 +58,7 @@ import type { UpdateIssueRequest, IssueStatus, IssuePriority, TimelineEntry } fr
 import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
 import { StatusIcon, PriorityIcon, StatusPicker, PriorityPicker, DueDatePicker, AssigneePicker, canAssignAgent } from ".";
 import { ProjectPicker } from "../../projects/components/project-picker";
+import { LabelsPicker } from "./pickers/labels-picker";
 import { CommentCard } from "./comment-card";
 import { CommentInput } from "./comment-input";
 import { AgentLiveCard, TaskRunHistory } from "./agent-live-card";
@@ -68,7 +69,7 @@ import { useActorName } from "@multica/core/workspace/hooks";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { issueListOptions, issueDetailOptions, childIssuesOptions, issueUsageOptions } from "@multica/core/issues/queries";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
-import { useUpdateIssue, useDeleteIssue } from "@multica/core/issues/mutations";
+import { useUpdateIssue, useDeleteIssue, useUpdateIssueLabels } from "@multica/core/issues/mutations";
 import { useIssueTimeline } from "../hooks/use-issue-timeline";
 import { useIssueReactions } from "../hooks/use-issue-reactions";
 import { useIssueSubscribers } from "../hooks/use-issue-subscribers";
@@ -302,6 +303,18 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
   const handleDescriptionUpload = useCallback(
     (file: File) => uploadWithToast(file),
     [uploadWithToast],
+  );
+
+  const updateIssueLabels = useUpdateIssueLabels();
+  const handleUpdateLabels = useCallback(
+    (labelIds: string[]) => {
+      if (!issue) return;
+      updateIssueLabels.mutate(
+        { issueId: issue.id, labelIds },
+        { onError: () => toast.error("Failed to update labels") },
+      );
+    },
+    [issue, updateIssueLabels],
   );
 
   const deleteIssueMutation = useDeleteIssue();
@@ -1162,6 +1175,15 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                 <ProjectPicker
                   projectId={issue.project_id}
                   onUpdate={handleUpdateField}
+                />
+              </PropRow>
+
+              {/* Labels */}
+              <PropRow label="Labels">
+                <LabelsPicker
+                  labels={issue.labels ?? []}
+                  onUpdate={handleUpdateLabels}
+                  align="start"
                 />
               </PropRow>
 

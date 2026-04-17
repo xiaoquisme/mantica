@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "../api";
+import type { Label } from "../types";
 
 export const issueKeys = {
   all: (wsId: string) => ["issues", wsId] as const,
@@ -14,6 +15,18 @@ export const issueKeys = {
     ["issues", "subscribers", issueId] as const,
   usage: (issueId: string) => ["issues", "usage", issueId] as const,
 };
+
+export const labelKeys = {
+  all: (wsId: string) => ["labels", wsId] as const,
+};
+
+export function labelListOptions(wsId: string) {
+  return queryOptions({
+    queryKey: labelKeys.all(wsId),
+    queryFn: (): Promise<Label[]> => api.getWorkspaceLabels(wsId),
+    enabled: !!wsId,
+  });
+}
 
 export const CLOSED_PAGE_SIZE = 50;
 
