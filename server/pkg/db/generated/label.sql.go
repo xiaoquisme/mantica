@@ -26,6 +26,48 @@ func (q *Queries) AddIssueLabel(ctx context.Context, arg AddIssueLabelParams) er
 	return err
 }
 
+const getLabelsByIssueIDs = `-- name: GetLabelsByIssueIDs :many
+SELECT itl.issue_id, il.id, il.workspace_id, il.name, il.color
+FROM issue_label il
+JOIN issue_to_label itl ON itl.label_id = il.id
+WHERE itl.issue_id = ANY($1::uuid[])
+ORDER BY il.name ASC
+`
+
+type GetLabelsByIssueIDsRow struct {
+	IssueID     pgtype.UUID `json:"issue_id"`
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Name        string      `json:"name"`
+	Color       string      `json:"color"`
+}
+
+func (q *Queries) GetLabelsByIssueIDs(ctx context.Context, issueIds []pgtype.UUID) ([]GetLabelsByIssueIDsRow, error) {
+	rows, err := q.db.Query(ctx, getLabelsByIssueIDs, issueIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetLabelsByIssueIDsRow{}
+	for rows.Next() {
+		var i GetLabelsByIssueIDsRow
+		if err := rows.Scan(
+			&i.IssueID,
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.Color,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteIssueLabels = `-- name: DeleteIssueLabels :exec
 DELETE FROM issue_to_label WHERE issue_id = $1
 `

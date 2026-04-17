@@ -133,6 +133,37 @@ func openIssueRowToResponse(i db.ListOpenIssuesRow, issuePrefix string) IssueRes
 	}
 }
 
+// attachLabelsToResponses batch-fetches labels for a slice of IssueResponses
+// and populates Labels on each entry using a single DB round-trip.
+func (h *Handler) attachLabelsToResponses(ctx context.Context, resps []IssueResponse) {
+	if len(resps) == 0 {
+		return
+	}
+	ids := make([]pgtype.UUID, len(resps))
+	for i, r := range resps {
+		ids[i] = parseUUID(r.ID)
+	}
+	labelRows, err := h.Queries.GetLabelsByIssueIDs(ctx, ids)
+	if err != nil {
+		return
+	}
+	byIssue := make(map[string][]LabelResponse, len(resps))
+	for _, l := range labelRows {
+		issueID := uuidToString(l.IssueID)
+		byIssue[issueID] = append(byIssue[issueID], LabelResponse{
+			ID:          uuidToString(l.ID),
+			WorkspaceID: uuidToString(l.WorkspaceID),
+			Name:        l.Name,
+			Color:       l.Color,
+		})
+	}
+	for i, r := range resps {
+		if labels, ok := byIssue[r.ID]; ok {
+			resps[i].Labels = labels
+		}
+	}
+}
+
 // SearchIssueResponse extends IssueResponse with search metadata.
 type SearchIssueResponse struct {
 	IssueResponse
@@ -613,6 +644,8 @@ func (h *Handler) ListIssues(w http.ResponseWriter, r *http.Request) {
 			resp[i] = openIssueRowToResponse(issue, prefix)
 		}
 
+		h.attachLabelsToResponses(ctx, resp)
+
 		writeJSON(w, http.StatusOK, map[string]any{
 			"issues": resp,
 			"total":  len(resp),
@@ -667,6 +700,8 @@ func (h *Handler) ListIssues(w http.ResponseWriter, r *http.Request) {
 	for i, issue := range issues {
 		resp[i] = issueListRowToResponse(issue, prefix)
 	}
+
+	h.attachLabelsToResponses(ctx, resp)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"issues": resp,
