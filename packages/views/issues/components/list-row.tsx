@@ -16,13 +16,14 @@ import { useAuthStore } from "@multica/core/auth";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
 import { projectListOptions } from "@multica/core/projects/queries";
-import { canAssignAgent } from "./pickers";
+import { canAssignAgent, LabelPicker } from "./pickers";
 import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
 import {
   MoreHorizontal,
   UserMinus,
   Calendar,
   FolderKanban,
+  Tag,
   Check,
 } from "lucide-react";
 import { Button } from "@multica/ui/components/ui/button";
@@ -281,6 +282,20 @@ function ListRowContextMenu({ issue, onUpdate }: {
                 No projects yet
               </div>
             )}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+
+        {/* Labels */}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Tag className="h-3.5 w-3.5" />
+            Labels
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <LabelPicker
+              issueId={issue.id}
+              currentLabels={issue.labels ?? []}
+            />
           </DropdownMenuSubContent>
         </DropdownMenuSub>
       </DropdownMenuContent>
