@@ -459,4 +459,57 @@ describe("IssueDetail (shared)", () => {
 
     expect(screen.getByText("I can help with this")).toBeInTheDocument();
   });
+
+  it("renders parent issue link in properties panel when parent_issue_id is set", async () => {
+    const mockParentIssue: Issue = {
+      id: "parent-issue-1",
+      workspace_id: "ws-1",
+      number: 5,
+      identifier: "TES-5",
+      title: "Parent Feature",
+      description: "Parent issue description",
+      status: "in_dev",
+      priority: "high",
+      assignee_type: null,
+      assignee_id: null,
+      creator_type: "member",
+      creator_id: "user-1",
+      parent_issue_id: null,
+      project_id: null,
+      swimlane_id: null,
+      position: 0,
+      due_date: null,
+      created_at: "2026-01-10T00:00:00Z",
+      updated_at: "2026-01-10T00:00:00Z",
+    };
+
+    const mockIssueWithParent: Issue = { ...mockIssue, parent_issue_id: "parent-issue-1" };
+
+    mockApiObj.getIssue.mockImplementation((id: string) =>
+      Promise.resolve(id === "parent-issue-1" ? mockParentIssue : mockIssueWithParent),
+    );
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Parent Feature").length).toBeGreaterThan(0);
+    });
+
+    const parentLinks = screen
+      .getAllByText("Parent Feature")
+      .map((el) => el.closest("a"))
+      .filter((a): a is HTMLElement => a !== null);
+    expect(parentLinks.length).toBeGreaterThan(0);
+    parentLinks.forEach((link) => expect(link).toHaveAttribute("href", "/issues/parent-issue-1"));
+  });
+
+  it("does not render parent issue section when parent_issue_id is null", async () => {
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("Implement authentication")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Parent issue")).not.toBeInTheDocument();
+  });
 });
