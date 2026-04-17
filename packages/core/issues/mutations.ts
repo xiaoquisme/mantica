@@ -441,29 +441,48 @@ export function useUpdateIssueLabels() {
       api.updateIssueLabels(issueId, labelIds),
     onMutate: ({ issueId, labelIds }) => {
       const prevDetail = qc.getQueryData<Issue>(issueKeys.detail(wsId, issueId));
+      const prevList = qc.getQueryData<ListIssuesResponse>(issueKeys.list(wsId));
       // Build label lookup from both the issue's current labels and the full
       // workspace label cache so newly-added labels (not yet on the issue) resolve.
       const workspaceLabels = qc.getQueryData<Label[]>(labelKeys.all(wsId)) ?? [];
+      // Collect existing labels from both caches to ensure allById is complete.
+      const detailLabels = prevDetail?.labels ?? [];
+      const listIssue = prevList?.issues.find((i) => i.id === issueId);
+      const listLabels = listIssue?.labels ?? [];
+      const allById = new Map<string, Label>([
+        ...workspaceLabels.map((l): [string, Label] => [l.id, l]),
+        ...listLabels.map((l): [string, Label] => [l.id, l]),
+        ...detailLabels.map((l): [string, Label] => [l.id, l]),
+      ]);
+      const optimisticLabels = labelIds
+        .map((id) => allById.get(id))
+        .filter((l): l is Label => !!l);
       qc.setQueryData<Issue>(issueKeys.detail(wsId, issueId), (old) => {
         if (!old) return old;
-        const allById = new Map<string, Label>([
-          ...workspaceLabels.map((l): [string, Label] => [l.id, l]),
-          ...(old.labels ?? []).map((l): [string, Label] => [l.id, l]),
-        ]);
-        const optimisticLabels = labelIds
-          .map((id) => allById.get(id))
-          .filter((l): l is Label => !!l);
         return { ...old, labels: optimisticLabels };
       });
-      return { prevDetail, issueId };
+      qc.setQueryData<ListIssuesResponse>(issueKeys.list(wsId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          issues: old.issues.map((i) =>
+            i.id === issueId ? { ...i, labels: optimisticLabels } : i,
+          ),
+        };
+      });
+      return { prevDetail, prevList, issueId };
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prevDetail) {
         qc.setQueryData(issueKeys.detail(wsId, ctx.issueId), ctx.prevDetail);
       }
+      if (ctx?.prevList) {
+        qc.setQueryData(issueKeys.list(wsId), ctx.prevList);
+      }
     },
     onSettled: (_data, _err, vars) => {
       qc.invalidateQueries({ queryKey: issueKeys.detail(wsId, vars.issueId) });
+      qc.invalidateQueries({ queryKey: issueKeys.list(wsId) });
     },
   });
 }
