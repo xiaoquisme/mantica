@@ -28,6 +28,21 @@ export function getDescendantIds(issues: Issue[], rootId: string): Set<string> {
   return result;
 }
 
+export function filterParentCandidates(
+  issues: Issue[],
+  currentIssueId: string,
+  query: string,
+): Issue[] {
+  const descendantIds = getDescendantIds(issues, currentIssueId);
+  const q = query.toLowerCase();
+  return issues.filter(
+    (i) =>
+      i.id !== currentIssueId &&
+      !descendantIds.has(i.id) &&
+      (!q || i.title.toLowerCase().includes(q) || i.identifier.toLowerCase().includes(q)),
+  );
+}
+
 export function ParentSubMenuContent({
   parentIssueId,
   currentIssueId,
@@ -41,15 +56,7 @@ export function ParentSubMenuContent({
   const wsId = useWorkspaceId();
   const { data: issues = [] } = useQuery(issueListOptions(wsId));
 
-  const descendantIds = getDescendantIds(issues, currentIssueId);
-  const query = filter.toLowerCase();
-  const filtered = issues.filter(
-    (i) =>
-      i.id !== currentIssueId &&
-      !descendantIds.has(i.id) &&
-      (i.title.toLowerCase().includes(query) ||
-        i.identifier.toLowerCase().includes(query)),
-  );
+  const filtered = filterParentCandidates(issues, currentIssueId, filter);
 
   return (
     <div className="w-64">
@@ -109,16 +116,7 @@ export function ParentPicker({
   const wsId = useWorkspaceId();
   const { data: issues = [] } = useQuery(issueListOptions(wsId));
 
-  const descendantIds = getDescendantIds(issues, currentIssueId);
-  const query = filter.toLowerCase();
-  const filtered = issues.filter(
-    (i) =>
-      i.id !== currentIssueId &&
-      !descendantIds.has(i.id) &&
-      (i.title.toLowerCase().includes(query) ||
-        i.identifier.toLowerCase().includes(query)),
-  );
-
+  const filtered = filterParentCandidates(issues, currentIssueId, filter);
   const parentIssue = issues.find((i) => i.id === parentIssueId) ?? null;
 
   return (
