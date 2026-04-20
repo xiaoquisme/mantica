@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, memo } from "react";
-import { AppLink } from "../../navigation";
+import { AppLink, useNavigation } from "../../navigation";
 import { useSortable, defaultAnimateLayoutChanges } from "@dnd-kit/sortable";
 import type { AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@multica/core/auth";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
+import { issueListOptions } from "@multica/core/issues/queries";
 import { projectListOptions } from "@multica/core/projects/queries";
 import { Button } from "@multica/ui/components/ui/button";
 import {
@@ -321,10 +322,18 @@ export const BoardCardContent = memo(function BoardCardContent({
     [issue.id, updateIssueMutation],
   );
 
+  const wsId = useWorkspaceId();
+  const { data: allIssues = [] } = useQuery(issueListOptions(wsId));
+  const navigation = useNavigation();
+
   const showPriority = storeProperties.priority;
   const showDescription = storeProperties.description && issue.description;
   const showAssignee = storeProperties.assignee && issue.assignee_type && issue.assignee_id;
   const showDueDate = storeProperties.dueDate && issue.due_date;
+  const showParent = storeProperties.parentIssue;
+  const parentIssue = showParent && issue.parent_issue_id
+    ? allIssues.find((i) => i.id === issue.parent_issue_id) ?? null
+    : null;
 
   return (
     <div className="relative rounded-lg border bg-card p-3.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] transition-shadow group-hover:shadow-sm">
@@ -360,6 +369,26 @@ export const BoardCardContent = memo(function BoardCardContent({
         <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
           {issue.description}
         </p>
+      )}
+
+      {/* Parent issue */}
+      {showParent && (
+        <PickerWrapper>
+          <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+            {parentIssue ? (
+              <button
+                onClick={() => navigation.push(`/issues/${parentIssue.id}`)}
+                className="flex items-center gap-1 truncate hover:text-foreground"
+              >
+                <StatusIcon status={parentIssue.status} className="h-3 w-3 shrink-0" />
+                <span className="shrink-0">{parentIssue.identifier}</span>
+                <span className="truncate">{parentIssue.title}</span>
+              </button>
+            ) : (
+              <span className="italic">No parent</span>
+            )}
+          </div>
+        </PickerWrapper>
       )}
 
       {/* Row 3: Assignee, priority badge, due date */}
