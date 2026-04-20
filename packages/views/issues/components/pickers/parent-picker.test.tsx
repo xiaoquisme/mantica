@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Issue } from "@multica/core/types";
@@ -268,5 +268,64 @@ describe("ParentSubMenuContent — AC5: success feedback", () => {
     );
     const parentButton = screen.getByText("Unrelated issue").closest("button")!;
     expect(parentButton.querySelector("svg.ml-auto")).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: AC2 — typing filters results by title and identifier
+// ---------------------------------------------------------------------------
+
+describe("ParentSubMenuContent — AC2: search filtering", () => {
+  it("AC2: typing filters issues by title (case-insensitive)", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-4" parentIssueId={null} onUpdate={vi.fn()} />,
+    );
+    fireEvent.change(screen.getByRole("textbox", { name: /search issues/i }), {
+      target: { value: "grandchild" },
+    });
+    expect(screen.getByText("Grandchild of root")).toBeInTheDocument();
+    expect(screen.queryByText("Root issue")).not.toBeInTheDocument();
+    expect(screen.queryByText("Child of root")).not.toBeInTheDocument();
+  });
+
+  it("AC2: typing filters issues by identifier (case-insensitive)", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-4" parentIssueId={null} onUpdate={vi.fn()} />,
+    );
+    fireEvent.change(screen.getByRole("textbox", { name: /search issues/i }), {
+      target: { value: "TES-1" },
+    });
+    expect(screen.getByText("Root issue")).toBeInTheDocument();
+    expect(screen.queryByText("Child of root")).not.toBeInTheDocument();
+    expect(screen.queryByText("Grandchild of root")).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: AC3 — results display identifier + title
+// ---------------------------------------------------------------------------
+
+describe("ParentSubMenuContent — AC3: result display", () => {
+  it("AC3: each result displays both identifier and title", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-4" parentIssueId={null} onUpdate={vi.fn()} />,
+    );
+    expect(screen.getByText("TES-1")).toBeInTheDocument();
+    expect(screen.getByText("Root issue")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: AC6 — current issue excluded from results (self-parent prevention)
+// ---------------------------------------------------------------------------
+
+describe("ParentSubMenuContent — AC6: self-parent prevention", () => {
+  it("AC6: the current issue does not appear in the selectable parent list", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-2" parentIssueId={null} onUpdate={vi.fn()} />,
+    );
+    expect(screen.queryByText("Child of root")).not.toBeInTheDocument();
+    expect(screen.getByText("Root issue")).toBeInTheDocument();
+    expect(screen.getByText("Unrelated issue")).toBeInTheDocument();
   });
 });
