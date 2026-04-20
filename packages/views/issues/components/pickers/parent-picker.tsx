@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Unlink, Check } from "lucide-react";
-import type { UpdateIssueRequest } from "@multica/core/types";
+import type { UpdateIssueRequest, Issue } from "@multica/core/types";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { issueListOptions } from "@multica/core/issues/queries";
@@ -12,6 +12,21 @@ import {
   PickerItem,
   PickerEmpty,
 } from "./property-picker";
+
+export function getDescendantIds(issues: Issue[], rootId: string): Set<string> {
+  const descendants = new Set<string>();
+  const queue = [rootId];
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    for (const issue of issues) {
+      if (issue.parent_issue_id === id) {
+        descendants.add(issue.id);
+        queue.push(issue.id);
+      }
+    }
+  }
+  return descendants;
+}
 
 export function ParentSubMenuContent({
   parentIssueId,
@@ -26,10 +41,12 @@ export function ParentSubMenuContent({
   const wsId = useWorkspaceId();
   const { data: issues = [] } = useQuery(issueListOptions(wsId));
 
+  const descendantIds = getDescendantIds(issues, currentIssueId);
   const query = filter.toLowerCase();
   const filtered = issues.filter(
     (i) =>
       i.id !== currentIssueId &&
+      !descendantIds.has(i.id) &&
       (i.title.toLowerCase().includes(query) ||
         i.identifier.toLowerCase().includes(query)),
   );
@@ -92,10 +109,12 @@ export function ParentPicker({
   const wsId = useWorkspaceId();
   const { data: issues = [] } = useQuery(issueListOptions(wsId));
 
+  const descendantIds = getDescendantIds(issues, currentIssueId);
   const query = filter.toLowerCase();
   const filtered = issues.filter(
     (i) =>
       i.id !== currentIssueId &&
+      !descendantIds.has(i.id) &&
       (i.title.toLowerCase().includes(query) ||
         i.identifier.toLowerCase().includes(query)),
   );
