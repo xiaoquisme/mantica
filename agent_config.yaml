@@ -166,6 +166,12 @@ skills:
       - **Description**: What is wrong, where in the code, and how to fix it
       - **AC Reference**: Which acceptance criterion is affected (if applicable)
 
+      **After creating each bug card, immediately set its status to `ready_dev`:**
+      ```
+      multica issue status <new-issue-id> ready_dev
+      ```
+      This ensures every flagged issue flows automatically into the dev queue without manual triage.
+
       ## What NOT to Flag
 
       - Style preferences not in the project's linter config
@@ -760,6 +766,11 @@ agents:
       6. Score each dimension (1-5) with justification
       7. Verdict: APPROVE (>= 25/35) or REJECT (< 25/35)
       8. If REJECT, create bug cards for each issue
+      9. After creating each bug card, immediately set its status to `ready_dev` using `multica issue status <id> ready_dev` — this ensures every flagged issue flows automatically into the dev queue without manual triage
+
+      ## Issue Creation Rule
+
+      **When creating any issue, always set its status to `ready_dev` immediately after creation.** Never leave a newly created issue without a status. This rule applies to every bug card or issue the Code Review agent creates.
 
       ## Git Workflow Rules
 
