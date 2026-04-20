@@ -7,7 +7,7 @@ import type { StoreApi, UseBoundStore } from "zustand";
 import type { AuthState } from "../auth/store";
 import type { WorkspaceStore } from "../workspace/store";
 import { createLogger } from "../logger";
-import { issueKeys } from "../issues/queries";
+import { issueKeys, labelKeys } from "../issues/queries";
 import { projectKeys } from "../projects/queries";
 import { runtimeKeys } from "../runtimes/queries";
 import {
@@ -96,6 +96,10 @@ export function useRealtimeSync(
       project: () => {
         const wsId = workspaceStore.getState().workspace?.id;
         if (wsId) qc.invalidateQueries({ queryKey: projectKeys.all(wsId) });
+      },
+      label: () => {
+        const wsId = workspaceStore.getState().workspace?.id;
+        if (wsId) qc.invalidateQueries({ queryKey: labelKeys.all(wsId) });
       },
       daemon: () => {
         const wsId = workspaceStore.getState().workspace?.id;

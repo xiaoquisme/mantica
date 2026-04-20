@@ -23,6 +23,7 @@ export function PropertyPicker({
   searchPlaceholder = "Filter...",
   onSearchChange,
   children,
+  footer,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -34,6 +35,7 @@ export function PropertyPicker({
   searchPlaceholder?: string;
   onSearchChange?: (query: string) => void;
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
 
@@ -73,6 +75,7 @@ export function PropertyPicker({
           </div>
         )}
         <div className="p-1 max-h-60 overflow-y-auto">{children}</div>
+        {footer && <div className="border-t">{footer}</div>}
       </PopoverContent>
     </Popover>
   );

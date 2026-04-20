@@ -136,6 +136,8 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 					r.Get("/", h.GetWorkspace)
 					r.Get("/members", h.ListMembersWithUser)
 					r.Get("/labels", h.ListWorkspaceLabels)
+					r.Post("/labels", h.CreateLabel)
+					r.Delete("/labels/{labelId}", h.DeleteLabel)
 					r.Post("/leave", h.LeaveWorkspace)
 				})
 				// Admin-level access

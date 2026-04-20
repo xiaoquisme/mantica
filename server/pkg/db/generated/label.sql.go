@@ -141,3 +141,42 @@ func (q *Queries) GetWorkspaceLabels(ctx context.Context, workspaceID pgtype.UUI
 	}
 	return items, nil
 }
+
+const createLabel = `-- name: CreateLabel :one
+INSERT INTO issue_label (workspace_id, name, color)
+VALUES ($1, $2, $3)
+RETURNING id, workspace_id, name, color
+`
+
+type CreateLabelParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Name        string      `json:"name"`
+	Color       string      `json:"color"`
+}
+
+func (q *Queries) CreateLabel(ctx context.Context, arg CreateLabelParams) (IssueLabel, error) {
+	row := q.db.QueryRow(ctx, createLabel, arg.WorkspaceID, arg.Name, arg.Color)
+	var i IssueLabel
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.Color,
+	)
+	return i, err
+}
+
+const deleteLabel = `-- name: DeleteLabel :exec
+DELETE FROM issue_label
+WHERE id = $1 AND workspace_id = $2
+`
+
+type DeleteLabelParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) DeleteLabel(ctx context.Context, arg DeleteLabelParams) error {
+	_, err := q.db.Exec(ctx, deleteLabel, arg.ID, arg.WorkspaceID)
+	return err
+}
