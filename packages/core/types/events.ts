@@ -51,6 +51,8 @@ export type WSEventType =
   | "project:created"
   | "project:updated"
   | "project:deleted"
+  | "label:created"
+  | "label:deleted"
 ;
 
 export interface WSMessage<T = unknown> {

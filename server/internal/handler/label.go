@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"regexp"
 
 	"github.com/go-chi/chi/v5"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
+
+var hexColorRe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
 
 type LabelResponse struct {
 	ID          string `json:"id"`
@@ -41,6 +44,71 @@ func (h *Handler) ListWorkspaceLabels(w http.ResponseWriter, r *http.Request) {
 		resp[i] = labelToResponse(l)
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+type CreateLabelRequest struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
+func (h *Handler) CreateLabel(w http.ResponseWriter, r *http.Request) {
+	wsID := chi.URLParam(r, "id")
+
+	var req CreateLabelRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	if !hexColorRe.MatchString(req.Color) {
+		writeError(w, http.StatusBadRequest, "color must be a hex color (e.g. #ff0000)")
+		return
+	}
+
+	label, err := h.Queries.CreateLabel(r.Context(), db.CreateLabelParams{
+		WorkspaceID: parseUUID(wsID),
+		Name:        req.Name,
+		Color:       req.Color,
+	})
+	if err != nil {
+		slog.Error("create label failed", "workspace_id", wsID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to create label")
+		return
+	}
+
+	resp := labelToResponse(label)
+	userID := requestUserID(r)
+	actorType, actorID := h.resolveActor(r, userID, wsID)
+	h.publish(protocol.EventLabelCreated, wsID, actorType, actorID, map[string]any{
+		"label": resp,
+	})
+
+	writeJSON(w, http.StatusCreated, resp)
+}
+
+func (h *Handler) DeleteLabel(w http.ResponseWriter, r *http.Request) {
+	wsID := chi.URLParam(r, "id")
+	labelID := chi.URLParam(r, "labelId")
+
+	if err := h.Queries.DeleteLabel(r.Context(), db.DeleteLabelParams{
+		ID:          parseUUID(labelID),
+		WorkspaceID: parseUUID(wsID),
+	}); err != nil {
+		slog.Error("delete label failed", "label_id", labelID, "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to delete label")
+		return
+	}
+
+	userID := requestUserID(r)
+	actorType, actorID := h.resolveActor(r, userID, wsID)
+	h.publish(protocol.EventLabelDeleted, wsID, actorType, actorID, map[string]any{
+		"label_id": labelID,
+	})
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 type UpdateIssueLabelsRequest struct {

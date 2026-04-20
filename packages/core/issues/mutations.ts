@@ -430,6 +430,22 @@ export function useToggleIssueReaction(issueId: string) {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
+// Workspace Labels
+// ---------------------------------------------------------------------------
+
+export function useCreateLabel() {
+  const qc = useQueryClient();
+  const wsId = useWorkspaceId();
+  return useMutation({
+    mutationFn: ({ name, color }: { name: string; color: string }) =>
+      api.createLabel(wsId, name, color),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: labelKeys.all(wsId) });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Issue Labels
 // ---------------------------------------------------------------------------
 

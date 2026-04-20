@@ -24,3 +24,12 @@ DELETE FROM issue_to_label WHERE issue_id = $1;
 -- name: AddIssueLabel :exec
 INSERT INTO issue_to_label (issue_id, label_id) VALUES ($1, $2)
 ON CONFLICT DO NOTHING;
+
+-- name: CreateLabel :one
+INSERT INTO issue_label (workspace_id, name, color)
+VALUES ($1, $2, $3)
+RETURNING id, workspace_id, name, color;
+
+-- name: DeleteLabel :exec
+DELETE FROM issue_label
+WHERE id = $1 AND workspace_id = $2;
