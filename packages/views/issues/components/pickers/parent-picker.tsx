@@ -83,7 +83,10 @@ export function ParentSubMenuContent({
             <span className="text-muted-foreground shrink-0">{issue.identifier}</span>
             <span className="truncate">{issue.title}</span>
             {issue.id === parentIssueId && (
-              <Check className="ml-auto h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Check
+                className="ml-auto h-3.5 w-3.5 text-muted-foreground shrink-0"
+                data-testid="parent-selected-check"
+              />
             )}
           </button>
         ))}
