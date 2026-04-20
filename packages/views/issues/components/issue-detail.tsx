@@ -56,7 +56,7 @@ import { AvatarGroup, AvatarGroupCount } from "@multica/ui/components/ui/avatar"
 import { ActorAvatar } from "../../common/actor-avatar";
 import type { UpdateIssueRequest, IssueStatus, IssuePriority, TimelineEntry } from "@multica/core/types";
 import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
-import { StatusIcon, PriorityIcon, StatusPicker, PriorityPicker, DueDatePicker, AssigneePicker, canAssignAgent } from ".";
+import { StatusIcon, PriorityIcon, StatusPicker, PriorityPicker, DueDatePicker, AssigneePicker, canAssignAgent, ParentPicker } from ".";
 import { ProjectPicker } from "../../projects/components/project-picker";
 import { LabelsPicker } from "./pickers/labels-picker";
 import { CommentCard } from "./comment-card";
@@ -1189,18 +1189,11 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
 
               {/* Parent issue */}
               <PropRow label="Parent">
-                {parentIssue ? (
-                  <AppLink
-                    href={`/issues/${parentIssue.id}`}
-                    className="flex items-center gap-1.5 overflow-hidden hover:text-foreground transition-colors group"
-                  >
-                    <StatusIcon status={parentIssue.status} className="h-3.5 w-3.5 shrink-0" />
-                    <span className="text-muted-foreground shrink-0">{parentIssue.identifier}</span>
-                    <span className="truncate group-hover:text-foreground">{parentIssue.title}</span>
-                  </AppLink>
-                ) : (
-                  <span className="text-muted-foreground">No parent</span>
-                )}
+                <ParentPicker
+                  parentIssueId={issue.parent_issue_id}
+                  currentIssueId={id}
+                  onUpdate={handleUpdateField}
+                />
               </PropRow>
             </div>}
           </div>
