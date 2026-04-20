@@ -269,6 +269,24 @@ describe("ParentSubMenuContent — AC5: success feedback", () => {
     const parentButton = screen.getByText("Unrelated issue").closest("button")!;
     expect(parentButton.querySelector("svg.ml-auto")).not.toBeInTheDocument();
   });
+
+  it("AC5: check icon is present via data-testid for the selected parent issue", () => {
+    renderInProvider(
+      <ParentSubMenuContent
+        currentIssueId="issue-3"
+        parentIssueId="issue-1"
+        onUpdate={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("parent-selected-check")).toBeInTheDocument();
+  });
+
+  it("AC5: check icon is absent via data-testid when no parent is selected", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-3" parentIssueId={null} onUpdate={vi.fn()} />,
+    );
+    expect(screen.queryByTestId("parent-selected-check")).not.toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
