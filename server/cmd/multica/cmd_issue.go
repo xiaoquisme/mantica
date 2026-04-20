@@ -172,6 +172,8 @@ func init() {
 	issueUpdateCmd.Flags().String("assignee", "", "New assignee name (member or agent)")
 	issueUpdateCmd.Flags().String("project", "", "Project ID")
 	issueUpdateCmd.Flags().String("due-date", "", "New due date (RFC3339 format)")
+	issueUpdateCmd.Flags().String("parent", "", "Parent issue ID")
+	issueUpdateCmd.Flags().Bool("unparent", false, "Remove parent issue")
 	issueUpdateCmd.Flags().String("output", "json", "Output format: table or json")
 
 	// issue status
@@ -456,9 +458,19 @@ func runIssueUpdate(cmd *cobra.Command, args []string) error {
 		body["assignee_type"] = aType
 		body["assignee_id"] = aID
 	}
+	if cmd.Flags().Changed("parent") && cmd.Flags().Changed("unparent") {
+		return fmt.Errorf("--parent and --unparent are mutually exclusive")
+	}
+	if cmd.Flags().Changed("parent") {
+		v, _ := cmd.Flags().GetString("parent")
+		body["parent_issue_id"] = v
+	}
+	if cmd.Flags().Changed("unparent") {
+		body["parent_issue_id"] = nil
+	}
 
 	if len(body) == 0 {
-		return fmt.Errorf("no fields to update; use flags like --title, --status, --priority, --assignee, etc.")
+		return fmt.Errorf("no fields to update; use flags like --title, --status, --priority, --assignee, --parent, --unparent, etc.")
 	}
 
 	var result map[string]any
