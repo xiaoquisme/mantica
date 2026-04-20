@@ -93,12 +93,16 @@ func (h *Handler) DeleteLabel(w http.ResponseWriter, r *http.Request) {
 	wsID := chi.URLParam(r, "id")
 	labelID := chi.URLParam(r, "labelId")
 
-	if err := h.Queries.DeleteLabel(r.Context(), db.DeleteLabelParams{
-		ID:          parseUUID(labelID),
-		WorkspaceID: parseUUID(wsID),
-	}); err != nil {
+	tag, err := h.DB.Exec(r.Context(),
+		`DELETE FROM issue_label WHERE id = $1 AND workspace_id = $2`,
+		parseUUID(labelID), parseUUID(wsID))
+	if err != nil {
 		slog.Error("delete label failed", "label_id", labelID, "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to delete label")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeError(w, http.StatusNotFound, "label not found")
 		return
 	}
 
