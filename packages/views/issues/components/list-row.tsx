@@ -16,7 +16,7 @@ import { useAuthStore } from "@multica/core/auth";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
 import { projectListOptions } from "@multica/core/projects/queries";
-import { canAssignAgent, LabelPicker } from "./pickers";
+import { canAssignAgent, LabelPicker, ParentSubMenuContent } from "./pickers";
 import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
 import {
   MoreHorizontal,
@@ -25,6 +25,7 @@ import {
   FolderKanban,
   Tag,
   Check,
+  Network,
 } from "lucide-react";
 import { Button } from "@multica/ui/components/ui/button";
 import {
@@ -295,6 +296,21 @@ function ListRowContextMenu({ issue, onUpdate }: {
             <LabelPicker
               issueId={issue.id}
               currentLabels={issue.labels ?? []}
+            />
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+
+        {/* Parent */}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Network className="h-3.5 w-3.5" />
+            Parent
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <ParentSubMenuContent
+              currentIssueId={issue.id}
+              parentIssueId={issue.parent_issue_id}
+              onUpdate={onUpdate}
             />
           </DropdownMenuSubContent>
         </DropdownMenuSub>
