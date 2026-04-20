@@ -16,6 +16,7 @@ import {
   Trash2,
   UserMinus,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
@@ -691,28 +692,37 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
           />
 
           {parentIssue && (
-            <AppLink
-              href={`/issues/${parentIssue.id}`}
-              className="mt-2 inline-flex max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group/parent"
-            >
-              <span className="font-medium shrink-0">Sub-issue of</span>
-              <StatusIcon status={parentIssue.status} className="h-3.5 w-3.5 shrink-0" />
-              <span className="tabular-nums shrink-0">{parentIssue.identifier}</span>
-              <span className="truncate group-hover/parent:text-foreground">
-                {parentIssue.title}
-              </span>
-              {parentChildIssues.length > 0 && (() => {
-                const done = parentChildIssues.filter((c) => c.status === "done").length;
-                return (
-                  <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 shrink-0">
-                    <ProgressRing done={done} total={parentChildIssues.length} size={11} />
-                    <span className="tabular-nums text-[10.5px] font-medium">
-                      {done}/{parentChildIssues.length}
+            <div className="mt-2 inline-flex max-w-full items-center gap-1 group/parent-block">
+              <AppLink
+                href={`/issues/${parentIssue.id}`}
+                className="inline-flex max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group/parent"
+              >
+                <span className="font-medium shrink-0">Sub-issue of</span>
+                <StatusIcon status={parentIssue.status} className="h-3.5 w-3.5 shrink-0" />
+                <span className="tabular-nums shrink-0">{parentIssue.identifier}</span>
+                <span className="truncate group-hover/parent:text-foreground">
+                  {parentIssue.title}
+                </span>
+                {parentChildIssues.length > 0 && (() => {
+                  const done = parentChildIssues.filter((c) => c.status === "done").length;
+                  return (
+                    <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 shrink-0">
+                      <ProgressRing done={done} total={parentChildIssues.length} size={11} />
+                      <span className="tabular-nums text-[10.5px] font-medium">
+                        {done}/{parentChildIssues.length}
+                      </span>
                     </span>
-                  </span>
-                );
-              })()}
-            </AppLink>
+                  );
+                })()}
+              </AppLink>
+              <button
+                onClick={() => handleUpdateField({ parent_issue_id: null })}
+                className="invisible group-hover/parent-block:visible ml-0.5 rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+                aria-label="Remove parent issue"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
 
           <ContentEditor
