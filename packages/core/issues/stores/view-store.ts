@@ -15,6 +15,7 @@ export interface CardProperties {
   description: boolean;
   assignee: boolean;
   dueDate: boolean;
+  parentIssue: boolean;
 }
 
 export interface ActorFilterValue {
@@ -35,6 +36,7 @@ export const CARD_PROPERTY_OPTIONS: { key: keyof CardProperties; label: string }
   { key: "description", label: "Description" },
   { key: "assignee", label: "Assignee" },
   { key: "dueDate", label: "Due date" },
+  { key: "parentIssue", label: "Parent issue" },
 ];
 
 export interface IssueViewState {
@@ -79,6 +81,7 @@ export const viewStoreSlice = (set: StoreApi<IssueViewState>["setState"]): Issue
     description: true,
     assignee: true,
     dueDate: true,
+    parentIssue: false,
   },
   listCollapsedStatuses: [],
   columnOrder: [],
