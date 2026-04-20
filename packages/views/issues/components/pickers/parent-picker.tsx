@@ -14,18 +14,18 @@ import {
 } from "./property-picker";
 
 export function getDescendantIds(issues: Issue[], rootId: string): Set<string> {
-  const descendants = new Set<string>();
+  const result = new Set<string>();
   const queue = [rootId];
   while (queue.length > 0) {
-    const id = queue.shift()!;
+    const current = queue.pop()!;
     for (const issue of issues) {
-      if (issue.parent_issue_id === id) {
-        descendants.add(issue.id);
+      if (issue.parent_issue_id === current) {
+        result.add(issue.id);
         queue.push(issue.id);
       }
     }
   }
-  return descendants;
+  return result;
 }
 
 export function ParentSubMenuContent({
