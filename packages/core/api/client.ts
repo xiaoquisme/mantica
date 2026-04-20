@@ -694,6 +694,19 @@ export class ApiClient {
     return this.fetch(`/api/workspaces/${workspaceId}/labels`);
   }
 
+  async createLabel(workspaceId: string, name: string, color: string): Promise<Label> {
+    return this.fetch(`/api/workspaces/${workspaceId}/labels`, {
+      method: "POST",
+      body: JSON.stringify({ name, color }),
+    });
+  }
+
+  async deleteLabel(workspaceId: string, labelId: string): Promise<void> {
+    await this.fetch(`/api/workspaces/${workspaceId}/labels/${labelId}`, {
+      method: "DELETE",
+    });
+  }
+
   async updateIssueLabels(issueId: string, labelIds: string[]): Promise<Label[]> {
     return this.fetch(`/api/issues/${issueId}/labels`, {
       method: "PUT",
