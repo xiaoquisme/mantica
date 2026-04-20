@@ -109,14 +109,14 @@ describe("filterParentCandidates (TES-102)", () => {
   it("AC2: filters by title substring (case-insensitive)", () => {
     const result = filterParentCandidates(issues, "current", "alpha");
     expect(result.length).toBe(1);
-    expect(result[0].id).toBe("alpha");
+    expect(result[0]!.id).toBe("alpha");
   });
 
   // AC2 — search by identifier
   it("AC2: filters by identifier substring (case-insensitive)", () => {
     const result = filterParentCandidates(issues, "current", "tes-2");
     expect(result.length).toBe(1);
-    expect(result[0].id).toBe("beta");
+    expect(result[0]!.id).toBe("beta");
   });
 
   it("AC2: returns no results when query matches nothing", () => {
@@ -127,8 +127,8 @@ describe("filterParentCandidates (TES-102)", () => {
   // AC3 — results include identifier and title
   it("AC3: result items expose both identifier and title fields", () => {
     const result = filterParentCandidates(issues, "current", "alpha");
-    expect(result[0].identifier).toBe("TES-1");
-    expect(result[0].title).toBe("Alpha Feature");
+    expect(result[0]!.identifier).toBe("TES-1");
+    expect(result[0]!.title).toBe("Alpha Feature");
   });
 
   // Empty query returns all valid candidates
