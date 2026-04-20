@@ -160,6 +160,49 @@ describe("ParentSubMenuContent", () => {
     );
     expect(screen.getByText("Unrelated issue")).toBeInTheDocument();
   });
+
+  // AC1 — search input renders
+  it("AC1: renders a visible search input for filtering issues", () => {
+    renderInProvider(
+      <ParentSubMenuContent
+        currentIssueId="issue-3"
+        parentIssueId={null}
+        onUpdate={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("textbox", { name: /search issues/i })).toBeInTheDocument();
+  });
+
+  // AC4 — selecting calls onUpdate with parent_issue_id
+  it("AC4: clicking an issue calls onUpdate with the correct parent_issue_id", async () => {
+    const user = userEvent.setup();
+    const onUpdate = vi.fn();
+    renderInProvider(
+      <ParentSubMenuContent
+        currentIssueId="issue-3"
+        parentIssueId={null}
+        onUpdate={onUpdate}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /unrelated issue/i }));
+    expect(onUpdate).toHaveBeenCalledWith({ parent_issue_id: "issue-4" });
+  });
+
+  // AC5 — selected parent shows check indicator
+  it("AC5: the currently selected parent issue renders a check indicator; others do not", () => {
+    renderInProvider(
+      <ParentSubMenuContent
+        currentIssueId="issue-3"
+        parentIssueId="issue-1"
+        onUpdate={vi.fn()}
+      />,
+    );
+    const selectedButton = screen.getByRole("button", { name: /root issue/i });
+    const otherButton = screen.getByRole("button", { name: /unrelated issue/i });
+    expect(selectedButton.querySelectorAll("svg").length).toBeGreaterThan(
+      otherButton.querySelectorAll("svg").length,
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
