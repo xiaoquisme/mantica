@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Issue } from "@multica/core/types";
 import { WorkspaceIdProvider } from "@multica/core/hooks";
@@ -158,5 +159,71 @@ describe("ParentSubMenuContent", () => {
       />,
     );
     expect(screen.getByText("Unrelated issue")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: AC1 — picker renders and shows search input
+// ---------------------------------------------------------------------------
+
+describe("ParentSubMenuContent — AC1: rendering", () => {
+  it("AC1: renders a search input for filtering issues", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-1" parentIssueId={null} onUpdate={vi.fn()} />,
+    );
+    expect(screen.getByPlaceholderText("Search issues...")).toBeInTheDocument();
+  });
+
+  it("AC1: renders candidate issues in the list on mount", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-1" parentIssueId={null} onUpdate={vi.fn()} />,
+    );
+    expect(screen.getByText("Unrelated issue")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: AC4 — selecting a parent saves the relationship immediately
+// ---------------------------------------------------------------------------
+
+describe("ParentSubMenuContent — AC4: selection saves parent relationship", () => {
+  it("AC4: clicking an issue calls onUpdate with the selected parent_issue_id", async () => {
+    const onUpdate = vi.fn();
+    const user = userEvent.setup();
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-1" parentIssueId={null} onUpdate={onUpdate} />,
+    );
+    await user.click(screen.getByText("Unrelated issue"));
+    expect(onUpdate).toHaveBeenCalledWith({ parent_issue_id: "issue-4" });
+  });
+
+  it("AC4: onUpdate is not called before any selection is made", () => {
+    const onUpdate = vi.fn();
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-1" parentIssueId={null} onUpdate={onUpdate} />,
+    );
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: AC5 — success feedback: selected parent shows a visual indicator
+// ---------------------------------------------------------------------------
+
+describe("ParentSubMenuContent — AC5: success feedback", () => {
+  it("AC5: shows a check indicator next to the currently selected parent issue", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-1" parentIssueId="issue-4" onUpdate={vi.fn()} />,
+    );
+    const parentButton = screen.getByText("Unrelated issue").closest("button")!;
+    expect(parentButton.querySelector("svg.ml-auto")).toBeInTheDocument();
+  });
+
+  it("AC5: does not show a check indicator when no parent is set", () => {
+    renderInProvider(
+      <ParentSubMenuContent currentIssueId="issue-1" parentIssueId={null} onUpdate={vi.fn()} />,
+    );
+    const parentButton = screen.getByText("Unrelated issue").closest("button")!;
+    expect(parentButton.querySelector("svg.ml-auto")).not.toBeInTheDocument();
   });
 });
