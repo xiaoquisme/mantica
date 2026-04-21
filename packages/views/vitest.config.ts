@@ -9,4 +9,7 @@ export default defineConfig({
     setupFiles: ["./test/setup.ts"],
     include: ["**/*.test.{ts,tsx}"],
   },
+  oxc: {
+    exclude: [/setup\.ts$/],
+  },
 });
