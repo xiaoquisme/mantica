@@ -670,9 +670,12 @@ func (h *Handler) ListTaskMessages(w http.ResponseWriter, r *http.Request) {
 // GetActiveTaskForIssue returns all currently active tasks for an issue.
 // Returns { tasks: [...] } array (may be empty).
 func (h *Handler) GetActiveTaskForIssue(w http.ResponseWriter, r *http.Request) {
-	issueID := chi.URLParam(r, "id")
+	issue, ok := h.loadIssueForUser(w, r, chi.URLParam(r, "id"))
+	if !ok {
+		return
+	}
 
-	tasks, err := h.Queries.ListActiveTasksByIssue(r.Context(), parseUUID(issueID))
+	tasks, err := h.Queries.ListActiveTasksByIssue(r.Context(), issue.ID)
 	if err != nil {
 		tasks = nil
 	}
@@ -702,9 +705,12 @@ func (h *Handler) CancelTask(w http.ResponseWriter, r *http.Request) {
 
 // ListTasksByIssue returns all tasks (any status) for an issue — used for execution history.
 func (h *Handler) ListTasksByIssue(w http.ResponseWriter, r *http.Request) {
-	issueID := chi.URLParam(r, "id")
+	issue, ok := h.loadIssueForUser(w, r, chi.URLParam(r, "id"))
+	if !ok {
+		return
+	}
 
-	tasks, err := h.Queries.ListTasksByIssue(r.Context(), parseUUID(issueID))
+	tasks, err := h.Queries.ListTasksByIssue(r.Context(), issue.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list tasks")
 		return
@@ -720,9 +726,12 @@ func (h *Handler) ListTasksByIssue(w http.ResponseWriter, r *http.Request) {
 
 // GetIssueUsage returns aggregated token usage for all tasks belonging to an issue.
 func (h *Handler) GetIssueUsage(w http.ResponseWriter, r *http.Request) {
-	issueID := chi.URLParam(r, "id")
+	issue, ok := h.loadIssueForUser(w, r, chi.URLParam(r, "id"))
+	if !ok {
+		return
+	}
 
-	row, err := h.Queries.GetIssueUsageSummary(r.Context(), parseUUID(issueID))
+	row, err := h.Queries.GetIssueUsageSummary(r.Context(), issue.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to get issue usage")
 		return
