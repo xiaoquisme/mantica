@@ -361,6 +361,7 @@ func (c *Cache) CreateWorktree(params WorktreeParams) (*WorktreeResult, error) {
 		for _, pattern := range []string{".agent_context", "CLAUDE.md", "AGENTS.md", ".claude", ".config/opencode"} {
 			_ = excludeFromGit(worktreePath, pattern)
 		}
+		configureWorktreeGitIdentity(worktreePath, params.AgentName)
 
 		c.logger.Info("repo checkout: existing worktree updated",
 			"url", params.RepoURL,
@@ -386,6 +387,7 @@ func (c *Cache) CreateWorktree(params WorktreeParams) (*WorktreeResult, error) {
 	for _, pattern := range []string{".agent_context", "CLAUDE.md", "AGENTS.md", ".claude", ".config/opencode"} {
 		_ = excludeFromGit(worktreePath, pattern)
 	}
+	configureWorktreeGitIdentity(worktreePath, params.AgentName)
 
 	c.logger.Info("repo checkout: worktree created",
 		"url", params.RepoURL,
@@ -609,6 +611,17 @@ func bareHeadBranch(barePath string) string {
 		return ""
 	}
 	return ref
+}
+
+// configureWorktreeGitIdentity sets per-worktree git user.name and user.email
+// so that commits made inside the worktree never inherit the agent's global
+// identity (agent@multica.ai). Errors are non-fatal; the worktree falls back
+// to the global config on failure.
+func configureWorktreeGitIdentity(worktreePath, agentName string) {
+	slug := sanitizeName(agentName)
+	_ = exec.Command("git", "-C", worktreePath, "config", "user.name", agentName).Run()
+	_ = exec.Command("git", "-C", worktreePath, "config", "user.email",
+		fmt.Sprintf("%s[bot]@users.noreply.multica.app", slug)).Run()
 }
 
 // excludeFromGit adds a pattern to the worktree's .git/info/exclude file.
