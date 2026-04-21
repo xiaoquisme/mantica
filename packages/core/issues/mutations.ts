@@ -458,6 +458,8 @@ export function useUpdateIssueLabels() {
     onMutate: ({ issueId, labelIds }) => {
       const prevDetail = qc.getQueryData<Issue>(issueKeys.detail(wsId, issueId));
       const prevList = qc.getQueryData<ListIssuesResponse>(issueKeys.list(wsId));
+      qc.cancelQueries({ queryKey: issueKeys.detail(wsId, issueId) });
+      qc.cancelQueries({ queryKey: issueKeys.list(wsId) });
       // Build label lookup from both the issue's current labels and the full
       // workspace label cache so newly-added labels (not yet on the issue) resolve.
       const workspaceLabels = qc.getQueryData<Label[]>(labelKeys.all(wsId)) ?? [];
@@ -487,6 +489,21 @@ export function useUpdateIssueLabels() {
         };
       });
       return { prevDetail, prevList, issueId };
+    },
+    onSuccess: (labels, vars) => {
+      qc.setQueryData<Issue>(issueKeys.detail(wsId, vars.issueId), (old) => {
+        if (!old) return old;
+        return { ...old, labels };
+      });
+      qc.setQueryData<ListIssuesResponse>(issueKeys.list(wsId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          issues: old.issues.map((i) =>
+            i.id === vars.issueId ? { ...i, labels } : i,
+          ),
+        };
+      });
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prevDetail) {
