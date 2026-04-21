@@ -181,9 +181,10 @@ func (h *Handler) UpdateIssueLabels(w http.ResponseWriter, r *http.Request) {
 	userID := requestUserID(r)
 	actorType, actorID := h.resolveActor(r, userID, workspaceID)
 	h.publish(protocol.EventIssueUpdated, workspaceID, actorType, actorID, map[string]any{
-		"issue_id":       id,
-		"labels_changed": true,
-		"labels":         resp,
+		"issue": map[string]any{
+			"id":     id,
+			"labels": resp,
+		},
 	})
 
 	writeJSON(w, http.StatusOK, resp)
