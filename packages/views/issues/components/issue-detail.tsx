@@ -285,6 +285,13 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
     }
   }, [highlightCommentId, timeline.length]);
 
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  useEffect(() => {
+    if (UUID_REGEX.test(issueId) && issue?.identifier) {
+      router.replace(`/issues/${issue.identifier}`);
+    }
+  }, [issueId, issue?.identifier]);
+
   // Issue field updates via TQ mutation (optimistic update + rollback in mutation hook)
   const updateIssueMutation = useUpdateIssue();
   const handleUpdateField = useCallback(
@@ -419,7 +426,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
             {parentIssue && (
               <>
                 <AppLink
-                  href={`/issues/${parentIssue.id}`}
+                  href={`/issues/${parentIssue.identifier}`}
                   className="text-muted-foreground hover:text-foreground transition-colors truncate shrink-0"
                 >
                   {parentIssue.identifier}
@@ -694,7 +701,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
           {parentIssue && (
             <div className="mt-2 inline-flex max-w-full items-center gap-1 group/parent-block">
               <AppLink
-                href={`/issues/${parentIssue.id}`}
+                href={`/issues/${parentIssue.identifier}`}
                 className="inline-flex max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group/parent"
               >
                 <span className="font-medium shrink-0">Sub-issue of</span>
@@ -830,7 +837,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                       return (
                         <AppLink
                           key={child.id}
-                          href={`/issues/${child.id}`}
+                          href={`/issues/${child.identifier}`}
                           className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent/50 transition-colors group/row"
                         >
                           <StatusIcon

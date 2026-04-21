@@ -503,7 +503,7 @@ describe("IssueDetail (shared)", () => {
       .map((el) => el.closest("a"))
       .filter((a): a is HTMLAnchorElement => a !== null);
     expect(parentLinks.length).toBeGreaterThan(0);
-    parentLinks.forEach((link) => expect(link).toHaveAttribute("href", "/issues/parent-issue-1"));
+    parentLinks.forEach((link) => expect(link).toHaveAttribute("href", "/issues/TES-5"));
   });
 
   it("does not render parent issue section when parent_issue_id is null", async () => {

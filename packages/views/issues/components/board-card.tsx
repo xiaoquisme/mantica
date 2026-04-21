@@ -377,7 +377,7 @@ export const BoardCardContent = memo(function BoardCardContent({
           <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
             {parentIssue ? (
               <button
-                onClick={() => navigation.push(`/issues/${parentIssue.id}`)}
+                onClick={() => navigation.push(`/issues/${parentIssue.identifier}`)}
                 className="flex items-center gap-1 truncate hover:text-foreground"
               >
                 <StatusIcon status={parentIssue.status} className="h-3 w-3 shrink-0" />
@@ -512,7 +512,7 @@ export const DraggableBoardCard = memo(function DraggableBoardCard({ issue, chil
       className={isDragging ? "opacity-30" : ""}
     >
       <AppLink
-        href={`/issues/${issue.id}`}
+        href={`/issues/${issue.identifier}`}
         className={`group block transition-colors ${isDragging ? "pointer-events-none" : ""}`}
       >
         <BoardCardContent issue={issue} editable childProgress={childProgress} />
