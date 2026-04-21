@@ -104,7 +104,7 @@ export function TasksTab({ agent }: { agent: Agent }) {
                   <div className="flex items-center gap-2">
                     {issue && (
                       <AppLink
-                        href={`/issues/${issue.id}`}
+                        href={`/issues/${issue.identifier}`}
                         className="shrink-0 text-xs font-mono text-muted-foreground hover:text-foreground hover:underline"
                         onClick={(e) => e.stopPropagation()}
                       >

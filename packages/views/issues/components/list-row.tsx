@@ -361,7 +361,7 @@ export const ListRow = memo(function ListRow({
         />
       </div>
       <AppLink
-        href={`/issues/${issue.id}`}
+        href={`/issues/${issue.identifier}`}
         className="flex flex-1 items-center gap-2 min-w-0"
       >
         <span className="w-16 shrink-0 text-xs text-muted-foreground">
