@@ -453,7 +453,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                         size="icon-xs"
                         className="text-muted-foreground"
                         disabled={!prevIssue}
-                        onClick={() => prevIssue && router.push(`/issues/${prevIssue.id}`)}
+                        onClick={() => prevIssue && router.push(`/issues/${prevIssue.identifier}`)}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
@@ -472,7 +472,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                         size="icon-xs"
                         className="text-muted-foreground"
                         disabled={!nextIssue}
-                        onClick={() => nextIssue && router.push(`/issues/${nextIssue.id}`)}
+                        onClick={() => nextIssue && router.push(`/issues/${nextIssue.identifier}`)}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
