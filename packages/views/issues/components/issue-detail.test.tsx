@@ -73,6 +73,14 @@ vi.mock("@multica/core/workspace/queries", () => ({
   }),
 }));
 
+// Stable router mock — shared across tests so call history can be inspected
+const mockRouter = vi.hoisted(() => ({
+  push: vi.fn(),
+  replace: vi.fn(),
+  pathname: "/issues/issue-1",
+  getShareableUrl: undefined as undefined,
+}));
+
 // Mock navigation
 vi.mock("../../navigation", () => ({
   AppLink: ({ children, href, ...props }: any) => (
@@ -80,7 +88,7 @@ vi.mock("../../navigation", () => ({
       {children}
     </a>
   ),
-  useNavigation: () => ({ push: vi.fn(), pathname: "/issues/issue-1", getShareableUrl: undefined }),
+  useNavigation: () => mockRouter,
   NavigationProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -659,5 +667,21 @@ describe("IssueDetail (shared)", () => {
     await waitFor(() => {
       expect(mockApiObj.updateIssueLabels).toHaveBeenCalledWith("issue-1", []);
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // TES-125 AC — UUID URL triggers silent redirect to identifier-based URL
+  // ---------------------------------------------------------------------------
+
+  it("calls router.replace with identifier path when rendered with a UUID issueId (TES-125 AC)", async () => {
+    const uuid = "550e8400-e29b-41d4-a716-446655440000";
+
+    renderIssueDetail(uuid);
+
+    await waitFor(() => {
+      expect(mockRouter.replace).toHaveBeenCalledWith("/issues/TES-1");
+    });
+
+    expect(mockRouter.push).not.toHaveBeenCalled();
   });
 });
