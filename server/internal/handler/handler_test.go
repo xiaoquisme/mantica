@@ -720,6 +720,33 @@ func TestResolveActor(t *testing.T) {
 	}
 }
 
+func TestSplitIdentifier(t *testing.T) {
+	cases := []struct {
+		input  string
+		prefix string
+		number int32
+		ok     bool
+	}{
+		{"TES-41", "TES", 41, true},
+		{"MUL-1", "MUL", 1, true},
+		{"abc-0", "", 0, false},           // number must be > 0
+		{"abc", "", 0, false},              // no dash
+		{"-41", "", 0, false},             // empty prefix
+		{"TES-abc", "", 0, false},         // non-numeric suffix
+		{"some-uuid-1234", "some-uuid", 1234, true}, // last dash wins
+	}
+	for _, tc := range cases {
+		got := splitIdentifier(tc.input)
+		if tc.ok {
+			if got == nil || got.prefix != tc.prefix || got.number != tc.number {
+				t.Errorf("splitIdentifier(%q) = %+v, want {prefix:%s number:%d}", tc.input, got, tc.prefix, tc.number)
+			}
+		} else if got != nil {
+			t.Errorf("splitIdentifier(%q) expected nil, got %+v", tc.input, got)
+		}
+	}
+}
+
 func TestDaemonRegisterMissingWorkspaceReturns404(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/daemon/register", bytes.NewBufferString(`{

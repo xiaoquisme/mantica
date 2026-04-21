@@ -8,6 +8,57 @@ import (
 	"testing"
 )
 
+func TestGetIssue_ByIdentifier(t *testing.T) {
+	ctx := context.Background()
+
+	// Create an issue to get its assigned identifier.
+	w := httptest.NewRecorder()
+	req := newRequest("POST", "/api/issues?workspace_id="+testWorkspaceID, map[string]any{
+		"title":  "Identifier lookup test",
+		"status": "backlog",
+	})
+	testHandler.CreateIssue(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("CreateIssue: %d: %s", w.Code, w.Body.String())
+	}
+	var created IssueResponse
+	json.NewDecoder(w.Body).Decode(&created)
+	t.Cleanup(func() {
+		testPool.Exec(ctx, `DELETE FROM issue WHERE id = $1`, created.ID)
+	})
+
+	identifier := created.Identifier
+	if identifier == "" {
+		t.Fatal("created issue has no identifier")
+	}
+
+	// GET by identifier.
+	w2 := httptest.NewRecorder()
+	req2 := newRequest("GET", "/api/issues/"+identifier, nil)
+	req2 = withURLParam(req2, "id", identifier)
+	testHandler.GetIssue(w2, req2)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("GetIssue by identifier: expected 200, got %d: %s", w2.Code, w2.Body.String())
+	}
+	var got IssueResponse
+	json.NewDecoder(w2.Body).Decode(&got)
+	if got.ID != created.ID {
+		t.Errorf("got issue ID %s, want %s", got.ID, created.ID)
+	}
+	if got.Identifier != identifier {
+		t.Errorf("got identifier %s, want %s", got.Identifier, identifier)
+	}
+
+	// 404 for non-existent identifier.
+	w3 := httptest.NewRecorder()
+	req3 := newRequest("GET", "/api/issues/HAN-999999", nil)
+	req3 = withURLParam(req3, "id", "HAN-999999")
+	testHandler.GetIssue(w3, req3)
+	if w3.Code != http.StatusNotFound {
+		t.Errorf("expected 404 for missing identifier, got %d", w3.Code)
+	}
+}
+
 // TestListIssues_LabelsAttached verifies that attachLabelsToResponses correctly
 // populates labels on issues returned by the list endpoint.
 func TestListIssues_LabelsAttached(t *testing.T) {
