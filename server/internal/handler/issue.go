@@ -1470,6 +1470,7 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 			AssigneeID:    prevIssue.AssigneeID,
 			DueDate:       prevIssue.DueDate,
 			ParentIssueID: prevIssue.ParentIssueID,
+			ProjectID:     prevIssue.ProjectID,
 		}
 
 		if req.Updates.Title != nil {
