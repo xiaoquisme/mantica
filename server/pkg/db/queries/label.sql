@@ -30,6 +30,6 @@ INSERT INTO issue_label (workspace_id, name, color)
 VALUES ($1, $2, $3)
 RETURNING id, workspace_id, name, color;
 
--- name: DeleteLabel :exec
+-- name: DeleteLabel :execrows
 DELETE FROM issue_label
 WHERE id = $1 AND workspace_id = $2;
