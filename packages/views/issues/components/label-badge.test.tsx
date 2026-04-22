@@ -48,22 +48,21 @@ describe("LabelBadge", () => {
     expect(screen.getByText("Feature")).toBeTruthy();
   });
 
-  it("applies the configured color as inline backgroundColor", () => {
+  it("applies the configured color as inline text color and semi-transparent background", () => {
     render(<LabelBadge label={makeLabel({ color: "#3b82f6" })} />);
-    const span = screen.getByText("Bug");
-    expect((span as HTMLElement).style.backgroundColor).toBe("rgb(59, 130, 246)");
+    const span = screen.getByText("Bug") as HTMLElement;
+    expect(span.style.color).toBe("rgb(59, 130, 246)");
+    // jsdom normalizes hex+alpha to rgba; 0x33/0xff = 0.2
+    expect(span.style.backgroundColor).toBe("rgba(59, 130, 246, 0.2)");
+    expect(span.style.borderColor).toBe("rgba(59, 130, 246, 0.333)");
   });
 
   it("renders different label colors independently", () => {
     const { rerender } = render(<LabelBadge label={makeLabel({ color: "#ef4444" })} />);
-    expect((screen.getByText("Bug") as HTMLElement).style.backgroundColor).toBe(
-      "rgb(239, 68, 68)",
-    );
+    expect((screen.getByText("Bug") as HTMLElement).style.color).toBe("rgb(239, 68, 68)");
 
     rerender(<LabelBadge label={makeLabel({ color: "#22c55e" })} />);
-    expect((screen.getByText("Bug") as HTMLElement).style.backgroundColor).toBe(
-      "rgb(34, 197, 94)",
-    );
+    expect((screen.getByText("Bug") as HTMLElement).style.color).toBe("rgb(34, 197, 94)");
   });
 });
 

@@ -8,6 +8,7 @@ import { labelListOptions } from "@multica/core/issues/queries";
 import { useCreateLabel } from "@multica/core/issues/mutations";
 import type { Label } from "@multica/core/types";
 import { PropertyPicker, PickerItem, PickerEmpty } from "./property-picker";
+import { LabelBadge } from "../label-badge";
 
 const LABEL_COLORS = [
   "#ef4444",
@@ -21,22 +22,6 @@ const LABEL_COLORS = [
   "#6b7280",
   "#0f172a",
 ];
-
-export function LabelBadge({ label, size = "sm" }: { label: Label; size?: "sm" | "xs" }) {
-  const sizeClass = size === "xs" ? "text-[10px] px-1 py-0" : "text-xs px-1.5 py-0.5";
-  return (
-    <span
-      className={`inline-flex items-center rounded font-medium ${sizeClass}`}
-      style={{
-        backgroundColor: label.color + "33",
-        color: label.color,
-        border: `1px solid ${label.color}55`,
-      }}
-    >
-      {label.name}
-    </span>
-  );
-}
 
 function CreateLabelForm({
   onCancel,
