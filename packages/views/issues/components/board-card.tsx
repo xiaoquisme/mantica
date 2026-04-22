@@ -24,6 +24,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
 import { issueListOptions } from "@multica/core/issues/queries";
 import { projectListOptions } from "@multica/core/projects/queries";
+import { ProjectBadge } from "./project-badge";
 import { Button } from "@multica/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -389,6 +390,13 @@ export const BoardCardContent = memo(function BoardCardContent({
             )}
           </div>
         </PickerWrapper>
+      )}
+
+      {/* Project badge */}
+      {issue.project_id && (
+        <div className="mt-1.5">
+          <ProjectBadge projectId={issue.project_id} />
+        </div>
       )}
 
       {/* Row 3: Assignee, priority badge, due date */}

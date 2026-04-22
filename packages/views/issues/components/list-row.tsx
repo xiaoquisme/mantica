@@ -9,6 +9,7 @@ import { PriorityIcon } from "./priority-icon";
 import { StatusIcon } from "./status-icon";
 import { ProgressRing } from "./progress-ring";
 import { LabelBadge } from "./label-badge";
+import { ProjectBadge } from "./project-badge";
 import { useUpdateIssue } from "@multica/core/issues/mutations";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -389,6 +390,9 @@ export const ListRow = memo(function ListRow({
               </span>
             )}
           </div>
+        )}
+        {issue.project_id && (
+          <ProjectBadge projectId={issue.project_id} />
         )}
         {issue.due_date && (
           <span className="shrink-0 text-xs text-muted-foreground">
