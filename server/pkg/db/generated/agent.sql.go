@@ -90,15 +90,49 @@ func (q *Queries) CancelAgentTasksByAgent(ctx context.Context, agentID pgtype.UU
 	return err
 }
 
-const cancelAgentTasksByIssue = `-- name: CancelAgentTasksByIssue :exec
+const cancelAgentTasksByIssue = `-- name: CancelAgentTasksByIssue :many
 UPDATE agent_task_queue
 SET status = 'cancelled'
 WHERE issue_id = $1 AND status IN ('queued', 'dispatched', 'running')
+RETURNING id, agent_id, issue_id, status, priority, dispatched_at, started_at, completed_at, result, error, created_at, context, runtime_id, session_id, work_dir, trigger_comment_id, chat_session_id
 `
 
-func (q *Queries) CancelAgentTasksByIssue(ctx context.Context, issueID pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, cancelAgentTasksByIssue, issueID)
-	return err
+func (q *Queries) CancelAgentTasksByIssue(ctx context.Context, issueID pgtype.UUID) ([]AgentTaskQueue, error) {
+	rows, err := q.db.Query(ctx, cancelAgentTasksByIssue, issueID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AgentTaskQueue{}
+	for rows.Next() {
+		var i AgentTaskQueue
+		if err := rows.Scan(
+			&i.ID,
+			&i.AgentID,
+			&i.IssueID,
+			&i.Status,
+			&i.Priority,
+			&i.DispatchedAt,
+			&i.StartedAt,
+			&i.CompletedAt,
+			&i.Result,
+			&i.Error,
+			&i.CreatedAt,
+			&i.Context,
+			&i.RuntimeID,
+			&i.SessionID,
+			&i.WorkDir,
+			&i.TriggerCommentID,
+			&i.ChatSessionID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const claimAgentTask = `-- name: ClaimAgentTask :one

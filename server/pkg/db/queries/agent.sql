@@ -60,10 +60,11 @@ INSERT INTO agent_task_queue (agent_id, runtime_id, issue_id, status, priority, 
 VALUES ($1, $2, $3, 'queued', $4, sqlc.narg(trigger_comment_id))
 RETURNING *;
 
--- name: CancelAgentTasksByIssue :exec
+-- name: CancelAgentTasksByIssue :many
 UPDATE agent_task_queue
 SET status = 'cancelled'
-WHERE issue_id = $1 AND status IN ('queued', 'dispatched', 'running');
+WHERE issue_id = $1 AND status IN ('queued', 'dispatched', 'running')
+RETURNING *;
 
 -- name: CancelAgentTasksByAgent :exec
 UPDATE agent_task_queue

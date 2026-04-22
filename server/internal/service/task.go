@@ -138,9 +138,19 @@ func (s *TaskService) EnqueueChatTask(ctx context.Context, chatSession db.ChatSe
 	return task, nil
 }
 
-// CancelTasksForIssue cancels all active tasks for an issue.
+// CancelTasksForIssue cancels all active tasks for an issue and broadcasts
+// task:cancelled for each so frontends can clear live cards immediately.
 func (s *TaskService) CancelTasksForIssue(ctx context.Context, issueID pgtype.UUID) error {
-	return s.Queries.CancelAgentTasksByIssue(ctx, issueID)
+	tasks, err := s.Queries.CancelAgentTasksByIssue(ctx, issueID)
+	if err != nil {
+		return err
+	}
+	for _, task := range tasks {
+		slog.Info("task cancelled (batch)", "task_id", util.UUIDToString(task.ID), "issue_id", util.UUIDToString(task.IssueID))
+		s.ReconcileAgentStatus(ctx, task.AgentID)
+		s.broadcastTaskEvent(ctx, protocol.EventTaskCancelled, task)
+	}
+	return nil
 }
 
 // CancelTask cancels a single task by ID. It broadcasts a task:cancelled event
