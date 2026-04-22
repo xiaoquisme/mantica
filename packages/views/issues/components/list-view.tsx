@@ -17,15 +17,18 @@ import { ListRow, type ChildProgress } from "./list-row";
 import { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
 
 const EMPTY_PROGRESS_MAP = new Map<string, ChildProgress>();
+const EMPTY_ISSUE_MAP = new Map<string, Issue>();
 
 export function ListView({
   issues,
   visibleStatuses,
   childProgressMap = EMPTY_PROGRESS_MAP,
+  parentIssueMap = EMPTY_ISSUE_MAP,
 }: {
   issues: Issue[];
   visibleStatuses: IssueStatus[];
   childProgressMap?: Map<string, ChildProgress>;
+  parentIssueMap?: Map<string, Issue>;
 }) {
   const sortBy = useViewStore((s) => s.sortBy);
   const sortDirection = useViewStore((s) => s.sortDirection);
@@ -137,7 +140,12 @@ export function ListView({
                 {statusIssues.length > 0 ? (
                   <>
                     {statusIssues.map((issue) => (
-                      <ListRow key={issue.id} issue={issue} childProgress={childProgressMap.get(issue.id)} />
+                      <ListRow
+                        key={issue.id}
+                        issue={issue}
+                        childProgress={childProgressMap.get(issue.id)}
+                        parentIssue={issue.parent_issue_id ? (parentIssueMap.get(issue.parent_issue_id) ?? null) : null}
+                      />
                     ))}
                     {status === "done" && hasMore && (
                       <InfiniteScrollSentinel onVisible={loadMore} loading={loadingMore} />
