@@ -1310,11 +1310,16 @@ func (h *Handler) triggerPipeline(ctx context.Context, issue db.Issue) {
 	h.TaskService.CancelTasksForIssue(ctx, issue.ID)
 
 	// Advance status to in_* and assign the agent.
+	// Preserve nullable fields (parent, due_date, project) that are directly
+	// set by sqlc.narg — passing Go zero values would NULL them out.
 	updatedIssue, err := h.Queries.UpdateIssue(ctx, db.UpdateIssueParams{
-		ID:           issue.ID,
-		Status:       pgtype.Text{String: stage.InProgressStatus, Valid: true},
-		AssigneeType: pgtype.Text{String: "agent", Valid: true},
-		AssigneeID:   targetAgent.ID,
+		ID:            issue.ID,
+		Status:        pgtype.Text{String: stage.InProgressStatus, Valid: true},
+		AssigneeType:  pgtype.Text{String: "agent", Valid: true},
+		AssigneeID:    targetAgent.ID,
+		DueDate:       issue.DueDate,
+		ParentIssueID: issue.ParentIssueID,
+		ProjectID:     issue.ProjectID,
 	})
 	if err != nil {
 		slog.Warn("pipeline: failed to update issue status/assignee", "error", err)
@@ -1351,10 +1356,13 @@ func (h *Handler) advanceToClassifying(ctx context.Context, issue db.Issue, ag d
 	stage := pipeline.ClassifierStage
 
 	updatedIssue, err := h.Queries.UpdateIssue(ctx, db.UpdateIssueParams{
-		ID:           issue.ID,
-		Status:       pgtype.Text{String: stage.InProgressStatus, Valid: true},
-		AssigneeType: pgtype.Text{String: "agent", Valid: true},
-		AssigneeID:   ag.ID,
+		ID:            issue.ID,
+		Status:        pgtype.Text{String: stage.InProgressStatus, Valid: true},
+		AssigneeType:  pgtype.Text{String: "agent", Valid: true},
+		AssigneeID:    ag.ID,
+		DueDate:       issue.DueDate,
+		ParentIssueID: issue.ParentIssueID,
+		ProjectID:     issue.ProjectID,
 	})
 	if err != nil {
 		slog.Warn("pipeline: failed to advance to classifying", "issue_id", uuidToString(issue.ID), "error", err)
