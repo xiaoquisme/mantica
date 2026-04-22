@@ -1,6 +1,6 @@
 import { forwardRef, useRef, useState, useImperativeHandle } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Issue, TimelineEntry } from "@multica/core/types";
@@ -333,8 +333,15 @@ function createTestQueryClient() {
   });
 }
 
-function renderIssueDetail(issueId = "issue-1") {
+function renderIssueDetail(issueId = "issue-1", seedIssues?: Issue[]) {
   const queryClient = createTestQueryClient();
+  if (seedIssues) {
+    queryClient.setQueryData(["issues", "ws-1", "list"], {
+      issues: seedIssues,
+      total: seedIssues.length,
+      doneTotal: 0,
+    });
+  }
   return render(
     <QueryClientProvider client={queryClient}>
       <WorkspaceIdProvider wsId="ws-1">
@@ -696,5 +703,35 @@ describe("IssueDetail (shared)", () => {
     // can see and interact with issue metadata.
     expect(screen.getByText("Properties")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // Prev/Next navigation — must use identifier, not UUID
+  // ---------------------------------------------------------------------------
+
+  it("prev button navigates to identifier-based URL (not UUID)", async () => {
+    const prevIssue: Issue = { ...mockIssue, id: "issue-0", number: 0, identifier: "TES-0", title: "Prev Issue" };
+    const nextIssue: Issue = { ...mockIssue, id: "issue-2", number: 2, identifier: "TES-2", title: "Next Issue" };
+    renderIssueDetail("issue-1", [prevIssue, mockIssue, nextIssue]);
+
+    const prevButton = await screen.findByRole("button", { name: /previous issue/i });
+    expect(prevButton).not.toBeDisabled();
+    fireEvent.click(prevButton);
+
+    expect(mockRouter.push).toHaveBeenCalledWith("/issues/TES-0");
+    expect(mockRouter.push).not.toHaveBeenCalledWith(expect.stringContaining("issue-0"));
+  });
+
+  it("next button navigates to identifier-based URL (not UUID)", async () => {
+    const prevIssue: Issue = { ...mockIssue, id: "issue-0", number: 0, identifier: "TES-0", title: "Prev Issue" };
+    const nextIssue: Issue = { ...mockIssue, id: "issue-2", number: 2, identifier: "TES-2", title: "Next Issue" };
+    renderIssueDetail("issue-1", [prevIssue, mockIssue, nextIssue]);
+
+    const nextButton = await screen.findByRole("button", { name: /next issue/i });
+    expect(nextButton).not.toBeDisabled();
+    fireEvent.click(nextButton);
+
+    expect(mockRouter.push).toHaveBeenCalledWith("/issues/TES-2");
+    expect(mockRouter.push).not.toHaveBeenCalledWith(expect.stringContaining("issue-2"));
   });
 });
