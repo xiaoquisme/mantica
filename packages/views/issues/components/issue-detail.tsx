@@ -331,11 +331,11 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
     (labelIds: string[]) => {
       if (!issue) return;
       updateIssueLabels.mutate(
-        { issueId: issue.id, labelIds },
+        { issueId: id, labelIds },
         { onError: () => toast.error("Failed to update labels") },
       );
     },
-    [issue, updateIssueLabels],
+    [issue, id, updateIssueLabels],
   );
 
   const deleteIssueMutation = useDeleteIssue();
