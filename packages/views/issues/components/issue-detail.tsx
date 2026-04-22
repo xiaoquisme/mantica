@@ -240,23 +240,27 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
     },
   });
 
+  // Once the issue is loaded, use the UUID for WS event matching and API calls.
+  // Before that, the identifier (e.g. "TES-123") is used for the initial HTTP fetch.
+  const resolvedId = issue?.id ?? id;
+
   // Custom hooks — encapsulate timeline, reactions, subscribers
   const {
     timeline, loading: timelineLoading, submitComment, submitReply,
     editComment, deleteComment, toggleReaction: handleToggleReaction,
-  } = useIssueTimeline(id, user?.id);
+  } = useIssueTimeline(resolvedId, user?.id);
 
   const {
     reactions: issueReactions, loading: reactionsLoading,
     toggleReaction: handleToggleIssueReaction,
-  } = useIssueReactions(id, user?.id);
+  } = useIssueReactions(resolvedId, user?.id);
 
   const {
     subscribers, loading: subscribersLoading, isSubscribed, toggleSubscribe: handleToggleSubscribe, toggleSubscriber,
-  } = useIssueSubscribers(id, user?.id);
+  } = useIssueSubscribers(resolvedId, user?.id);
 
   // Token usage
-  const { data: usage } = useQuery(issueUsageOptions(id));
+  const { data: usage } = useQuery(issueUsageOptions(resolvedId));
 
   // Sub-issue queries
   const parentIssueId = issue?.parent_issue_id;
@@ -989,11 +993,11 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
 
             {/* Agent live output — sticky inside the Activity section so it
                 stays pinned while scrolling through TaskRunHistory + comments. */}
-            <AgentLiveCard issueId={id} />
+            <AgentLiveCard issueId={issue.id} />
 
             {/* Agent execution history */}
             <div className="mt-3">
-              <TaskRunHistory issueId={id} />
+              <TaskRunHistory issueId={issue.id} />
             </div>
 
             {/* Timeline entries */}
