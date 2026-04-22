@@ -464,6 +464,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                         variant="ghost"
                         size="icon-xs"
                         className="text-muted-foreground"
+                        aria-label="Previous issue"
                         disabled={!prevIssue}
                         onClick={() => prevIssue && router.push(`/issues/${prevIssue.identifier}`)}
                       >
@@ -483,6 +484,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                         variant="ghost"
                         size="icon-xs"
                         className="text-muted-foreground"
+                        aria-label="Next issue"
                         disabled={!nextIssue}
                         onClick={() => nextIssue && router.push(`/issues/${nextIssue.identifier}`)}
                       >
