@@ -74,6 +74,14 @@ export function IssuesPage() {
     return map;
   }, [allIssues]);
 
+  const parentIssueMap = useMemo(() => {
+    const map = new Map<string, (typeof allIssues)[0]>();
+    for (const issue of allIssues) {
+      map.set(issue.id, issue);
+    }
+    return map;
+  }, [allIssues]);
+
   const visibleStatuses = useMemo(() => {
     if (statusFilters.length > 0)
       return BOARD_STATUSES.filter((s) => statusFilters.includes(s));
@@ -166,7 +174,7 @@ export function IssuesPage() {
                 childProgressMap={childProgressMap}
               />
             ) : (
-              <ListView issues={issues} visibleStatuses={visibleStatuses} childProgressMap={childProgressMap} />
+              <ListView issues={issues} visibleStatuses={visibleStatuses} childProgressMap={childProgressMap} parentIssueMap={parentIssueMap} />
             )}
           </div>
         )}

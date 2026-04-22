@@ -322,9 +322,11 @@ function ListRowContextMenu({ issue, onUpdate }: {
 export const ListRow = memo(function ListRow({
   issue,
   childProgress,
+  parentIssue,
 }: {
   issue: Issue;
   childProgress?: ChildProgress;
+  parentIssue?: Issue | null;
 }) {
   const selected = useIssueSelectionStore((s) => s.selectedIds.has(issue.id));
   const toggle = useIssueSelectionStore((s) => s.toggle);
@@ -367,6 +369,12 @@ export const ListRow = memo(function ListRow({
         <span className="w-16 shrink-0 text-xs text-muted-foreground">
           {issue.identifier}
         </span>
+        {parentIssue && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground">
+            <Network className="h-3 w-3 shrink-0" />
+            <span>{parentIssue.identifier}</span>
+          </span>
+        )}
         <span className="flex min-w-0 flex-1 items-center gap-1.5">
           <span className="truncate">{issue.title}</span>
           {childProgress && (
