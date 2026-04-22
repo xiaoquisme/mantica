@@ -166,7 +166,7 @@ func (q *Queries) CreateLabel(ctx context.Context, arg CreateLabelParams) (Issue
 	return i, err
 }
 
-const deleteLabel = `-- name: DeleteLabel :exec
+const deleteLabel = `-- name: DeleteLabel :execrows
 DELETE FROM issue_label
 WHERE id = $1 AND workspace_id = $2
 `
@@ -176,7 +176,7 @@ type DeleteLabelParams struct {
 	WorkspaceID pgtype.UUID `json:"workspace_id"`
 }
 
-func (q *Queries) DeleteLabel(ctx context.Context, arg DeleteLabelParams) error {
-	_, err := q.db.Exec(ctx, deleteLabel, arg.ID, arg.WorkspaceID)
-	return err
+func (q *Queries) DeleteLabel(ctx context.Context, arg DeleteLabelParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteLabel, arg.ID, arg.WorkspaceID)
+	return result.RowsAffected(), err
 }
