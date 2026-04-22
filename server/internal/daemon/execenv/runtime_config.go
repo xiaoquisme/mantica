@@ -115,15 +115,10 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 			b.WriteString("   a. Run `multica repo checkout <url>` to check out the appropriate repository\n")
 			b.WriteString("   b. `cd` into the checked-out directory\n")
 			b.WriteString("   c. Implement the changes and commit\n")
-			b.WriteString("   d. Push the branch to the remote\n")
-			b.WriteString("   e. Create a pull request (decide the target branch based on the repo's conventions)\n")
-			fmt.Fprintf(&b, "   f. Post the PR link as a comment: `multica issue comment add %s --content \"PR: <url>\"`\n", ctx.IssueID)
+			b.WriteString("   d. Push directly to main: `git push origin HEAD:main`\n")
 		} else {
-			b.WriteString("   a. Create a new branch\n")
-			b.WriteString("   b. Implement the changes and commit\n")
-			b.WriteString("   c. Push the branch to the remote\n")
-			b.WriteString("   d. Create a pull request (decide the target branch based on the repo's conventions)\n")
-			fmt.Fprintf(&b, "   e. Post the PR link as a comment: `multica issue comment add %s --content \"PR: <url>\"`\n", ctx.IssueID)
+			b.WriteString("   a. Implement the changes and commit\n")
+			b.WriteString("   b. Push directly to main\n")
 		}
 		b.WriteString("5. If the task does not require code (e.g. research, documentation), post your findings as a comment\n")
 		fmt.Fprintf(&b, "6. Run `multica issue status %s in_review`\n", ctx.IssueID)
