@@ -99,6 +99,11 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 		logger:  logger,
 	}
 
+	// Mount the workspace-shared memory dir into the workdir as `./memory`.
+	if err := ensureWorkspaceMemoryMounted(params.WorkspacesRoot, params.WorkspaceID, workDir, logger); err != nil {
+		return nil, fmt.Errorf("execenv: mount workspace memory: %w", err)
+	}
+
 	// Write context files into workdir (skills go to provider-native paths).
 	if err := writeContextFiles(workDir, params.Provider, params.Task); err != nil {
 		return nil, fmt.Errorf("execenv: write context files: %w", err)
@@ -124,7 +129,9 @@ func Prepare(params PrepareParams, logger *slog.Logger) (*Environment, error) {
 
 // Reuse wraps an existing workdir into an Environment and refreshes context files.
 // Returns nil if the workdir does not exist (caller should fall back to Prepare).
-func Reuse(workDir, provider string, task TaskContextForEnv, logger *slog.Logger) *Environment {
+// workspacesRoot and workspaceID are used to (re)mount the workspace memory dir;
+// pass empty strings to skip the mount (memory will simply be unavailable).
+func Reuse(workspacesRoot, workspaceID, workDir, provider string, task TaskContextForEnv, logger *slog.Logger) *Environment {
 	if _, err := os.Stat(workDir); err != nil {
 		return nil
 	}
@@ -133,6 +140,11 @@ func Reuse(workDir, provider string, task TaskContextForEnv, logger *slog.Logger
 		RootDir: filepath.Dir(workDir),
 		WorkDir: workDir,
 		logger:  logger,
+	}
+
+	// (Re-)mount workspace memory in case the prior workdir predates this feature.
+	if err := ensureWorkspaceMemoryMounted(workspacesRoot, workspaceID, workDir, logger); err != nil {
+		logger.Warn("execenv: mount workspace memory on reuse failed", "error", err)
 	}
 
 	// Refresh context files (issue_context.md, skills).
