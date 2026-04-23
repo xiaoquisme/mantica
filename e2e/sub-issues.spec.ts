@@ -19,17 +19,22 @@ test.describe("Sub-task progress overview", () => {
   }) => {
     const stamp = Date.now();
     const parent = await api.createIssue(`E2E Parent ${stamp}`);
+    // Status values must match the current enum
+    // (packages/core/issues/config/status.ts) — the prior "in_progress"
+    // and "todo" labels were dropped in the workflow redesign and the
+    // server's status_check constraint silently rejects them, so only the
+    // first child would land and the chip read "1 of 1" instead of "1 of 3".
     const childA = await api.createIssue(`E2E Child A ${stamp}`, {
       parent_issue_id: parent.id,
       status: "done",
     });
     const childB = await api.createIssue(`E2E Child B ${stamp}`, {
       parent_issue_id: parent.id,
-      status: "in_progress",
+      status: "in_dev",
     });
     const childC = await api.createIssue(`E2E Child C ${stamp}`, {
       parent_issue_id: parent.id,
-      status: "todo",
+      status: "backlog",
     });
 
     await page.goto(`/issues/${parent.identifier}`);
