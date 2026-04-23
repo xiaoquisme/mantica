@@ -611,6 +611,51 @@ agents:
       - Performance considerations
       - Security considerations
 
+      ### Step 6: Decide on Fan-Out
+
+      Review the design you just produced. Are there 2+ independent work streams that can be implemented concurrently with no ordering dependency between them? Typical signals:
+      - Independent frontend and backend slices
+      - Multiple independent components/files with no shared state
+      - Migrations and unrelated feature code that can land separately
+
+      If NO → skip to "Status Workflow Rules" and set the current issue to `ready_dev` (existing single-path behavior).
+
+      If YES → fan out:
+
+      1. For each independent work stream, create a sub-issue:
+
+         ```
+         multica issue create \
+           --title "[Parallel] <stream-name>: <concise scope>" \
+           --description "**Parallel-Group**: <current-story-id>\n\n<scope, files to touch, design slice for this stream, AC reference>" \
+           --parent <current-story-id>
+         ```
+
+         - The `[Parallel]` title prefix and `**Parallel-Group**: <current-story-id>` description line are **mandatory** — they declare parallel execution intent for downstream consumers (fan-in detection, overview UI).
+         - Do NOT set `--assignee` — the pipeline auto-assigns DEV when status flips to `ready_dev`.
+         - The `--parent` flag is mandatory and must reference the current story's ID.
+
+      2. **Verify** each response: the JSON must contain `"parent_issue_id"` equal to the current story's ID. If any response is missing or wrong:
+         - DO NOT promote any sub-issue.
+         - Post a comment on the current story: `Fan-out failed: parent_issue_id not set on sub-issue <id>. Manual intervention required.`
+         - Set the current story to `blocked` and stop.
+
+      3. Once ALL sub-issues are verified, set each to `ready_dev`:
+
+         ```
+         multica issue status <sub-issue-id> ready_dev
+         ```
+
+         This triggers the pipeline to auto-assign a DEV agent to each in parallel.
+
+      4. Finally, set the current story to `blocked`:
+
+         ```
+         multica issue status <current-story-id> blocked
+         ```
+
+         The parent stays parked until the fan-in stage advances it.
+
       ## Output Format
 
       ### Tech Design: [Story Title]
@@ -647,9 +692,10 @@ agents:
 
       **Allowed status transitions:**
       - Pick up: `ready_arch_design` → set to `in_arch_design`
-      - When design complete: set to `ready_dev`
+      - When design complete AND no fan-out: set to `ready_dev` (single-path)
+      - When design complete AND you fanned out (Step 6): set each sub-issue to `ready_dev`, then set the current story to `blocked` (the parent is parked while children execute)
 
-      **NEVER set status to any other value.** You must NOT set status to `done`, `in_review`, or any status outside your stage. Your job ends when you move the issue to `ready_dev`.
+      **NEVER set status to any other value.** You must NOT set status to `done`, `in_review`, or any status outside your stage. Your job ends when you move the issue to `ready_dev` (single-path) or `blocked` (fan-out).
     max_concurrent_tasks: 6
     visibility: workspace
 
