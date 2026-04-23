@@ -11,6 +11,50 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const clearIssueAssigneeIfStatus = `-- name: ClearIssueAssigneeIfStatus :one
+UPDATE issue SET
+    assignee_type = NULL,
+    assignee_id = NULL,
+    updated_at = now()
+WHERE id = $1
+  AND status = $2::text
+RETURNING id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id
+`
+
+type ClearIssueAssigneeIfStatusParams struct {
+	ID             pgtype.UUID `json:"id"`
+	ExpectedStatus string      `json:"expected_status"`
+}
+
+// Clear the assignee on an issue when its status matches. Used to recover from a failed
+// Classifier run: revert backlog and clear the Classifier assignee so the user can re-trigger.
+func (q *Queries) ClearIssueAssigneeIfStatus(ctx context.Context, arg ClearIssueAssigneeIfStatusParams) (Issue, error) {
+	row := q.db.QueryRow(ctx, clearIssueAssigneeIfStatus, arg.ID, arg.ExpectedStatus)
+	var i Issue
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.Priority,
+		&i.AssigneeType,
+		&i.AssigneeID,
+		&i.CreatorType,
+		&i.CreatorID,
+		&i.ParentIssueID,
+		&i.AcceptanceCriteria,
+		&i.ContextRefs,
+		&i.Position,
+		&i.DueDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Number,
+		&i.ProjectID,
+	)
+	return i, err
+}
+
 const countIssues = `-- name: CountIssues :one
 SELECT count(*) FROM issue
 WHERE workspace_id = $1
@@ -425,6 +469,51 @@ func (q *Queries) ListOpenIssues(ctx context.Context, arg ListOpenIssuesParams) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const revertIssueStatusIfMatching = `-- name: RevertIssueStatusIfMatching :one
+UPDATE issue SET
+    status = $2::text,
+    updated_at = now()
+WHERE id = $1
+  AND status = $3::text
+RETURNING id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id
+`
+
+type RevertIssueStatusIfMatchingParams struct {
+	ID             pgtype.UUID `json:"id"`
+	NewStatus      string      `json:"new_status"`
+	ExpectedStatus string      `json:"expected_status"`
+}
+
+// Atomically revert an issue's status from the expected in_* status to the matching ready_* status.
+// Returns no rows if the issue is not currently at the expected status (e.g. the agent already
+// transitioned it before crashing). Used by the auto-revert path to recover from agent run failures.
+func (q *Queries) RevertIssueStatusIfMatching(ctx context.Context, arg RevertIssueStatusIfMatchingParams) (Issue, error) {
+	row := q.db.QueryRow(ctx, revertIssueStatusIfMatching, arg.ID, arg.NewStatus, arg.ExpectedStatus)
+	var i Issue
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.Priority,
+		&i.AssigneeType,
+		&i.AssigneeID,
+		&i.CreatorType,
+		&i.CreatorID,
+		&i.ParentIssueID,
+		&i.AcceptanceCriteria,
+		&i.ContextRefs,
+		&i.Position,
+		&i.DueDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Number,
+		&i.ProjectID,
+	)
+	return i, err
 }
 
 const updateIssue = `-- name: UpdateIssue :one

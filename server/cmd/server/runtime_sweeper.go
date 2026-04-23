@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/events"
+	"github.com/multica-ai/multica/server/internal/service"
 	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
@@ -31,7 +32,7 @@ const (
 // last_seen_at exceeds the stale threshold, and fails orphaned tasks.
 // This handles cases where the daemon crashes, is killed without calling
 // the deregister endpoint, or leaves tasks in a non-terminal state.
-func runRuntimeSweeper(ctx context.Context, queries *db.Queries, bus *events.Bus) {
+func runRuntimeSweeper(ctx context.Context, queries *db.Queries, bus *events.Bus, taskService *service.TaskService) {
 	ticker := time.NewTicker(sweepInterval)
 	defer ticker.Stop()
 
@@ -40,8 +41,8 @@ func runRuntimeSweeper(ctx context.Context, queries *db.Queries, bus *events.Bus
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			sweepStaleRuntimes(ctx, queries, bus)
-			sweepStaleTasks(ctx, queries, bus)
+			sweepStaleRuntimes(ctx, queries, bus, taskService)
+			sweepStaleTasks(ctx, queries, bus, taskService)
 			sweepStaleAgentStatus(ctx, queries, bus)
 		}
 	}
@@ -49,7 +50,7 @@ func runRuntimeSweeper(ctx context.Context, queries *db.Queries, bus *events.Bus
 
 // sweepStaleRuntimes marks runtimes offline if they haven't heartbeated,
 // then fails any tasks belonging to those offline runtimes.
-func sweepStaleRuntimes(ctx context.Context, queries *db.Queries, bus *events.Bus) {
+func sweepStaleRuntimes(ctx context.Context, queries *db.Queries, bus *events.Bus, taskService *service.TaskService) {
 	staleRows, err := queries.MarkStaleRuntimesOffline(ctx, staleThresholdSeconds)
 	if err != nil {
 		slog.Warn("runtime sweeper: failed to mark stale runtimes offline", "error", err)
@@ -74,7 +75,7 @@ func sweepStaleRuntimes(ctx context.Context, queries *db.Queries, bus *events.Bu
 		slog.Warn("runtime sweeper: failed to clean up stale tasks", "error", err)
 	} else if len(failedTasks) > 0 {
 		slog.Info("runtime sweeper: failed orphaned tasks", "count", len(failedTasks))
-		broadcastFailedTasks(ctx, queries, bus, failedTasks)
+		broadcastFailedTasks(ctx, queries, bus, taskService, failedTasks)
 	}
 
 	// Take agents offline for each stale runtime.
@@ -120,7 +121,7 @@ func sweepStaleRuntimes(ctx context.Context, queries *db.Queries, bus *events.Bu
 // - The agent process hangs and the daemon is still heartbeating
 // - The daemon failed to report task completion/failure
 // - A server restart left tasks in a non-terminal state
-func sweepStaleTasks(ctx context.Context, queries *db.Queries, bus *events.Bus) {
+func sweepStaleTasks(ctx context.Context, queries *db.Queries, bus *events.Bus, taskService *service.TaskService) {
 	failedTasks, err := queries.FailStaleTasks(ctx, db.FailStaleTasksParams{
 		DispatchTimeoutSecs: dispatchTimeoutSeconds,
 		RunningTimeoutSecs:  runningTimeoutSeconds,
@@ -134,7 +135,7 @@ func sweepStaleTasks(ctx context.Context, queries *db.Queries, bus *events.Bus) 
 	}
 
 	slog.Info("task sweeper: failed stale tasks", "count", len(failedTasks))
-	broadcastFailedTasks(ctx, queries, bus, failedTasks)
+	broadcastFailedTasks(ctx, queries, bus, taskService, failedTasks)
 }
 
 // failedTask is a common interface for both sweeper result types.
@@ -144,9 +145,11 @@ type failedTask struct {
 	IssueID pgtype.UUID
 }
 
-// broadcastFailedTasks publishes task:failed events with the correct WorkspaceID
-// and reconciles agent status for all affected agents.
-func broadcastFailedTasks(ctx context.Context, queries *db.Queries, bus *events.Bus, tasks any) {
+// broadcastFailedTasks publishes task:failed events with the correct WorkspaceID,
+// reconciles agent status for all affected agents, and triggers auto-revert
+// on the parent issue so the pipeline can re-dispatch. taskService may be nil
+// in tests that are only exercising the broadcast/reconcile shape.
+func broadcastFailedTasks(ctx context.Context, queries *db.Queries, bus *events.Bus, taskService *service.TaskService, tasks any) {
 	var items []failedTask
 	switch ts := tasks.(type) {
 	case []db.FailStaleTasksRow:
@@ -179,6 +182,20 @@ func broadcastFailedTasks(ctx context.Context, queries *db.Queries, bus *events.
 				"status":   "failed",
 			},
 		})
+
+		// Auto-revert the issue so the pipeline can re-dispatch. Loading the
+		// fresh task row gives us the populated `error` field that the
+		// sweeper just wrote, which is embedded in the system comment.
+		if taskService != nil {
+			if task, err := queries.GetAgentTask(ctx, ft.ID); err == nil {
+				taskService.AutoRevertIssueStatusOnFailure(ctx, task)
+			} else {
+				slog.Warn("auto-revert: failed task lookup",
+					"task_id", util.UUIDToString(ft.ID),
+					"error", err,
+				)
+			}
+		}
 
 		agentKey := util.UUIDToString(ft.AgentID)
 		affectedAgents[agentKey] = ft.AgentID

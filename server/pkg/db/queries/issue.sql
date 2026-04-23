@@ -54,6 +54,28 @@ UPDATE issue SET
 WHERE id = $1
 RETURNING *;
 
+-- name: RevertIssueStatusIfMatching :one
+-- Atomically revert an issue's status from the expected in_* status to the matching ready_* status.
+-- Returns no rows if the issue is not currently at the expected status (e.g. the agent already
+-- transitioned it before crashing). Used by the auto-revert path to recover from agent run failures.
+UPDATE issue SET
+    status = sqlc.arg('new_status')::text,
+    updated_at = now()
+WHERE id = $1
+  AND status = sqlc.arg('expected_status')::text
+RETURNING *;
+
+-- name: ClearIssueAssigneeIfStatus :one
+-- Clear the assignee on an issue when its status matches. Used to recover from a failed
+-- Classifier run: revert backlog and clear the Classifier assignee so the user can re-trigger.
+UPDATE issue SET
+    assignee_type = NULL,
+    assignee_id = NULL,
+    updated_at = now()
+WHERE id = $1
+  AND status = sqlc.arg('expected_status')::text
+RETURNING *;
+
 -- name: DeleteIssue :exec
 DELETE FROM issue WHERE id = $1;
 

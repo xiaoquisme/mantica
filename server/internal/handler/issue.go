@@ -1282,78 +1282,14 @@ func (h *Handler) isAgentAssigneeReady(ctx context.Context, issue db.Issue) bool
 
 // triggerPipeline auto-assigns the next agent and advances the issue status
 // from ready_* to the corresponding in_* when a pipeline stage is triggered.
+// The advance + assign + enqueue is shared with the runtime auto-revert path
+// via TaskService.TriggerPipeline; the parent fan-in re-evaluation stays here
+// because it is specific to the HTTP/agent transition flow.
 func (h *Handler) triggerPipeline(ctx context.Context, issue db.Issue) {
-	stage, ok := pipeline.Stages[issue.Status]
-	if !ok {
+	updatedIssue := h.TaskService.TriggerPipeline(ctx, issue)
+	if updatedIssue == nil {
 		return
 	}
-
-	// Find the target agent by name in this workspace.
-	agents, err := h.Queries.ListAgents(ctx, issue.WorkspaceID)
-	if err != nil {
-		slog.Warn("pipeline: failed to list agents", "issue_id", uuidToString(issue.ID), "error", err)
-		return
-	}
-
-	var targetAgent *db.Agent
-	for i := range agents {
-		if agents[i].Name == stage.AgentName && !agents[i].ArchivedAt.Valid {
-			targetAgent = &agents[i]
-			break
-		}
-	}
-
-	if targetAgent == nil {
-		slog.Warn("pipeline: no agent found for stage", "issue_id", uuidToString(issue.ID), "status", issue.Status, "agent_name", stage.AgentName)
-		return
-	}
-
-	if !targetAgent.RuntimeID.Valid {
-		slog.Warn("pipeline: agent has no runtime", "agent_name", stage.AgentName)
-		return
-	}
-
-	// Cancel any existing tasks for this issue.
-	h.TaskService.CancelTasksForIssue(ctx, issue.ID)
-
-	// Advance status to in_* and assign the agent.
-	// Preserve nullable fields (parent, due_date, project) that are directly
-	// set by sqlc.narg — passing Go zero values would NULL them out.
-	updatedIssue, err := h.Queries.UpdateIssue(ctx, db.UpdateIssueParams{
-		ID:            issue.ID,
-		Status:        pgtype.Text{String: stage.InProgressStatus, Valid: true},
-		AssigneeType:  pgtype.Text{String: "agent", Valid: true},
-		AssigneeID:    targetAgent.ID,
-		DueDate:       issue.DueDate,
-		ParentIssueID: issue.ParentIssueID,
-		ProjectID:     issue.ProjectID,
-	})
-	if err != nil {
-		slog.Warn("pipeline: failed to update issue status/assignee", "error", err)
-		return
-	}
-
-	// Broadcast the issue update.
-	prefix := h.getIssuePrefix(ctx, issue.WorkspaceID)
-	h.publish(protocol.EventIssueUpdated, uuidToString(issue.WorkspaceID), "system", "", issueToResponse(updatedIssue, prefix))
-
-	// Enqueue task for the new agent — skip if one is already active.
-	hasActive, err := h.Queries.HasActiveTaskForIssueAndAgent(ctx, db.HasActiveTaskForIssueAndAgentParams{
-		IssueID: issue.ID,
-		AgentID: targetAgent.ID,
-	})
-	if err == nil && hasActive {
-		slog.Debug("pipeline: skipping enqueue, active task already exists",
-			"issue_id", uuidToString(issue.ID), "agent", stage.AgentName)
-	} else {
-		h.TaskService.EnqueueTaskForIssue(ctx, updatedIssue)
-	}
-
-	slog.Info("pipeline: auto-assigned and advanced",
-		"issue_id", uuidToString(issue.ID),
-		"agent", stage.AgentName,
-		"status", stage.InProgressStatus,
-	)
 
 	// Fan-in: an in-pipeline transition (e.g. QA setting a child to done)
 	// is the leaf event for fan-in too. Re-evaluate the parent here so an

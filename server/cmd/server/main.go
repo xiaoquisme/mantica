@@ -14,6 +14,7 @@ import (
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/logger"
 	"github.com/multica-ai/multica/server/internal/realtime"
+	"github.com/multica-ai/multica/server/internal/service"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
@@ -65,9 +66,12 @@ func main() {
 		Handler: r,
 	}
 
-	// Start background sweeper to mark stale runtimes as offline.
+	// Start background sweeper to mark stale runtimes as offline. The sweeper
+	// owns a TaskService instance so it can auto-revert issue status (and
+	// re-trigger the pipeline) when runs fail outside the request lifecycle.
+	taskService := service.NewTaskService(queries, hub, bus)
 	sweepCtx, sweepCancel := context.WithCancel(context.Background())
-	go runRuntimeSweeper(sweepCtx, queries, bus)
+	go runRuntimeSweeper(sweepCtx, queries, bus, taskService)
 
 	// Graceful shutdown
 	go func() {
