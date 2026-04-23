@@ -50,6 +50,19 @@ interface TestWorkspace {
   slug: string;
 }
 
+interface CachedSession {
+  token: string;
+  user: { id: string; email: string; name: string } | null;
+}
+
+// Module-level token cache, keyed by email. The auth send-code endpoint is
+// rate-limited to 1 code per 10 seconds per email and verify-code marks the
+// code used. With one login per test (beforeEach), runs of more than two
+// tests would otherwise fail at the second test's send-code → can't find an
+// unused fresh code. Reusing the JWT (valid for 30 days, see auth.go) keeps
+// every test's beforeEach hitting the rate-limited code path at most once.
+const sessionCache = new Map<string, CachedSession>();
+
 export class TestApiClient {
   private token: string | null = null;
   private workspaceId: string | null = null;
@@ -57,6 +70,18 @@ export class TestApiClient {
   private createdProjectIds: string[] = [];
 
   async login(email: string, name: string) {
+    const cached = sessionCache.get(email);
+    if (cached) {
+      this.token = cached.token;
+      return cached;
+    }
+
+    const data = await this.authenticate(email, name);
+    sessionCache.set(email, { token: data.token, user: data.user ?? null });
+    return data;
+  }
+
+  private async authenticate(email: string, name: string) {
     // Step 1: Send verification code
     const sendRes = await fetch(`${API_BASE}/auth/send-code`, {
       method: "POST",
@@ -158,9 +183,11 @@ export class TestApiClient {
   }
 
   async createProject(title: string, opts?: Record<string, unknown>) {
+    // status must match the DB project_status_check constraint:
+    // planned | in_progress | paused | completed | cancelled
     const res = await this.authedFetch("/api/projects", {
       method: "POST",
-      body: JSON.stringify({ title, status: "active", priority: "none", ...opts }),
+      body: JSON.stringify({ title, status: "planned", priority: "none", ...opts }),
     });
     const project = await res.json();
     this.createdProjectIds.push(project.id);
