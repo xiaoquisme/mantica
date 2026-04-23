@@ -196,6 +196,31 @@ RETURNING *;
 -- name: ListAgentsByRuntime :many
 SELECT * FROM agent WHERE runtime_id = $1 AND archived_at IS NULL;
 
+-- name: ReconcileStaleWorkingAgents :many
+-- Finds agents marked as 'working' but with no dispatched or running tasks,
+-- and sets them back to 'idle'. Returns the fixed agents for WS broadcasting.
+UPDATE agent
+SET status = 'idle', updated_at = now()
+WHERE status = 'working'
+  AND archived_at IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM agent_task_queue
+    WHERE agent_id = agent.id AND status IN ('dispatched', 'running')
+  )
+RETURNING *;
+
 -- name: SetAgentStatusByRuntime :exec
 UPDATE agent SET status = $2, updated_at = now()
 WHERE runtime_id = $1 AND archived_at IS NULL;
+
+-- name: RequeueOrphanedTasksByRuntime :many
+UPDATE agent_task_queue
+SET status = 'queued', dispatched_at = NULL, started_at = NULL, error = NULL
+WHERE runtime_id = $1 AND status IN ('dispatched', 'running')
+RETURNING *;
+
+-- name: RequeueSweeperFailedTasksByRuntime :many
+UPDATE agent_task_queue
+SET status = 'queued', dispatched_at = NULL, started_at = NULL, error = NULL
+WHERE runtime_id = $1 AND status = 'failed' AND error = 'runtime went offline'
+RETURNING *;

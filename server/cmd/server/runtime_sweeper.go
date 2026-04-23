@@ -42,6 +42,7 @@ func runRuntimeSweeper(ctx context.Context, queries *db.Queries, bus *events.Bus
 		case <-ticker.C:
 			sweepStaleRuntimes(ctx, queries, bus)
 			sweepStaleTasks(ctx, queries, bus)
+			sweepStaleAgentStatus(ctx, queries, bus)
 		}
 	}
 }
@@ -212,4 +213,29 @@ func reconcileAgentStatus(ctx context.Context, queries *db.Queries, bus *events.
 		ActorType:   "system",
 		Payload:     map[string]any{"agent_id": util.UUIDToString(agent.ID), "status": agent.Status},
 	})
+}
+
+// sweepStaleAgentStatus finds agents stuck in 'working' status with no active
+// tasks and resets them to 'idle'. This handles race conditions where a task
+// is cancelled between CancelTasksForIssue and ClaimTask, leaving the agent
+// status inconsistent.
+func sweepStaleAgentStatus(ctx context.Context, queries *db.Queries, bus *events.Bus) {
+	fixedAgents, err := queries.ReconcileStaleWorkingAgents(ctx)
+	if err != nil {
+		slog.Warn("agent status sweeper: failed to reconcile stale working agents", "error", err)
+		return
+	}
+	if len(fixedAgents) == 0 {
+		return
+	}
+
+	slog.Info("agent status sweeper: reset stale working agents to idle", "count", len(fixedAgents))
+	for _, a := range fixedAgents {
+		bus.Publish(events.Event{
+			Type:        protocol.EventAgentStatus,
+			WorkspaceID: util.UUIDToString(a.WorkspaceID),
+			ActorType:   "system",
+			Payload:     map[string]any{"agent_id": util.UUIDToString(a.ID), "status": "idle"},
+		})
+	}
 }

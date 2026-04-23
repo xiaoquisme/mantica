@@ -24,6 +24,7 @@ const (
 
 	// Task events (server <-> daemon)
 	EventTaskDispatch  = "task:dispatch"
+	EventTaskQueued    = "task:queued"
 	EventTaskProgress  = "task:progress"
 	EventTaskCompleted = "task:completed"
 	EventTaskFailed    = "task:failed"
