@@ -155,7 +155,7 @@ func TestPrepareWithRepoContext(t *testing.T) {
 	}
 	for _, e := range entries {
 		name := e.Name()
-		if name != ".agent_context" && name != "CLAUDE.md" && name != ".claude" {
+		if name != ".agent_context" && name != "CLAUDE.md" && name != ".claude" && name != "memory" {
 			t.Errorf("unexpected entry in workdir: %s", name)
 		}
 	}
@@ -383,10 +383,18 @@ func TestInjectRuntimeConfigClaude(t *testing.T) {
 		"Go Conventions",
 		"PR Review",
 		"discovered automatically",
+		"## Workspace Memory",
+		"memory/MEMORY.md",
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("CLAUDE.md missing %q", want)
 		}
+	}
+	// Workspace Memory section must appear before Workflow so the agent reads memory first.
+	memIdx := strings.Index(s, "## Workspace Memory")
+	flowIdx := strings.Index(s, "### Workflow")
+	if memIdx < 0 || flowIdx < 0 || memIdx > flowIdx {
+		t.Errorf("expected ## Workspace Memory to appear before ### Workflow (mem=%d, flow=%d)", memIdx, flowIdx)
 	}
 }
 
@@ -414,6 +422,9 @@ func TestInjectRuntimeConfigCodex(t *testing.T) {
 	}
 	if !strings.Contains(s, "Coding") {
 		t.Error("AGENTS.md missing skill name")
+	}
+	if !strings.Contains(s, "## Workspace Memory") || !strings.Contains(s, "memory/MEMORY.md") {
+		t.Error("AGENTS.md missing Workspace Memory section")
 	}
 }
 
@@ -520,6 +531,9 @@ func TestInjectRuntimeConfigOpencode(t *testing.T) {
 	if !strings.Contains(s, "discovered automatically") {
 		t.Error("AGENTS.md missing native skill discovery hint")
 	}
+	if !strings.Contains(s, "## Workspace Memory") || !strings.Contains(s, "memory/MEMORY.md") {
+		t.Error("AGENTS.md missing Workspace Memory section")
+	}
 
 	// CLAUDE.md should NOT exist.
 	if _, err := os.Stat(filepath.Join(dir, "CLAUDE.md")); !os.IsNotExist(err) {
@@ -561,7 +575,7 @@ func TestPrepareWithRepoContextOpencode(t *testing.T) {
 	}
 	for _, e := range entries {
 		name := e.Name()
-		if name != ".agent_context" && name != "AGENTS.md" {
+		if name != ".agent_context" && name != "AGENTS.md" && name != "memory" {
 			t.Errorf("unexpected entry in workdir: %s", name)
 		}
 	}
@@ -686,6 +700,125 @@ func TestPrepareCodexHomeSkipsMissingFiles(t *testing.T) {
 			names[i] = e.Name()
 		}
 		t.Errorf("expected empty codex-home, got: %v", names)
+	}
+}
+
+func TestPrepareCreatesWorkspaceMemorySymlink(t *testing.T) {
+	t.Parallel()
+	workspacesRoot := t.TempDir()
+
+	env, err := Prepare(PrepareParams{
+		WorkspacesRoot: workspacesRoot,
+		WorkspaceID:    "ws-mem-001",
+		TaskID:         "11111111-2222-3333-4444-555555555555",
+		AgentName:      "Memory Test",
+		Task:           TaskContextForEnv{IssueID: "memory-test-issue"},
+	}, testLogger())
+	if err != nil {
+		t.Fatalf("Prepare failed: %v", err)
+	}
+	defer env.Cleanup(true)
+
+	sharedMem := filepath.Join(workspacesRoot, "ws-mem-001", "memory")
+	if fi, err := os.Stat(sharedMem); err != nil || !fi.IsDir() {
+		t.Fatalf("expected shared memory dir at %s", sharedMem)
+	}
+
+	link := filepath.Join(env.WorkDir, "memory")
+	fi, err := os.Lstat(link)
+	if err != nil {
+		t.Fatalf("workdir memory entry missing: %v", err)
+	}
+	if fi.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("expected %s to be a symlink", link)
+	}
+	target, err := os.Readlink(link)
+	if err != nil {
+		t.Fatalf("readlink failed: %v", err)
+	}
+	if target != sharedMem {
+		t.Errorf("symlink target = %q, want %q", target, sharedMem)
+	}
+
+	// Writes through the symlink land in the shared dir (proves the mount works).
+	if err := os.WriteFile(filepath.Join(link, "MEMORY.md"), []byte("- entry\n"), 0o644); err != nil {
+		t.Fatalf("write through symlink failed: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(sharedMem, "MEMORY.md"))
+	if err != nil {
+		t.Fatalf("read shared memory failed: %v", err)
+	}
+	if string(data) != "- entry\n" {
+		t.Errorf("shared MEMORY.md content = %q", data)
+	}
+}
+
+func TestReuseReestablishesMemorySymlink(t *testing.T) {
+	t.Parallel()
+	workspacesRoot := t.TempDir()
+
+	// Simulate a workdir created before the workspace-memory feature: just a bare dir.
+	workDir := filepath.Join(workspacesRoot, "ws-mem-002", "abcd1234", "workdir")
+	if err := os.MkdirAll(workDir, 0o755); err != nil {
+		t.Fatalf("mkdir workdir: %v", err)
+	}
+
+	env := Reuse(workspacesRoot, "ws-mem-002", workDir, "claude", TaskContextForEnv{IssueID: "i"}, testLogger())
+	if env == nil {
+		t.Fatal("Reuse returned nil")
+	}
+
+	sharedMem := filepath.Join(workspacesRoot, "ws-mem-002", "memory")
+	if _, err := os.Stat(sharedMem); err != nil {
+		t.Fatalf("shared memory dir missing after Reuse: %v", err)
+	}
+
+	link := filepath.Join(workDir, "memory")
+	fi, err := os.Lstat(link)
+	if err != nil {
+		t.Fatalf("memory symlink missing after Reuse: %v", err)
+	}
+	if fi.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("expected %s to be a symlink", link)
+	}
+	target, _ := os.Readlink(link)
+	if target != sharedMem {
+		t.Errorf("symlink target = %q, want %q", target, sharedMem)
+	}
+}
+
+func TestWorkspaceMemorySharedAcrossTasks(t *testing.T) {
+	t.Parallel()
+	workspacesRoot := t.TempDir()
+
+	mkEnv := func(taskID string) *Environment {
+		env, err := Prepare(PrepareParams{
+			WorkspacesRoot: workspacesRoot,
+			WorkspaceID:    "ws-mem-shared",
+			TaskID:         taskID,
+			AgentName:      "Shared Memory Test",
+			Task:           TaskContextForEnv{IssueID: "i"},
+		}, testLogger())
+		if err != nil {
+			t.Fatalf("Prepare failed: %v", err)
+		}
+		return env
+	}
+
+	envA := mkEnv("aaaaaaaa-1111-2222-3333-444444444444")
+	defer envA.Cleanup(true)
+	envB := mkEnv("bbbbbbbb-1111-2222-3333-444444444444")
+	defer envB.Cleanup(true)
+
+	if err := os.WriteFile(filepath.Join(envA.WorkDir, "memory", "MEMORY.md"), []byte("from A"), 0o644); err != nil {
+		t.Fatalf("write from task A: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(envB.WorkDir, "memory", "MEMORY.md"))
+	if err != nil {
+		t.Fatalf("read from task B: %v", err)
+	}
+	if string(data) != "from A" {
+		t.Errorf("task B saw %q, want %q (memory not shared across tasks)", data, "from A")
 	}
 }
 

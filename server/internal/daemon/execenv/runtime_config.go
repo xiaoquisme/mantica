@@ -82,6 +82,16 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 		b.WriteString("\nThe checkout command creates a git worktree with a dedicated branch. You can check out one or more repos as needed.\n\n")
 	}
 
+	b.WriteString("## Workspace Memory\n\n")
+	b.WriteString("This workspace has a shared memory directory at `./memory/` (relative to your working directory). ")
+	b.WriteString("It accumulates context — architectural decisions, prior bug fixes, conventions — across all agent sessions in this workspace, regardless of provider.\n\n")
+	b.WriteString("**Step 0 — before your first action, do this:**\n\n")
+	b.WriteString("1. Read `memory/MEMORY.md` (the index of available memory files).\n")
+	b.WriteString("2. Read each referenced `memory/*.md` file that is relevant to your current task type (e.g. architect, dev, review).\n")
+	b.WriteString("3. Apply the recalled context when planning your first action.\n\n")
+	b.WriteString("**If `memory/MEMORY.md` does not exist**, treat memory as empty and proceed normally — this is a valid state for new workspaces.\n\n")
+	b.WriteString("Memory is **read-only** during this read phase. Memory entries are markdown files with frontmatter (`name`, `description`, `type ∈ {user, feedback, project, reference}`); use `./memory/` as the canonical location for Multica workspace memory and ignore any provider-private memory directory.\n\n")
+
 	b.WriteString("### Workflow\n\n")
 
 	if ctx.ChatSessionID != "" {

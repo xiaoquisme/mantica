@@ -901,7 +901,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	// Try to reuse the workdir from a previous task on the same (agent, issue) pair.
 	var env *execenv.Environment
 	if task.PriorWorkDir != "" {
-		env = execenv.Reuse(task.PriorWorkDir, provider, taskCtx, d.logger)
+		env = execenv.Reuse(d.cfg.WorkspacesRoot, task.WorkspaceID, task.PriorWorkDir, provider, taskCtx, d.logger)
 	}
 	if env == nil {
 		var err error
