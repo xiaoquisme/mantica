@@ -26,46 +26,28 @@ func (q *Queries) AddIssueLabel(ctx context.Context, arg AddIssueLabelParams) er
 	return err
 }
 
-const getLabelsByIssueIDs = `-- name: GetLabelsByIssueIDs :many
-SELECT itl.issue_id, il.id, il.workspace_id, il.name, il.color
-FROM issue_label il
-JOIN issue_to_label itl ON itl.label_id = il.id
-WHERE itl.issue_id = ANY($1::uuid[])
-ORDER BY il.name ASC
+const createLabel = `-- name: CreateLabel :one
+INSERT INTO issue_label (workspace_id, name, color)
+VALUES ($1, $2, $3)
+RETURNING id, workspace_id, name, color
 `
 
-type GetLabelsByIssueIDsRow struct {
-	IssueID     pgtype.UUID `json:"issue_id"`
-	ID          pgtype.UUID `json:"id"`
+type CreateLabelParams struct {
 	WorkspaceID pgtype.UUID `json:"workspace_id"`
 	Name        string      `json:"name"`
 	Color       string      `json:"color"`
 }
 
-func (q *Queries) GetLabelsByIssueIDs(ctx context.Context, issueIds []pgtype.UUID) ([]GetLabelsByIssueIDsRow, error) {
-	rows, err := q.db.Query(ctx, getLabelsByIssueIDs, issueIds)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []GetLabelsByIssueIDsRow{}
-	for rows.Next() {
-		var i GetLabelsByIssueIDsRow
-		if err := rows.Scan(
-			&i.IssueID,
-			&i.ID,
-			&i.WorkspaceID,
-			&i.Name,
-			&i.Color,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) CreateLabel(ctx context.Context, arg CreateLabelParams) (IssueLabel, error) {
+	row := q.db.QueryRow(ctx, createLabel, arg.WorkspaceID, arg.Name, arg.Color)
+	var i IssueLabel
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.Color,
+	)
+	return i, err
 }
 
 const deleteIssueLabels = `-- name: DeleteIssueLabels :exec
@@ -75,6 +57,24 @@ DELETE FROM issue_to_label WHERE issue_id = $1
 func (q *Queries) DeleteIssueLabels(ctx context.Context, issueID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteIssueLabels, issueID)
 	return err
+}
+
+const deleteLabel = `-- name: DeleteLabel :execrows
+DELETE FROM issue_label
+WHERE id = $1 AND workspace_id = $2
+`
+
+type DeleteLabelParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) DeleteLabel(ctx context.Context, arg DeleteLabelParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteLabel, arg.ID, arg.WorkspaceID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getIssueLabels = `-- name: GetIssueLabels :many
@@ -95,6 +95,48 @@ func (q *Queries) GetIssueLabels(ctx context.Context, issueID pgtype.UUID) ([]Is
 	for rows.Next() {
 		var i IssueLabel
 		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.Color,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLabelsByIssueIDs = `-- name: GetLabelsByIssueIDs :many
+SELECT itl.issue_id, il.id, il.workspace_id, il.name, il.color
+FROM issue_label il
+JOIN issue_to_label itl ON itl.label_id = il.id
+WHERE itl.issue_id = ANY($1::uuid[])
+ORDER BY il.name ASC
+`
+
+type GetLabelsByIssueIDsRow struct {
+	IssueID     pgtype.UUID `json:"issue_id"`
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Name        string      `json:"name"`
+	Color       string      `json:"color"`
+}
+
+func (q *Queries) GetLabelsByIssueIDs(ctx context.Context, dollar_1 []pgtype.UUID) ([]GetLabelsByIssueIDsRow, error) {
+	rows, err := q.db.Query(ctx, getLabelsByIssueIDs, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetLabelsByIssueIDsRow{}
+	for rows.Next() {
+		var i GetLabelsByIssueIDsRow
+		if err := rows.Scan(
+			&i.IssueID,
 			&i.ID,
 			&i.WorkspaceID,
 			&i.Name,
@@ -140,43 +182,4 @@ func (q *Queries) GetWorkspaceLabels(ctx context.Context, workspaceID pgtype.UUI
 		return nil, err
 	}
 	return items, nil
-}
-
-const createLabel = `-- name: CreateLabel :one
-INSERT INTO issue_label (workspace_id, name, color)
-VALUES ($1, $2, $3)
-RETURNING id, workspace_id, name, color
-`
-
-type CreateLabelParams struct {
-	WorkspaceID pgtype.UUID `json:"workspace_id"`
-	Name        string      `json:"name"`
-	Color       string      `json:"color"`
-}
-
-func (q *Queries) CreateLabel(ctx context.Context, arg CreateLabelParams) (IssueLabel, error) {
-	row := q.db.QueryRow(ctx, createLabel, arg.WorkspaceID, arg.Name, arg.Color)
-	var i IssueLabel
-	err := row.Scan(
-		&i.ID,
-		&i.WorkspaceID,
-		&i.Name,
-		&i.Color,
-	)
-	return i, err
-}
-
-const deleteLabel = `-- name: DeleteLabel :execrows
-DELETE FROM issue_label
-WHERE id = $1 AND workspace_id = $2
-`
-
-type DeleteLabelParams struct {
-	ID          pgtype.UUID `json:"id"`
-	WorkspaceID pgtype.UUID `json:"workspace_id"`
-}
-
-func (q *Queries) DeleteLabel(ctx context.Context, arg DeleteLabelParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteLabel, arg.ID, arg.WorkspaceID)
-	return result.RowsAffected(), err
 }

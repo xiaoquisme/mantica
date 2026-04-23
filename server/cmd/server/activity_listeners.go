@@ -220,6 +220,11 @@ func registerActivityListeners(bus *events.Bus, queries *db.Queries) {
 	bus.Subscribe(protocol.EventTaskFailed, func(e events.Event) {
 		handleTaskActivity(ctx, bus, queries, e, "task_failed")
 	})
+
+	// task:queued — record "task_queued" activity
+	bus.Subscribe(protocol.EventTaskQueued, func(e events.Event) {
+		handleTaskActivity(ctx, bus, queries, e, "task_queued")
+	})
 }
 
 // handleTaskActivity records an activity for task:completed or task:failed events.

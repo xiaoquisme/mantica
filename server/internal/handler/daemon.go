@@ -147,6 +147,18 @@ func (h *Handler) DaemonRegister(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Requeue orphaned tasks when daemon reconnects.
+	for _, runtimeID := range runtimesByProvider {
+		count, err := h.TaskService.RequeueOrphanedTasks(r.Context(), runtimeID)
+		if err != nil {
+			slog.Warn("daemon register: failed to requeue orphaned tasks", "runtime_id", runtimeID, "error", err)
+			continue
+		}
+		if count > 0 {
+			slog.Info("daemon register: requeued orphaned tasks", "runtime_id", runtimeID, "count", count)
+		}
+	}
+
 	h.publish(protocol.EventDaemonRegister, req.WorkspaceID, "system", "", map[string]any{
 		"runtimes": resp,
 	})

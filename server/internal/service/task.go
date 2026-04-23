@@ -71,6 +71,24 @@ func (s *TaskService) EnqueueTaskForIssue(ctx context.Context, issue db.Issue, t
 	}
 
 	slog.Info("task enqueued", "task_id", util.UUIDToString(task.ID), "issue_id", util.UUIDToString(issue.ID), "agent_id", util.UUIDToString(issue.AssigneeID))
+
+	// Publish task:queued event for activity tracking
+	workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+	if workspaceID != "" {
+		s.Bus.Publish(events.Event{
+			Type:        protocol.EventTaskQueued,
+			WorkspaceID: workspaceID,
+			ActorType:   "system",
+			ActorID:     "",
+			Payload: map[string]any{
+				"task_id":  util.UUIDToString(task.ID),
+				"agent_id": util.UUIDToString(issue.AssigneeID),
+				"issue_id": util.UUIDToString(issue.ID),
+				"status":   task.Status,
+			},
+		})
+	}
+
 	return task, nil
 }
 
@@ -105,6 +123,24 @@ func (s *TaskService) EnqueueTaskForMention(ctx context.Context, issue db.Issue,
 	}
 
 	slog.Info("mention task enqueued", "task_id", util.UUIDToString(task.ID), "issue_id", util.UUIDToString(issue.ID), "agent_id", util.UUIDToString(agentID))
+
+	// Publish task:queued event for activity tracking
+	workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+	if workspaceID != "" {
+		s.Bus.Publish(events.Event{
+			Type:        protocol.EventTaskQueued,
+			WorkspaceID: workspaceID,
+			ActorType:   "system",
+			ActorID:     "",
+			Payload: map[string]any{
+				"task_id":  util.UUIDToString(task.ID),
+				"agent_id": util.UUIDToString(agentID),
+				"issue_id": util.UUIDToString(issue.ID),
+				"status":   task.Status,
+			},
+		})
+	}
+
 	return task, nil
 }
 
@@ -373,6 +409,59 @@ func (s *TaskService) ReportProgress(ctx context.Context, taskID string, workspa
 			Total:   total,
 		},
 	})
+}
+
+// RequeueOrphanedTasks requeues tasks that were stuck in dispatched/running or
+// marked as failed by the sweeper when a runtime went offline. Called when a daemon
+// reconnects to recover in-progress work.
+func (s *TaskService) RequeueOrphanedTasks(ctx context.Context, runtimeID pgtype.UUID) (int, error) {
+	// Requeue tasks stuck in dispatched/running
+	orphanedTasks, err := s.Queries.RequeueOrphanedTasksByRuntime(ctx, runtimeID)
+	if err != nil {
+		return 0, fmt.Errorf("requeue orphaned tasks: %w", err)
+	}
+
+	// Requeue tasks failed by sweeper with "runtime went offline"
+	sweeperFailedTasks, err := s.Queries.RequeueSweeperFailedTasksByRuntime(ctx, runtimeID)
+	if err != nil {
+		return 0, fmt.Errorf("requeue sweeper-failed tasks: %w", err)
+	}
+
+	allRequeued := append(orphanedTasks, sweeperFailedTasks...)
+
+	for _, task := range allRequeued {
+		slog.Info("task requeued after runtime reconnect",
+			"task_id", util.UUIDToString(task.ID),
+			"runtime_id", util.UUIDToString(task.RuntimeID),
+			"issue_id", util.UUIDToString(task.IssueID),
+			"agent_id", util.UUIDToString(task.AgentID),
+		)
+
+		// Reconcile agent status
+		s.ReconcileAgentStatus(ctx, task.AgentID)
+
+		// Delete old task messages from previous failed attempt
+		s.Queries.DeleteTaskMessages(ctx, task.ID)
+
+		// Publish task:queued event
+		workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+		if workspaceID != "" {
+			s.Bus.Publish(events.Event{
+				Type:        protocol.EventTaskQueued,
+				WorkspaceID: workspaceID,
+				ActorType:   "system",
+				ActorID:     "",
+				Payload: map[string]any{
+					"task_id":  util.UUIDToString(task.ID),
+					"agent_id": util.UUIDToString(task.AgentID),
+					"issue_id": util.UUIDToString(task.IssueID),
+					"status":   task.Status,
+				},
+			})
+		}
+	}
+
+	return len(allRequeued), nil
 }
 
 // ReconcileAgentStatus checks running task count and sets agent status accordingly.

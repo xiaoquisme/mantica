@@ -344,3 +344,41 @@ func TestActivityTaskFailed(t *testing.T) {
 		t.Fatalf("expected action 'task_failed', got %q", activities[0].Action)
 	}
 }
+
+func TestActivityTaskQueued(t *testing.T) {
+	queries := db.New(testPool)
+	bus := events.New()
+	registerActivityListeners(bus, queries)
+
+	issueID := createTestIssue(t, testWorkspaceID, testUserID)
+	t.Cleanup(func() {
+		cleanupActivities(t, issueID)
+		cleanupTestIssue(t, issueID)
+	})
+
+	agentID := testUserID // reuse as a stand-in for agent ID
+
+	bus.Publish(events.Event{
+		Type:        protocol.EventTaskQueued,
+		WorkspaceID: testWorkspaceID,
+		ActorType:   "system",
+		ActorID:     "",
+		Payload: map[string]any{
+			"task_id":  "00000000-0000-0000-0000-000000000003",
+			"agent_id": agentID,
+			"issue_id": issueID,
+			"status":   "queued",
+		},
+	})
+
+	activities := listActivitiesForIssue(t, queries, issueID)
+	if len(activities) != 1 {
+		t.Fatalf("expected 1 activity, got %d", len(activities))
+	}
+	if activities[0].Action != "task_queued" {
+		t.Fatalf("expected action 'task_queued', got %q", activities[0].Action)
+	}
+	if util.UUIDToString(activities[0].ActorID) != agentID {
+		t.Fatalf("expected actor_id %s, got %s", agentID, util.UUIDToString(activities[0].ActorID))
+	}
+}
