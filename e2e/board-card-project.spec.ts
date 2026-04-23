@@ -6,19 +6,53 @@
  *   AC2: Project picker opens from menu
  *   AC3: Change project successfully
  *   AC4: Remove from project
- *   AC5: Feedback on update (toast)
+ *   AC5: Feedback on update (toast / badge change reflected on the card)
+ *
+ * Locator notes:
+ * - The breadcrumb on /issues renders the literal text "Issues" (no
+ *   "All Issues" string exists in the page); `loginAsDefault` already waits
+ *   on the URL, so we anchor the page-loaded gate on a stable element near
+ *   the board (an issue card or the empty-state).
+ * - The dropdown menu items expose `data-slot="dropdown-menu-item"` /
+ *   `data-slot="dropdown-menu-sub-trigger"` (see packages/ui/components/ui/
+ *   dropdown-menu.tsx) — using these avoids matching unrelated "Project"
+ *   text elsewhere on the page (sidebar nav, badges, etc.).
  */
 
 import { test, expect } from "./fixtures";
 import type { TestApiClient } from "./fixtures";
+import type { Locator, Page } from "@playwright/test";
 import { loginAsDefault, createTestApi } from "./helpers";
+
+function boardCardFor(page: Page, title: string): Locator {
+  // The card root is the AppLink with class "group" wrapping BoardCardContent.
+  return page.locator(".group").filter({ hasText: title }).first();
+}
+
+async function openCardQuickActions(card: Locator) {
+  await card.scrollIntoViewIfNeeded();
+  await card.hover();
+  // The MoreHorizontal trigger renders a lucide ellipsis SVG. Filtering by
+  // that SVG distinguishes it from the priority/assignee/due-date pickers
+  // that live in the same card.
+  const trigger = card.locator("button", { has: card.page().locator("svg.lucide-ellipsis") });
+  await trigger.first().click();
+}
+
+function menuItem(page: Page, label: string): Locator {
+  // Match a real menu item by label, ignoring incidental "Project" text on
+  // the page (e.g. sidebar nav, project badges).
+  return page
+    .locator('[data-slot="dropdown-menu-item"], [data-slot="dropdown-menu-sub-trigger"]')
+    .filter({ hasText: label });
+}
 
 test.describe("Board Card — Change Project via Quick Actions (TES-64)", () => {
   let api: TestApiClient;
 
   test.beforeEach(async ({ page }) => {
     api = await createTestApi();
-    await loginAsDefault(page);
+    await loginAsDefault(page, api);
   });
 
   test.afterEach(async () => {
@@ -26,101 +60,89 @@ test.describe("Board Card — Change Project via Quick Actions (TES-64)", () => 
   });
 
   test("project option visible in quick actions menu (AC1 + AC2)", async ({ page }) => {
-    // Create an issue so there is a card on the board
     const issue = await api.createIssue("Quick Actions Project Test " + Date.now());
 
     await page.reload();
-    await expect(page.locator("text=All Issues")).toBeVisible();
 
-    // Hover the board card to reveal the quick actions (…) button
-    const card = page.locator(`text=${issue.title}`).first();
+    const card = boardCardFor(page, issue.title);
     await expect(card).toBeVisible({ timeout: 10000 });
-    await card.hover();
 
-    // The MoreHorizontal (…) button should appear
-    const moreBtn = page.locator("button").filter({ has: page.locator("svg") }).filter({ hasText: "" }).first();
-    // Use the aria button near the card
-    const cardContainer = card.locator("..").locator("..");
-    await cardContainer.hover();
+    await openCardQuickActions(card);
 
-    // Click the context menu trigger (MoreHorizontal icon inside the card)
-    const menuTrigger = page.locator('[data-testid="dropdown-trigger"]').first();
+    // AC1: "Project" sub-trigger is present in the menu.
+    const projectTrigger = menuItem(page, "Project").first();
+    await expect(projectTrigger).toBeVisible({ timeout: 5000 });
 
-    // Fallback: look for the button that shows on hover via opacity transition
-    // The button has opacity-0 group-hover:opacity-100 — hover the card group
-    const boardCard = page.locator(".group").filter({ hasText: issue.title }).first();
-    await boardCard.hover();
-    await page.waitForTimeout(200);
-
-    // Click the ... button (MoreHorizontal)
-    const contextBtn = boardCard.locator("button").last();
-    await contextBtn.click();
-
-    // The dropdown should appear with a "Project" option containing FolderKanban icon
-    await expect(page.locator("text=Project").last()).toBeVisible({ timeout: 5000 });
+    // AC2: hovering the sub-trigger opens the submenu and we did not navigate
+    // off the issues page.
+    await projectTrigger.hover();
+    await expect(page).toHaveURL(/\/issues(?!\/)/);
   });
 
   test("can change issue project from quick actions menu (AC3 + AC5)", async ({ page }) => {
-    // Create a project and an issue
     const project = await api.createProject("E2E Project " + Date.now());
     const issue = await api.createIssue("Issue For Project Change " + Date.now());
 
     await page.reload();
-    await expect(page.locator("text=All Issues")).toBeVisible();
 
-    // Find the board card
-    const boardCard = page.locator(".group").filter({ hasText: issue.title }).first();
-    await expect(boardCard).toBeVisible({ timeout: 10000 });
-    await boardCard.hover();
-    await page.waitForTimeout(200);
+    const card = boardCardFor(page, issue.title);
+    await expect(card).toBeVisible({ timeout: 10000 });
 
-    // Open the quick actions menu
-    const contextBtn = boardCard.locator("button").last();
-    await contextBtn.click();
+    await openCardQuickActions(card);
+    await menuItem(page, "Project").first().hover();
 
-    // Click "Project" to open the submenu
-    await page.locator("text=Project").last().click();
+    // AC3: pick the project from the submenu.
+    const option = menuItem(page, project.title).first();
+    await expect(option).toBeVisible({ timeout: 5000 });
+    await option.click();
 
-    // The project picker submenu should appear with the project name
-    await expect(page.locator(`text=${project.title}`)).toBeVisible({ timeout: 5000 });
+    // AC5: the project badge appears on the card without a manual reload —
+    // confirms the optimistic update + cache invalidation completed.
+    await expect(boardCardFor(page, issue.title).getByText(project.title)).toBeVisible({
+      timeout: 5000,
+    });
+  });
 
-    // Select the project
-    await page.locator(`text=${project.title}`).click();
+  test("can remove issue from project via quick actions menu (AC4)", async ({ page }) => {
+    const project = await api.createProject("E2E Remove Project " + Date.now());
+    const issue = await api.createIssue("Issue Already In Project " + Date.now(), {
+      project_id: project.id,
+    });
 
-    // A success toast should appear
-    // (The toast may contain text like "updated" or simply be visible)
-    // Wait briefly for the mutation to complete
-    await page.waitForTimeout(500);
+    await page.reload();
 
-    // The project badge should now appear on the card
-    await expect(page.locator(".group").filter({ hasText: issue.title }).locator(`text=${project.title}`).first()).toBeVisible({ timeout: 5000 });
+    // Sanity: the badge is on the card to start with.
+    const card = boardCardFor(page, issue.title);
+    await expect(card).toBeVisible({ timeout: 10000 });
+    await expect(card.getByText(project.title)).toBeVisible();
+
+    await openCardQuickActions(card);
+    await menuItem(page, "Project").first().hover();
+
+    const removeItem = menuItem(page, "Remove from project").first();
+    await expect(removeItem).toBeVisible({ timeout: 5000 });
+    await removeItem.click();
+
+    // The project badge disappears from the card after the mutation settles.
+    await expect(boardCardFor(page, issue.title).getByText(project.title)).toHaveCount(0, {
+      timeout: 5000,
+    });
   });
 
   test("quick actions menu does not navigate away from board (AC2 edge case)", async ({ page }) => {
-    // Verify that clicking the quick actions button does NOT navigate away
     const issue = await api.createIssue("No Nav Test " + Date.now());
 
     await page.reload();
-    await expect(page.locator("text=All Issues")).toBeVisible();
 
-    const boardCard = page.locator(".group").filter({ hasText: issue.title }).first();
-    await expect(boardCard).toBeVisible({ timeout: 10000 });
-    await boardCard.hover();
-    await page.waitForTimeout(200);
+    const card = boardCardFor(page, issue.title);
+    await expect(card).toBeVisible({ timeout: 10000 });
 
-    const contextBtn = boardCard.locator("button").last();
-    await contextBtn.click();
+    await openCardQuickActions(card);
 
-    // Still on the issues page
-    await expect(page).toHaveURL(/\/issues/);
+    await expect(page).toHaveURL(/\/issues(?!\/)/);
+    await expect(menuItem(page, "Project").first()).toBeVisible();
 
-    // Dropdown should be open — verify Project option is shown
-    await expect(page.locator("text=Project").last()).toBeVisible();
-
-    // Press Escape to close
     await page.keyboard.press("Escape");
-
-    // Still on issues page
-    await expect(page).toHaveURL(/\/issues/);
+    await expect(page).toHaveURL(/\/issues(?!\/)/);
   });
 });
