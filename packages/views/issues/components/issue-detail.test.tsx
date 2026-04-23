@@ -256,11 +256,22 @@ vi.mock("sonner", () => ({
 }));
 
 // Mock react-resizable-panels (used by @multica/ui/components/ui/resizable)
+const mockDefaultLayout = vi.hoisted(() => ({
+  value: undefined as Record<string, number> | undefined,
+}));
 vi.mock("react-resizable-panels", () => ({
-  Group: ({ children, ...props }: any) => <div data-testid="panel-group" {...props}>{children}</div>,
+  Group: ({ children, defaultLayout, ...props }: any) => (
+    <div
+      data-testid="panel-group"
+      data-default-layout={defaultLayout === undefined ? "undefined" : JSON.stringify(defaultLayout)}
+      {...props}
+    >
+      {children}
+    </div>
+  ),
   Panel: ({ children, ...props }: any) => <div data-testid="panel" {...props}>{children}</div>,
   Separator: ({ children, ...props }: any) => <div data-testid="panel-handle" {...props}>{children}</div>,
-  useDefaultLayout: () => ({ defaultLayout: undefined, onLayoutChanged: vi.fn() }),
+  useDefaultLayout: () => ({ defaultLayout: mockDefaultLayout.value, onLayoutChanged: vi.fn() }),
   usePanelRef: () => ({ current: { isCollapsed: () => false, expand: vi.fn(), collapse: vi.fn() } }),
 }));
 
@@ -358,6 +369,7 @@ function renderIssueDetail(issueId = "issue-1", seedIssues?: Issue[]) {
 describe("IssueDetail (shared)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDefaultLayout.value = undefined;
     // Default: issue loads successfully
     mockApiObj.getIssue.mockResolvedValue(mockIssue);
     mockApiObj.listTimeline.mockResolvedValue(mockTimeline);
@@ -703,6 +715,39 @@ describe("IssueDetail (shared)", () => {
     // can see and interact with issue metadata.
     expect(screen.getByText("Properties")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // TES-71 — Sidebar must always be visible on entry; never restore a fully
+  // collapsed (sidebar=0) layout from localStorage.
+  // ---------------------------------------------------------------------------
+
+  it("drops persisted layout when sidebar was previously collapsed (size 0)", async () => {
+    mockDefaultLayout.value = { content: 1, sidebar: 0 };
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Implement authentication")).toBeInTheDocument();
+    });
+
+    // Group should receive an undefined defaultLayout so each panel falls back
+    // to its own defaultSize (sidebar = 320px, visible).
+    const group = screen.getByTestId("panel-group");
+    expect(group.getAttribute("data-default-layout")).toBe("undefined");
+  });
+
+  it("preserves persisted layout when sidebar has a non-zero width", async () => {
+    mockDefaultLayout.value = { content: 1, sidebar: 0.5 };
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Implement authentication")).toBeInTheDocument();
+    });
+
+    const group = screen.getByTestId("panel-group");
+    expect(group.getAttribute("data-default-layout")).toBe(
+      JSON.stringify({ content: 1, sidebar: 0.5 }),
+    );
   });
 
   // ---------------------------------------------------------------------------

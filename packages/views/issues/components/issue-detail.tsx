@@ -208,19 +208,21 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
   const nextIssue = currentIndex < allIssues.length - 1 ? allIssues[currentIndex + 1] : null;
   const { getActorName } = useActorName();
   const { uploadWithToast } = useFileUpload(api);
-  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+  const { defaultLayout: rawDefaultLayout, onLayoutChanged } = useDefaultLayout({
     id: layoutId,
   });
+  // Never restore a fully-collapsed sidebar: the right-side action buttons must
+  // be visible on every visit so users can manage issue properties. If the
+  // previous session left the sidebar collapsed we drop the persisted layout
+  // and fall back to the panel's `defaultSize` (sidebar visible). The toggle
+  // button still works mid-session for users who want to hide it.
+  const defaultLayout =
+    rawDefaultLayout !== undefined &&
+    (rawDefaultLayout as Record<string, number>)["sidebar"] === 0
+      ? undefined
+      : rawDefaultLayout;
   const sidebarRef = usePanelRef();
-  // Derive initial open state from persisted layout so the toggle button
-  // reflects reality when the user returns to a previously collapsed sidebar.
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (defaultLayout !== undefined) {
-      const storedSize = (defaultLayout as Record<string, number>)["sidebar"];
-      return storedSize !== 0;
-    }
-    return defaultSidebarOpen;
-  });
+  const [sidebarOpen, setSidebarOpen] = useState(defaultSidebarOpen);
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertiesOpen, setPropertiesOpen] = useState(true);
