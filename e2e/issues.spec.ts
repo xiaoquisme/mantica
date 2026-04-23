@@ -71,6 +71,35 @@ test.describe("Issues", () => {
     ).toBeVisible();
   });
 
+  // TES-71: when a previous session collapsed the sidebar, the persisted
+  // {sidebar: 0} layout used to make the right-side action buttons disappear
+  // on every subsequent visit. The page must always render the sidebar so
+  // users can manage issue properties.
+  test("issue detail sidebar stays visible even when previously collapsed", async ({
+    page,
+  }) => {
+    const issue = await api.createIssue("E2E Sidebar TES-71 " + Date.now());
+
+    // Pre-seed the persisted resizable layout with a fully collapsed sidebar,
+    // mimicking the user state from the bug report. The /issues page is
+    // already loaded by loginAsDefault, so we set localStorage in-place.
+    await page.evaluate(() => {
+      localStorage.setItem(
+        "react-resizable-panels:multica_issue_detail_layout",
+        JSON.stringify({ content: 1, sidebar: 0 }),
+      );
+    });
+
+    await page.goto(`/issues/${issue.id}`);
+    await page.waitForURL(/\/issues\/[\w-]+/);
+
+    // Sidebar Properties section + action rows must be visible despite the
+    // persisted collapsed-sidebar layout.
+    await expect(page.locator("text=Properties")).toBeVisible();
+    await expect(page.locator("text=Status")).toBeVisible();
+    await expect(page.locator("text=Assignee")).toBeVisible();
+  });
+
   test("can cancel issue creation", async ({ page }) => {
     await page.click("text=New Issue");
 
