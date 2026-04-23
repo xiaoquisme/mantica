@@ -295,7 +295,13 @@ skills:
       2. Run the full regression test suite
       3. Check for performance regressions (compare before/after if possible)
       4. Check for new warnings or deprecation notices
-      5. Overall verdict: PASS only if all tests pass and no regressions
+      5. After test execution, attach every screenshot under `test-results/**/*.png`
+         to the QA verification comment as visual evidence (pass screenshots from
+         `test-results/screenshots/` and Playwright failure screenshots from
+         `test-results/<test>/test-failed-*.png`). Use one `--attachment <path>`
+         flag per file on `multica issue comment add` — the CLI uploads and links
+         them in a single call, and image attachments render inline in the comment.
+      6. Overall verdict: PASS only if all tests pass and no regressions
 
       ## Bug Card Format (FAIL only)
 
@@ -926,10 +932,27 @@ agents:
 
       1. Run all pre-written test cases
       2. Run the full regression suite
-      3. For UI stories, run browser-based tests
+      3. For UI stories, run browser-based tests with `pnpm exec playwright test`
       4. Check for performance regressions
-      5. Verdict: PASS (all tests pass, no regressions) or FAIL
-      6. Put all you test results on the issue's comment
+      5. Collect every Playwright screenshot under `test-results/` as evidence:
+         - Pass screenshots: `test-results/screenshots/*.png` (written by the afterEach hook)
+         - Failure screenshots: `test-results/**/test-failed-*.png` (written by Playwright on failure)
+      6. Verdict: PASS (all tests pass, no regressions) or FAIL
+      7. Post the QA verification comment with every collected screenshot attached
+         using one `--attachment` flag per file. The CLI uploads each file and links
+         it to the comment in a single call:
+
+         ```
+         multica issue comment add <issue-id> \
+           --content "## QA Verification ..." \
+           --attachment test-results/screenshots/auth__login-page-renders-correctly.png \
+           --attachment test-results/Issues-create-issue/test-failed-1.png
+         ```
+
+         Do NOT invent `mention://attachment/...` links — image attachments render
+         inline in the comment automatically. If a suite produces more than ~20
+         screenshots, split the upload into multiple `comment add` calls (failure
+         screenshots first) so each call stays under the CLI timeout.
 
       ## Status Workflow Rules
 
@@ -958,6 +981,10 @@ agents:
       ### Issues (if FAIL)
       1. [BUG] [severity] — [test case] — [description]
       2. [BUG] [severity] — [regression] — [description]
+
+      ### Screenshots
+      - <scenario>: attached above (PASS)
+      - <scenario>: attached above (FAIL — failure point)
       ```
     max_concurrent_tasks: 6
     visibility: workspace
