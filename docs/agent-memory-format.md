@@ -1,0 +1,306 @@
+# Agent Memory File Format
+
+This document specifies the on-disk format used by Multica agents to persist
+context across sessions. Any agent that reads or writes workspace memory must
+conform to this spec; any human admin reviewing or editing memory should be
+able to do so with a plain text editor.
+
+The runtime tooling that consumes this format is delivered separately:
+
+- Reading memory at session start — TES-169
+- Writing memory after task completion — TES-170
+
+If the spec and the runtime ever disagree, treat it as a spec defect and fix
+this document. Do not let the two conventions drift.
+
+---
+
+## 1. Overview
+
+A workspace's memory layer is a small, append-friendly directory of markdown
+files. Each file holds one *memory entry* — a single fact, lesson, or pointer
+that future agents in the workspace should know about. A single index file
+(`MEMORY.md`) lists every entry and is loaded into the agent's context at the
+start of each session so the agent can decide what is relevant.
+
+Design constraints:
+
+- **Human-readable.** Admins inspect and edit memory directly. No binary
+  formats, no opaque blobs.
+- **Machine-parseable.** YAML frontmatter (parseable by the existing
+  `gopkg.in/yaml.v3` dependency) carries the structured fields; the body is
+  free-form markdown.
+- **Cheap to load.** The index is small enough to drop into every prompt; full
+  entry bodies are only read when the agent decides they are relevant.
+- **Topic-organised, not time-organised.** Entries are named by what they
+  describe, not when they were written, so the writer can detect duplicates
+  before creating a second file on the same subject.
+
+---
+
+## 2. Directory Layout
+
+Memory lives at the workspace working-directory root in a directory called
+`memory/`:
+
+```
+<workdir>/
+└── memory/
+    ├── MEMORY.md            # index — always loaded
+    ├── user_role.md         # one memory entry per file
+    ├── feedback_testing.md
+    ├── project_q2_freeze.md
+    └── reference_grafana.md
+```
+
+Rules:
+
+- The directory is always `memory/` and always at the workdir root.
+- `MEMORY.md` lives **inside** `memory/`, not at the workdir root.
+- Every `.md` file in `memory/` other than `MEMORY.md` is a memory entry and
+  must conform to the schema in §3.
+- Subdirectories under `memory/` are not used in this phase. Keep the layout
+  flat.
+
+---
+
+## 3. Memory File Format
+
+A memory entry is a UTF-8 markdown file with YAML frontmatter delimited by
+`---` lines. The frontmatter must be the very first content in the file.
+
+### 3.1 Frontmatter schema
+
+| Field         | Required | Type   | Constraint                                                                          |
+|---------------|----------|--------|-------------------------------------------------------------------------------------|
+| `name`        | yes      | string | Short title. ≤ 60 chars. Human-friendly, not the filename.                          |
+| `description` | yes      | string | One-line relevance hook. ≤ 150 chars. **Reused verbatim** in `MEMORY.md` (see §6).  |
+| `type`        | yes      | enum   | One of `user`, `feedback`, `project`, `reference`. Closed enum — see §4.            |
+
+No other fields are defined in this phase. Writers must not invent new keys;
+readers must ignore unknown keys (and may warn).
+
+### 3.2 Body
+
+Everything after the closing `---` is the entry body. It is markdown. The
+required body shape depends on `type` — see §5.
+
+### 3.3 Parse failures
+
+Readers must skip and warn on any file in `memory/` that fails to parse. A
+single malformed entry must never abort loading the rest of the index.
+
+---
+
+## 4. Memory Types
+
+The `type` field is a closed enum. Adding a new value requires revising this
+spec; agents must not invent ad-hoc types.
+
+| Type        | Purpose                                                                                                  | Decay      |
+|-------------|----------------------------------------------------------------------------------------------------------|------------|
+| `user`      | Facts about the human (role, expertise, preferences) that tailor agent behaviour to *them specifically*. | Slow       |
+| `feedback`  | Corrections or validated approaches the user has confirmed. Save both *don'ts* and *do-keep-doings*.     | Medium     |
+| `project`   | Non-derivable workspace facts: deadlines, in-flight initiatives, stakeholder asks.                       | Fast       |
+| `reference` | Pointers to external systems (Linear projects, dashboards, channels) and what they are for.              | Slow       |
+
+### 4.1 What NOT to save
+
+Do not create memory entries for any of the following — they are recoverable
+from the project itself or are too ephemeral to survive past the session:
+
+- Code patterns, architectural conventions, file paths, project structure —
+  read the current code instead.
+- Git history or who-changed-what — `git log` / `git blame` are authoritative.
+- Bug fixes or debugging recipes — the fix is in the code, the reason is in
+  the commit message.
+- Anything already documented in `CLAUDE.md` or other in-repo docs.
+- In-progress task state, current conversation context, ephemeral todos.
+
+These exclusions apply even when the user explicitly asks the agent to "save
+this" — if the request is really about ephemeral state, the agent should
+clarify what was *surprising* or *non-obvious* and save only that.
+
+---
+
+## 5. Body Structure by Type
+
+`feedback` and `project` entries decay or need judgement at the edge cases.
+For both, the body **must** start with the rule or fact, then include two
+labelled lines:
+
+- `**Why:**` — the reason the user gave (often an incident, a stated
+  preference, a deadline). This is what lets a future agent judge edge cases
+  instead of blindly following the rule.
+- `**How to apply:**` — when this guidance kicks in (which files, which kinds
+  of task, which decisions).
+
+`user` and `reference` entries are free-form prose. A short paragraph is
+typical; multiple paragraphs are allowed when needed.
+
+---
+
+## 6. MEMORY.md Index Format
+
+`MEMORY.md` is a flat list of one-line pointers to every entry in the
+directory. It is **not** a memory entry and must not have frontmatter.
+
+### 6.1 Line format
+
+Each entry is exactly one line in the following form:
+
+```
+- [<name>](<file>.md) — <description>
+```
+
+- `<name>` is the entry's frontmatter `name`.
+- `<file>.md` is the entry's filename, relative to `memory/`.
+- `<description>` is the entry's frontmatter `description`, **copied
+  verbatim**. Writers must not author a separate index hook — the
+  frontmatter `description` is the source of truth so admins can scan the
+  index and trust it matches the file.
+- The em-dash separator is `—` (U+2014), surrounded by single spaces.
+
+### 6.2 Ordering
+
+Group entries by type in this order: `user`, `feedback`, `project`,
+`reference`. Within a group, order is not significant; alphabetical by name
+is fine. Optional `## <Type>` subheadings are permitted for readability but
+not required.
+
+### 6.3 200-line limit
+
+`MEMORY.md` is hard-capped at 200 lines (including any blank lines and
+optional subheadings). Lines past 200 are silently truncated by the reader,
+so any entry in the tail becomes invisible.
+
+When the index would exceed 200 lines, the writer must consolidate or remove
+stale entries before adding a new one. TES-170 is responsible for enforcing
+this at write time.
+
+---
+
+## 7. Naming Conventions
+
+Entry filenames use semantic snake_case with a `.md` extension and should
+indicate the topic, not the date:
+
+- `user_role.md`
+- `feedback_testing.md`
+- `project_q2_freeze.md`
+- `reference_grafana_latency.md`
+
+Two rules follow from this:
+
+1. **Topic before type when natural.** `feedback_testing.md` is preferred
+   over `testing_feedback.md` only when grouping by type aids discovery; the
+   important property is that two entries on the same topic collide on
+   filename rather than silently coexisting.
+2. **Check before writing.** A writer adding a new entry must first look for
+   an existing file whose name matches the topic. If one exists, update it
+   instead of creating a parallel file. TES-170 implements the check.
+
+Date-based names (`2026-04-23-foo.md`) are not used.
+
+---
+
+## 8. Examples
+
+The following four entries and one index file are valid and copy-paste
+runnable against the schema above.
+
+### 8.1 `memory/user_role.md`
+
+```markdown
+---
+name: User role and stack background
+description: User is a senior Go engineer; new to the React side of this repo
+type: user
+---
+
+The user has been writing Go for ten years and leads the backend team. They
+are comfortable reading Go code at any depth and prefer terse explanations
+when the topic is in their domain.
+
+This is their first time contributing to the frontend in `apps/web/` and
+`packages/views/`. When explaining frontend concepts, prefer analogies to
+backend patterns (e.g. "the Query cache is the read model; mutations are
+commands") and call out React-specific footguns explicitly.
+```
+
+### 8.2 `memory/feedback_testing.md`
+
+```markdown
+---
+name: Integration tests must hit a real database
+description: Do not mock the database in integration tests — use a real one
+type: feedback
+---
+
+Integration tests in `server/` must run against a real Postgres instance, not
+against a mocked or in-memory replacement.
+
+**Why:** Last quarter a mocked test suite passed cleanly while the production
+migration failed because the mocks did not exercise real constraint
+behaviour. The user explicitly called this out as a recurring concern.
+
+**How to apply:** Whenever adding or modifying a test under `server/` that
+exercises a query, repository, or migration, wire it through the existing
+test-database fixture. Do not introduce `sqlmock` or hand-rolled stubs for
+DB calls in integration tests. Pure unit tests of non-DB logic are still
+fine to mock.
+```
+
+### 8.3 `memory/project_q2_freeze.md`
+
+```markdown
+---
+name: Q2 mobile release freeze
+description: Merge freeze for non-critical PRs starts 2026-05-07 (mobile cut)
+type: project
+---
+
+A merge freeze for all non-critical changes begins on 2026-05-07 so the
+mobile team can cut a release branch from a stable main.
+
+**Why:** Mobile cannot rebuild on shifting infrastructure during their
+release week; the user committed to the mobile lead that main would be
+quiet from 2026-05-07 through 2026-05-14.
+
+**How to apply:** Between 2026-05-07 and 2026-05-14, flag any non-critical
+PR work — refactors, dependency bumps, doc-only changes — and ask whether
+it can wait. Hotfixes and revert-of-broken-main changes are still allowed.
+```
+
+### 8.4 `memory/reference_grafana_latency.md`
+
+```markdown
+---
+name: Oncall API latency dashboard
+description: grafana.internal/d/api-latency — oncall watches this for request-path regressions
+type: reference
+---
+
+The Grafana board at `grafana.internal/d/api-latency` is the dashboard that
+oncall watches for request-handling latency. It is the most likely thing to
+page someone when request-path code changes.
+
+Check it before and after any change under `server/internal/handler/` or
+`server/internal/middleware/` that could affect request latency.
+```
+
+### 8.5 `memory/MEMORY.md`
+
+```markdown
+## user
+- [User role and stack background](user_role.md) — User is a senior Go engineer; new to the React side of this repo
+
+## feedback
+- [Integration tests must hit a real database](feedback_testing.md) — Do not mock the database in integration tests — use a real one
+
+## project
+- [Q2 mobile release freeze](project_q2_freeze.md) — Merge freeze for non-critical PRs starts 2026-05-07 (mobile cut)
+
+## reference
+- [Oncall API latency dashboard](reference_grafana_latency.md) — grafana.internal/d/api-latency — oncall watches this for request-path regressions
+```
