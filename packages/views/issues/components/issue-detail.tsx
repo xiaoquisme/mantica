@@ -728,7 +728,11 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                 {parentChildIssues.length > 0 && (() => {
                   const done = parentChildIssues.filter((c) => c.status === "done").length;
                   return (
-                    <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 shrink-0">
+                    <span
+                      className="ml-1 inline-flex items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 shrink-0"
+                      aria-label={`${done} of ${parentChildIssues.length} sub-tasks complete`}
+                      title={`${done} of ${parentChildIssues.length} sub-tasks complete`}
+                    >
                       <ProgressRing done={done} total={parentChildIssues.length} size={11} />
                       <span className="tabular-nums text-[10.5px] font-medium">
                         {done}/{parentChildIssues.length}
@@ -815,12 +819,24 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                     />
                     <span>Sub-issues</span>
                   </button>
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2 py-0.5">
-                    <ProgressRing done={doneCount} total={childIssues.length} size={11} />
-                    <span className="text-[11px] text-muted-foreground tabular-nums font-medium">
-                      {doneCount}/{childIssues.length}
-                    </span>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <div
+                          className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2 py-0.5"
+                          aria-label={`${doneCount} of ${childIssues.length} sub-tasks complete`}
+                        >
+                          <ProgressRing done={doneCount} total={childIssues.length} size={11} />
+                          <span className="text-[11px] text-muted-foreground tabular-nums font-medium">
+                            {doneCount}/{childIssues.length}
+                          </span>
+                        </div>
+                      }
+                    />
+                    <TooltipContent side="bottom">
+                      {doneCount} of {childIssues.length} sub-tasks complete
+                    </TooltipContent>
+                  </Tooltip>
                   <Tooltip>
                     <TooltipTrigger
                       render={
