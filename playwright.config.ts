@@ -26,6 +26,12 @@ export default defineConfig({
   // so the second worker (or second file) would fail "No verification
   // code found".
   globalSetup: "./e2e/global-setup.ts",
+  // Run serially. All tests share one E2E workspace ("E2E Workspace"),
+  // and settings.spec.ts mutates its name — running in parallel produces
+  // race conditions where another worker reads/writes the workspace mid-
+  // rename. The suite is small (~60s serial), so the loss of parallelism
+  // is acceptable in exchange for stability against shared-state races.
+  workers: 1,
   // Failure screenshots land at test-results/<test>/test-failed-*.png; pass
   // screenshots are written by the afterEach hook in e2e/fixtures.ts.
   outputDir: "test-results",
