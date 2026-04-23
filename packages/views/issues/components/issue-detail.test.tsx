@@ -734,4 +734,91 @@ describe("IssueDetail (shared)", () => {
     expect(mockRouter.push).toHaveBeenCalledWith("/issues/TES-2");
     expect(mockRouter.push).not.toHaveBeenCalledWith(expect.stringContaining("issue-2"));
   });
+
+  // ---------------------------------------------------------------------------
+  // TES-173 — Parent issue shows status of all child sub-issues
+  // ---------------------------------------------------------------------------
+
+  function makeChild(overrides: Partial<Issue>): Issue {
+    return {
+      id: "child-id",
+      workspace_id: "ws-1",
+      number: 0,
+      identifier: "TES-X",
+      title: "Child",
+      description: null,
+      status: "in_dev",
+      priority: "none",
+      assignee_type: null,
+      assignee_id: null,
+      creator_type: "member",
+      creator_id: "user-1",
+      parent_issue_id: "issue-1",
+      project_id: null,
+      position: 0,
+      due_date: null,
+      created_at: "2026-01-15T00:00:00Z",
+      updated_at: "2026-01-15T00:00:00Z",
+      ...overrides,
+    };
+  }
+
+  it("shows summary count chip with accessible 'X of Y sub-tasks complete' label (TES-173 AC3)", async () => {
+    const children = [
+      makeChild({ id: "c1", identifier: "TES-10", title: "Child A", status: "done" }),
+      makeChild({ id: "c2", identifier: "TES-11", title: "Child B", status: "done" }),
+      makeChild({ id: "c3", identifier: "TES-12", title: "Child C", status: "done" }),
+      makeChild({ id: "c4", identifier: "TES-13", title: "Child D", status: "in_dev" }),
+    ];
+    mockApiObj.listChildIssues.mockResolvedValue({ issues: children });
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("Sub-issues")).toBeInTheDocument();
+    });
+
+    // Visual count "3/4"
+    expect(screen.getByText("3/4")).toBeInTheDocument();
+
+    // Accessible label naming the AC verbatim
+    expect(
+      screen.getByLabelText("3 of 4 sub-tasks complete"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders each child sub-issue as a clickable link to its identifier (TES-173 AC1, AC2)", async () => {
+    const children = [
+      makeChild({ id: "c1", identifier: "TES-10", title: "Child A", status: "done" }),
+      makeChild({ id: "c2", identifier: "TES-11", title: "Child B", status: "in_dev" }),
+    ];
+    mockApiObj.listChildIssues.mockResolvedValue({ issues: children });
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("Child A")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Child B")).toBeInTheDocument();
+
+    const linkA = screen.getByText("Child A").closest("a");
+    const linkB = screen.getByText("Child B").closest("a");
+    expect(linkA).toHaveAttribute("href", "/issues/TES-10");
+    expect(linkB).toHaveAttribute("href", "/issues/TES-11");
+  });
+
+  it("does not render Sub-issues header when there are no children", async () => {
+    mockApiObj.listChildIssues.mockResolvedValue({ issues: [] });
+
+    renderIssueDetail();
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Implement authentication")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Sub-issues")).not.toBeInTheDocument();
+    // The compact "Add sub-issues" affordance should still be there
+    expect(screen.getByText("Add sub-issues")).toBeInTheDocument();
+  });
 });
