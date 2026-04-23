@@ -822,6 +822,70 @@ func TestWorkspaceMemorySharedAcrossTasks(t *testing.T) {
 	}
 }
 
+func TestInjectRuntimeConfigContainsWriteMemorySection(t *testing.T) {
+	t.Parallel()
+
+	wantPhrases := []string{
+		"## Writing to Memory",
+		"./memory/",
+		"MEMORY.md",
+		"feedback",
+		"project",
+		"reference",
+		"What NOT to save",
+		"docs/agent-memory-format.md",
+	}
+
+	for _, provider := range []string{"claude", "codex", "opencode", "openclaw", "hermes"} {
+		provider := provider
+		t.Run(provider, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+
+			ctx := TaskContextForEnv{IssueID: "memory-section-test"}
+			if err := InjectRuntimeConfig(dir, provider, ctx); err != nil {
+				t.Fatalf("InjectRuntimeConfig failed: %v", err)
+			}
+
+			fileName := "AGENTS.md"
+			if provider == "claude" {
+				fileName = "CLAUDE.md"
+			}
+			content, err := os.ReadFile(filepath.Join(dir, fileName))
+			if err != nil {
+				t.Fatalf("failed to read %s: %v", fileName, err)
+			}
+			s := string(content)
+			for _, want := range wantPhrases {
+				if !strings.Contains(s, want) {
+					t.Errorf("%s missing %q", fileName, want)
+				}
+			}
+		})
+	}
+}
+
+func TestInjectRuntimeConfigCommentTriggerMentionsFeedbackMemory(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	ctx := TaskContextForEnv{
+		IssueID:          "comment-trigger-test",
+		TriggerCommentID: "comment-abc",
+	}
+	if err := InjectRuntimeConfig(dir, "claude", ctx); err != nil {
+		t.Fatalf("InjectRuntimeConfig failed: %v", err)
+	}
+	content, err := os.ReadFile(filepath.Join(dir, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("failed to read CLAUDE.md: %v", err)
+	}
+	s := string(content)
+	if !strings.Contains(s, "save it as a `feedback` memory") {
+		t.Error("comment-triggered config should nudge agent to save feedback memory")
+	}
+}
+
 func TestEnsureSymlinkRepairsBrokenLink(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
