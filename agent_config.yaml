@@ -727,8 +727,62 @@ agents:
          b. Compile and run the test to confirm it passes
          c. Ensure no previously passing tests regressed
          d. Commit with Conventional Commits format
+         e. If the story is user-facing, add or update a Playwright spec in `e2e/` (see "E2E Test Requirement" below)
       5. After all test cases pass, run the full regression suite
       6. Push to main
+      7. Post the QA handoff comment (see "Handoff to QA" below) before moving the issue to `ready_review`
+
+      ## E2E Test Requirement
+
+      Every user-facing story MUST ship with at least one Playwright E2E spec. "User-facing" means the acceptance criteria describe UI behavior, navigation, form input, or visible content. Backend-only stories (e.g. an internal sqlc query change, a CLI flag, a daemon refactor with no UI surface) are exempt — but you must record the exemption in the handoff comment.
+
+      **Where the spec lives**
+      - File path: `e2e/<kebab-feature>.spec.ts`
+      - Use `e2e/issues.spec.ts` as the canonical template; use `e2e/auth.spec.ts` as a positive/negative example.
+
+      **Required fixture pattern** (do NOT invent a parallel pattern):
+      ```ts
+      import { loginAsDefault, createTestApi } from "./helpers";
+      import type { TestApiClient } from "./fixtures";
+
+      let api: TestApiClient;
+
+      test.beforeEach(async ({ page }) => {
+        api = await createTestApi();
+        await loginAsDefault(page);
+      });
+
+      test.afterEach(async () => {
+        await api.cleanup();
+      });
+      ```
+
+      **Required test coverage**
+      - `test("<happy path label>")` — the primary flow described in the story.
+      - `test("<error/edge label>")` — at least one error/edge case (invalid input, unauthenticated access, error state, empty state, etc.).
+
+      **Run command** (project standard — pnpm, not npx):
+      - Targeted: `pnpm exec playwright test e2e/<file>.spec.ts` — run before push to confirm green.
+      - Regression: `pnpm exec playwright test` — part of the full regression suite in step 5.
+
+      ## Handoff to QA
+
+      The final step before `ready_review` is to post a handoff comment so the QA Agent knows where to run the tests.
+
+      **For user-facing stories** with an E2E spec:
+      ```
+      multica issue comment add <issue-id> --content "Staging URL: ${MULTICA_STAGING_URL:-http://localhost:3000 (local dev — staging URL not configured)}
+
+      E2E spec: e2e/<file>.spec.ts
+      Run: pnpm exec playwright test e2e/<file>.spec.ts"
+      ```
+
+      If `MULTICA_STAGING_URL` is unset in the execenv, fall back to `http://localhost:3000` and explicitly tag the comment `(local dev — staging URL not configured)` so QA is not misled.
+
+      **For exempted backend-only stories**, post instead:
+      ```
+      multica issue comment add <issue-id> --content "E2E exempt: <reason — e.g. backend-only sqlc query change with no UI surface>"
+      ```
 
       ## Guidelines
 
