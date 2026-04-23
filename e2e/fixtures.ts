@@ -2,9 +2,44 @@
  * TestApiClient — lightweight API helper for E2E test data setup/teardown.
  *
  * Uses raw fetch so E2E tests have zero build-time coupling to the web app.
+ *
+ * Also re-exports an extended Playwright `test` that captures a pass screenshot
+ * for every scenario. Failure screenshots are produced by Playwright via
+ * `use.screenshot: 'only-on-failure'` in playwright.config.ts.
  */
 
+import path from "node:path";
+import { test as base, expect } from "@playwright/test";
 import pg from "pg";
+
+const SCREENSHOT_DIR = path.join("test-results", "screenshots");
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "scenario";
+}
+
+export const test = base.extend({
+  page: async ({ page }, use, testInfo) => {
+    await use(page);
+    if (testInfo.status !== "passed") return;
+    const fileSlug = path.basename(testInfo.file).replace(/\.spec\.ts$/, "");
+    const filename = `${fileSlug}__${slugify(testInfo.title)}.png`;
+    try {
+      await page.screenshot({
+        path: path.join(SCREENSHOT_DIR, filename),
+        fullPage: true,
+      });
+    } catch {
+      // Page may already be closed; pass screenshots are best-effort evidence.
+    }
+  },
+});
+
+export { expect };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? `http://localhost:${process.env.PORT ?? "8080"}`;
 const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://multica:multica@localhost:5432/multica?sslmode=disable";

@@ -1,6 +1,6 @@
-import { test, expect } from "@playwright/test";
-import { loginAsDefault, createTestApi } from "./helpers";
+import { test, expect } from "./fixtures";
 import type { TestApiClient } from "./fixtures";
+import { loginAsDefault, createTestApi } from "./helpers";
 
 test.describe("Issues", () => {
   let api: TestApiClient;
