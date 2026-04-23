@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { loginAsDefault, openWorkspaceMenu } from "./helpers";
+import { loginAsDefault } from "./helpers";
 
 test.describe("Navigation", () => {
   test.beforeEach(async ({ page }) => {
@@ -8,33 +8,42 @@ test.describe("Navigation", () => {
 
   test("sidebar navigation works", async ({ page }) => {
     // Click Inbox
-    await page.locator("nav a", { hasText: "Inbox" }).click();
+    await page.getByRole("link", { name: "Inbox" }).click();
     await page.waitForURL("**/inbox");
     await expect(page).toHaveURL(/\/inbox/);
 
     // Click Agents
-    await page.locator("nav a", { hasText: "Agents" }).click();
+    await page.getByRole("link", { name: "Agents" }).click();
     await page.waitForURL("**/agents");
     await expect(page).toHaveURL(/\/agents/);
 
-    // Click Issues
-    await page.locator("nav a", { hasText: "Issues" }).click();
+    // Click Issues — exact match is required because "My Issues" also
+    // contains the substring "Issues" and would otherwise match.
+    await page
+      .getByRole("link", { name: "Issues", exact: true })
+      .click();
     await page.waitForURL("**/issues");
     await expect(page).toHaveURL(/\/issues/);
   });
 
-  test("settings page loads via workspace menu", async ({ page }) => {
-    // Settings is inside the workspace dropdown menu
-    await openWorkspaceMenu(page);
-    await page.locator("text=Settings").click();
+  test("settings page loads from sidebar", async ({ page }) => {
+    // Settings now lives in the sidebar's Configure section, not inside the
+    // workspace dropdown — clicking the sidebar nav link is the only path.
+    await page.getByRole("link", { name: "Settings" }).click();
     await page.waitForURL("**/settings");
 
-    await expect(page.getByRole("heading", { name: "Workspace" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
+    // Settings page renders an h1 "Settings" header in the left tab nav and
+    // tab triggers for the per-section panes; assert both so we know the
+    // tabbed shell rendered (the previous "Workspace"/"Members" headings
+    // were replaced by tab labels in the redesign).
+    await expect(
+      page.getByRole("heading", { name: "Settings" }),
+    ).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Members" })).toBeVisible();
   });
 
   test("agents page shows agent list", async ({ page }) => {
-    await page.locator("nav a", { hasText: "Agents" }).click();
+    await page.getByRole("link", { name: "Agents" }).click();
     await page.waitForURL("**/agents");
 
     // Should show "Agents" heading

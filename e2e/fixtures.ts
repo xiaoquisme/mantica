@@ -6,9 +6,18 @@
  * Also re-exports an extended Playwright `test` that captures a pass screenshot
  * for every scenario. Failure screenshots are produced by Playwright via
  * `use.screenshot: 'only-on-failure'` in playwright.config.ts.
+ *
+ * Env-var contract (see playwright.config.ts for the loader):
+ *   - `DATABASE_URL` — same value the backend reads from `.env` /
+ *     `.env.worktree`. Used to read verification codes the API just wrote.
+ *     If server and fixtures see different DBs, every login-dependent test
+ *     fails with `No verification code found`.
+ *   - `NEXT_PUBLIC_API_URL` / `PORT` — backend base URL for fetch().
+ * Precedence: explicit `process.env` > `.env.worktree` > `.env` > defaults.
  */
 
 import path from "node:path";
+import fs from "node:fs";
 import { test as base, expect } from "@playwright/test";
 import pg from "pg";
 
@@ -61,7 +70,34 @@ interface CachedSession {
 // tests would otherwise fail at the second test's send-code → can't find an
 // unused fresh code. Reusing the JWT (valid for 30 days, see auth.go) keeps
 // every test's beforeEach hitting the rate-limited code path at most once.
+//
+// e2e/global-setup.ts pre-warms this cache from a session file written
+// before any worker starts, so every worker (including the first test in
+// every spec file) reuses the same JWT instead of racing the rate limit.
 const sessionCache = new Map<string, CachedSession>();
+
+// Hydrate the cache from the session file written by globalSetup, if
+// present. Workers are separate Node processes, so the in-memory cache
+// alone is not shared across them — the file is the only cross-worker
+// channel.
+try {
+  const sessionFile = path.join(
+    process.cwd(),
+    "test-results",
+    ".e2e-session.json",
+  );
+  if (fs.existsSync(sessionFile)) {
+    const cached = JSON.parse(fs.readFileSync(sessionFile, "utf-8")) as {
+      email: string;
+      token: string;
+      user: CachedSession["user"];
+    };
+    sessionCache.set(cached.email, { token: cached.token, user: cached.user });
+  }
+} catch {
+  // Best-effort hydration — fall back to the per-worker live login if the
+  // file is missing or malformed.
+}
 
 export class TestApiClient {
   private token: string | null = null;
