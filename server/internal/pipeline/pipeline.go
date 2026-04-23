@@ -60,3 +60,38 @@ func IsAllowedAgentTransition(agentName, newStatus string) bool {
 	}
 	return false
 }
+
+// FanInRule describes how a parent issue advances when its parallel children
+// all reach a terminal status.
+type FanInRule struct {
+	NextStatus            string   // status to set on the parent when fan-in fires
+	TerminalChildStatuses []string // child statuses that count as "done" for fan-in
+}
+
+// IsTerminal returns true if the given child status counts as terminal under this rule.
+func (r FanInRule) IsTerminal(status string) bool {
+	for _, s := range r.TerminalChildStatuses {
+		if s == status {
+			return true
+		}
+	}
+	return false
+}
+
+// FanInConfig maps a parent's in_* status to the rule that decides when the
+// parent advances based on its parallel child issues. When every child reaches
+// a terminal status, the parent is moved to NextStatus and the existing
+// pipeline machinery handles the rest (agent reassignment, task enqueue, WS
+// broadcast).
+var FanInConfig = map[string]FanInRule{
+	"in_arch_design": {NextStatus: "ready_dev", TerminalChildStatuses: []string{"done"}},
+	"in_dev":         {NextStatus: "ready_review", TerminalChildStatuses: []string{"done"}},
+	"in_review":      {NextStatus: "ready_test", TerminalChildStatuses: []string{"done"}},
+	"in_test":        {NextStatus: "done", TerminalChildStatuses: []string{"done"}},
+}
+
+// FanInRuleFor returns the fan-in rule for a parent's current status, if any.
+func FanInRuleFor(parentStatus string) (FanInRule, bool) {
+	r, ok := FanInConfig[parentStatus]
+	return r, ok
+}
