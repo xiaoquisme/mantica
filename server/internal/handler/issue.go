@@ -1179,6 +1179,13 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		h.triggerPipeline(r.Context(), issue)
 	}
 
+	// Fan-in: when a child issue's status changes, re-evaluate the parent's
+	// aggregated state so it can auto-advance when all siblings are terminal
+	// or auto-block when any sibling is blocked.
+	if statusChanged && prevIssue.ParentIssueID.Valid {
+		h.evaluateParentFanIn(r.Context(), prevIssue.ParentIssueID)
+	}
+
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -1347,6 +1354,114 @@ func (h *Handler) triggerPipeline(ctx context.Context, issue db.Issue) {
 		"agent", stage.AgentName,
 		"status", stage.InProgressStatus,
 	)
+
+	// Fan-in: an in-pipeline transition (e.g. QA setting a child to done)
+	// is the leaf event for fan-in too. Re-evaluate the parent here so an
+	// auto-advance also propagates upward.
+	if updatedIssue.ParentIssueID.Valid {
+		h.evaluateParentFanIn(ctx, updatedIssue.ParentIssueID)
+	}
+}
+
+// evaluateParentFanIn aggregates the statuses of a parent's children and
+// advances or blocks the parent accordingly. The parent moves to the next
+// pipeline status (per pipeline.FanInConfig) when every child is terminal,
+// or to "blocked" when any child is blocked. No-ops if the parent is not in
+// a fan-in-eligible state, has no children, or another concurrent caller has
+// already moved it forward (idempotent).
+func (h *Handler) evaluateParentFanIn(ctx context.Context, parentID pgtype.UUID) {
+	if !parentID.Valid {
+		return
+	}
+
+	parent, err := h.Queries.GetIssue(ctx, parentID)
+	if err != nil {
+		slog.Debug("fan-in: parent lookup failed", "parent_id", uuidToString(parentID), "error", err)
+		return
+	}
+
+	rule, ok := pipeline.FanInRuleFor(parent.Status)
+	if !ok {
+		return
+	}
+
+	children, err := h.Queries.ListChildIssues(ctx, parentID)
+	if err != nil {
+		slog.Warn("fan-in: failed to list children", "parent_id", uuidToString(parentID), "error", err)
+		return
+	}
+	if len(children) == 0 {
+		return
+	}
+
+	anyBlocked := false
+	allTerminal := true
+	for _, c := range children {
+		if c.Status == "blocked" {
+			anyBlocked = true
+		}
+		if !rule.IsTerminal(c.Status) {
+			allTerminal = false
+		}
+	}
+
+	switch {
+	case anyBlocked:
+		updated, err := h.Queries.UpdateIssueStatus(ctx, db.UpdateIssueStatusParams{
+			ID:     parent.ID,
+			Status: "blocked",
+		})
+		if err != nil {
+			slog.Warn("fan-in: failed to block parent", "parent_id", uuidToString(parentID), "error", err)
+			return
+		}
+		prefix := h.getIssuePrefix(ctx, parent.WorkspaceID)
+		h.publish(protocol.EventIssueUpdated, uuidToString(parent.WorkspaceID), "system", "", map[string]any{
+			"issue":          issueToResponse(updated, prefix),
+			"status_changed": true,
+			"prev_status":    parent.Status,
+		})
+		slog.Info("fan-in: parent blocked by child",
+			"parent_id", uuidToString(parentID),
+			"prev_status", parent.Status,
+		)
+		// Propagate the block upward to the grandparent so the entire chain
+		// reflects the stuck branch.
+		if updated.ParentIssueID.Valid {
+			h.evaluateParentFanIn(ctx, updated.ParentIssueID)
+		}
+	case allTerminal:
+		updated, err := h.Queries.UpdateIssueStatus(ctx, db.UpdateIssueStatusParams{
+			ID:     parent.ID,
+			Status: rule.NextStatus,
+		})
+		if err != nil {
+			slog.Warn("fan-in: failed to advance parent", "parent_id", uuidToString(parentID), "error", err)
+			return
+		}
+		prefix := h.getIssuePrefix(ctx, parent.WorkspaceID)
+		h.publish(protocol.EventIssueUpdated, uuidToString(parent.WorkspaceID), "system", "", map[string]any{
+			"issue":          issueToResponse(updated, prefix),
+			"status_changed": true,
+			"prev_status":    parent.Status,
+		})
+		slog.Info("fan-in: parent advanced",
+			"parent_id", uuidToString(parentID),
+			"prev_status", parent.Status,
+			"next_status", rule.NextStatus,
+		)
+		// If the new parent status is itself a pipeline trigger (ready_*),
+		// hand off to the existing machinery so the next agent is assigned
+		// and a task is enqueued. triggerPipeline re-enters fan-in for the
+		// grandparent on its own.
+		// Otherwise (terminal status like "done") propagate directly so the
+		// chain keeps unwinding upward.
+		if pipeline.IsReadyStatus(updated.Status) {
+			h.triggerPipeline(ctx, updated)
+		} else if updated.ParentIssueID.Valid {
+			h.evaluateParentFanIn(ctx, updated.ParentIssueID)
+		}
+	}
 }
 
 // advanceToClassifying handles the backlog→classifying entry point.
@@ -1548,6 +1663,10 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 			if h.shouldEnqueueAgentTask(r.Context(), issue) {
 				h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
 			}
+		}
+
+		if statusChanged && prevIssue.ParentIssueID.Valid {
+			h.evaluateParentFanIn(r.Context(), prevIssue.ParentIssueID)
 		}
 
 		updated++
