@@ -55,8 +55,14 @@ export async function createTestApi(): Promise<TestApiClient> {
 }
 
 export async function openWorkspaceMenu(page: Page) {
-  // Click the workspace switcher button (has ChevronDown icon)
-  await page.locator("aside button").first().click();
-  // Wait for dropdown to appear
-  await page.locator('[class*="popover"]').waitFor({ state: "visible" });
+  // The workspace switcher is the first dropdown-menu-trigger inside the
+  // sidebar header. Note: `[data-slot="sidebar-menu-button"]` does NOT match
+  // the workspace switcher button — Base UI's DropdownMenuTrigger overrides
+  // the SidebarMenuButton's data-slot when rendered via its `render` prop.
+  // The implicit wait inside the caller's next .click() catches the open
+  // dropdown, so no separate popover wait is needed here.
+  await page
+    .locator('[data-slot="sidebar-header"] [data-slot="dropdown-menu-trigger"]')
+    .first()
+    .click();
 }

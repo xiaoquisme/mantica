@@ -5,11 +5,16 @@ test.describe("Authentication", () => {
   test("login page renders correctly", async ({ page }) => {
     await page.goto("/login");
 
-    await expect(page.locator("h1")).toContainText("Multica");
-    await expect(page.locator('input[placeholder="Email"]')).toBeVisible();
-    await expect(page.locator('input[placeholder="Name"]')).toBeVisible();
+    // The page title is rendered inside shadcn's <CardTitle>, which is a <div>
+    // (not a heading element) — target it via the data-slot attribute instead
+    // of an h1 selector. Bumping CardTitle to a heading would be a global
+    // shadcn-component change that affects every other Card in the app.
+    await expect(page.locator('[data-slot="card-title"]')).toContainText(
+      "Multica",
+    );
+    await expect(page.locator("#login-email")).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toContainText(
-      "Sign in",
+      "Continue",
     );
   });
 
@@ -17,7 +22,13 @@ test.describe("Authentication", () => {
     await loginAsDefault(page);
 
     await expect(page).toHaveURL(/\/issues/);
-    await expect(page.locator("text=All Issues")).toBeVisible();
+    // The previous `text=All Issues` heading no longer exists in the issues
+    // page header; loginAsDefault already waits for the "New Issue" sidebar
+    // button which is the canonical signal that the authenticated shell has
+    // rendered, so re-asserting it here just confirms the shell stayed up.
+    await expect(
+      page.getByRole("button", { name: "New Issue" }),
+    ).toBeVisible();
   });
 
   test("unauthenticated user is redirected to /login", async ({ page }) => {
@@ -37,8 +48,8 @@ test.describe("Authentication", () => {
     // Open the workspace dropdown menu
     await openWorkspaceMenu(page);
 
-    // Click Sign out
-    await page.locator("text=Sign out").click();
+    // Click Log out (menu item label is "Log out", not "Sign out")
+    await page.getByRole("menuitem", { name: "Log out" }).click();
 
     await page.waitForURL("**/login", { timeout: 10000 });
     await expect(page).toHaveURL(/\/login/);
