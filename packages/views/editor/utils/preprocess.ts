@@ -20,7 +20,8 @@ export function preprocessMarkdown(markdown: string): string {
   const step1 = preprocessMentionShortcodes(markdown);
   const step2 = preprocessLinks(step1);
   const step3 = preprocessFileCards(step2);
-  return step3;
+  const step4 = stripUnknownHtmlTags(step3);
+  return step4;
 }
 
 /**
@@ -45,4 +46,35 @@ function preprocessFileCards(markdown: string): string {
       return `<div data-type="fileCard" data-href="${url}" data-filename="${filename}"></div>`;
     })
     .join("\n");
+}
+
+/**
+ * Strip non-standard HTML/XML tags that agents may include in their output
+ * (e.g. <concise>, <thinking>, <artifact>). These cause React warnings
+ * when rehype-raw passes them through as DOM elements.
+ *
+ * Allows standard HTML tags, mentions, and data-type divs through.
+ */
+const STANDARD_HTML_TAGS = new Set([
+  "a", "abbr", "address", "article", "aside", "audio", "b", "bdi", "bdo",
+  "blockquote", "br", "button", "canvas", "caption", "cite", "code", "col",
+  "colgroup", "data", "dd", "del", "details", "dfn", "dialog", "div", "dl",
+  "dt", "em", "fieldset", "figcaption", "figure", "footer", "form", "h1",
+  "h2", "h3", "h4", "h5", "h6", "header", "hr", "i", "iframe", "img",
+  "input", "ins", "kbd", "label", "legend", "li", "main", "mark", "menu",
+  "meter", "nav", "ol", "optgroup", "option", "output", "p", "picture",
+  "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "section",
+  "select", "small", "source", "span", "strong", "sub", "summary", "sup",
+  "svg", "table", "tbody", "td", "template", "textarea", "tfoot", "th",
+  "thead", "time", "tr", "track", "u", "ul", "var", "video", "wbr",
+]);
+
+function stripUnknownHtmlTags(markdown: string): string {
+  // Match opening and closing HTML tags: <tagname ...> or </tagname>
+  return markdown.replace(/<\/?([a-zA-Z][a-zA-Z0-9_-]*)\b[^>]*\/?>/g, (match, tagName: string) => {
+    const lower = tagName.toLowerCase();
+    if (STANDARD_HTML_TAGS.has(lower)) return match;
+    // Escape angle brackets so it renders as plain text.
+    return match.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  });
 }
