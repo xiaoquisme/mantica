@@ -35,6 +35,27 @@ func IsReadyStatus(status string) bool {
 	return ok
 }
 
+// RevertStatusFor returns the ready_* status that an in_* status should
+// revert to when the agent run for that stage fails. Used by the auto-revert
+// path in TaskService to recover from agent crashes/timeouts.
+//
+// The Classifier stage is special: its in-progress status is "classifying"
+// and its trigger is assigneeChanged on a backlog issue (not a ready_*
+// status), so a Classifier crash reverts to "backlog" rather than
+// "ready_classifying" (which doesn't exist). Callers should additionally
+// clear the assignee in that case so the user can re-trigger Classifier.
+func RevertStatusFor(inStatus string) (readyStatus string, ok bool) {
+	for ready, stage := range Stages {
+		if stage.InProgressStatus == inStatus {
+			return ready, true
+		}
+	}
+	if inStatus == ClassifierStage.InProgressStatus {
+		return "backlog", true
+	}
+	return "", false
+}
+
 // AllowedAgentTransitions maps agent name to the statuses they are allowed to set.
 // This prevents agents from setting status to backlog, done, or other stages they don't own.
 var AllowedAgentTransitions = map[string][]string{

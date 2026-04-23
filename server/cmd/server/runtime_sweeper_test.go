@@ -127,7 +127,7 @@ func TestSweepStaleTasksBroadcastsWithWorkspaceID(t *testing.T) {
 	}
 
 	// Call broadcastFailedTasks — this is what we're testing
-	broadcastFailedTasks(context.Background(), queries, bus, failedTasks)
+	broadcastFailedTasks(context.Background(), queries, bus, nil, failedTasks)
 
 	// Verify the event was published with WorkspaceID (the core of the bug fix)
 	mu.Lock()
@@ -195,7 +195,7 @@ func TestSweepStaleTasksReconcileAgentStatus(t *testing.T) {
 		t.Fatal("expected at least 1 stale task")
 	}
 
-	broadcastFailedTasks(context.Background(), queries, bus, failedTasks)
+	broadcastFailedTasks(context.Background(), queries, bus, nil, failedTasks)
 
 	// Verify agent status is now "idle" in DB
 	var agentStatus string
@@ -256,7 +256,7 @@ func TestSweepDispatchedStaleTask(t *testing.T) {
 		t.Fatal("expected at least 1 stale dispatched task")
 	}
 
-	broadcastFailedTasks(context.Background(), queries, bus, failedTasks)
+	broadcastFailedTasks(context.Background(), queries, bus, nil, failedTasks)
 
 	// Verify DB: task should be failed
 	var status string

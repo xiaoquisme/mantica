@@ -13,12 +13,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/mention"
+	"github.com/multica-ai/multica/server/internal/pipeline"
 	"github.com/multica-ai/multica/server/internal/realtime"
 	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 	"github.com/multica-ai/multica/server/pkg/redact"
 )
+
+// errorSummaryMaxLen caps the redacted error summary embedded in the
+// auto-revert system comment to keep it readable.
+const errorSummaryMaxLen = 200
 
 type TaskService struct {
 	Queries *db.Queries
@@ -389,10 +394,217 @@ func (s *TaskService) FailTask(ctx context.Context, taskID pgtype.UUID, errMsg s
 	// Reconcile agent status
 	s.ReconcileAgentStatus(ctx, task.AgentID)
 
+	// Auto-revert issue status if the agent crashed mid-stage so the pipeline
+	// can re-dispatch. CAS-guarded — no-op if the issue already moved on.
+	s.AutoRevertIssueStatusOnFailure(ctx, task)
+
 	// Broadcast
 	s.broadcastTaskEvent(ctx, protocol.EventTaskFailed, task)
 
 	return &task, nil
+}
+
+// TriggerPipeline advances an issue at a ready_* status to the matching in_*
+// status, assigns the corresponding pipeline agent, and enqueues a task. This
+// is the same logic the HTTP handler uses on a status change to ready_*; it
+// also runs on auto-revert so a failed run is automatically re-dispatched.
+//
+// Returns the updated issue when an advance happened, or nil when no advance
+// occurred (issue not at a ready_* status, no agent for the stage, agent has
+// no runtime, or the underlying update failed).
+func (s *TaskService) TriggerPipeline(ctx context.Context, issue db.Issue) *db.Issue {
+	stage, ok := pipeline.Stages[issue.Status]
+	if !ok {
+		return nil
+	}
+
+	agents, err := s.Queries.ListAgents(ctx, issue.WorkspaceID)
+	if err != nil {
+		slog.Warn("pipeline: failed to list agents", "issue_id", util.UUIDToString(issue.ID), "error", err)
+		return nil
+	}
+
+	var targetAgent *db.Agent
+	for i := range agents {
+		if agents[i].Name == stage.AgentName && !agents[i].ArchivedAt.Valid {
+			targetAgent = &agents[i]
+			break
+		}
+	}
+
+	if targetAgent == nil {
+		slog.Warn("pipeline: no agent found for stage", "issue_id", util.UUIDToString(issue.ID), "status", issue.Status, "agent_name", stage.AgentName)
+		return nil
+	}
+
+	if !targetAgent.RuntimeID.Valid {
+		slog.Warn("pipeline: agent has no runtime", "agent_name", stage.AgentName)
+		return nil
+	}
+
+	// Cancel any existing tasks for this issue.
+	s.CancelTasksForIssue(ctx, issue.ID)
+
+	// Advance status to in_* and assign the agent. Preserve nullable fields
+	// (parent, due_date, project) that are directly set by sqlc.narg —
+	// passing Go zero values would NULL them out.
+	updatedIssue, err := s.Queries.UpdateIssue(ctx, db.UpdateIssueParams{
+		ID:            issue.ID,
+		Status:        pgtype.Text{String: stage.InProgressStatus, Valid: true},
+		AssigneeType:  pgtype.Text{String: "agent", Valid: true},
+		AssigneeID:    targetAgent.ID,
+		DueDate:       issue.DueDate,
+		ParentIssueID: issue.ParentIssueID,
+		ProjectID:     issue.ProjectID,
+	})
+	if err != nil {
+		slog.Warn("pipeline: failed to update issue status/assignee", "error", err)
+		return nil
+	}
+
+	// Broadcast the issue update so frontends see the new status/assignee.
+	prefix := s.getIssuePrefix(issue.WorkspaceID)
+	s.Bus.Publish(events.Event{
+		Type:        protocol.EventIssueUpdated,
+		WorkspaceID: util.UUIDToString(issue.WorkspaceID),
+		ActorType:   "system",
+		ActorID:     "",
+		Payload:     issueToMap(updatedIssue, prefix),
+	})
+
+	// Enqueue task for the new agent — skip if one is already active.
+	hasActive, err := s.Queries.HasActiveTaskForIssueAndAgent(ctx, db.HasActiveTaskForIssueAndAgentParams{
+		IssueID: issue.ID,
+		AgentID: targetAgent.ID,
+	})
+	if err == nil && hasActive {
+		slog.Debug("pipeline: skipping enqueue, active task already exists",
+			"issue_id", util.UUIDToString(issue.ID), "agent", stage.AgentName)
+	} else {
+		s.EnqueueTaskForIssue(ctx, updatedIssue)
+	}
+
+	slog.Info("pipeline: auto-assigned and advanced",
+		"issue_id", util.UUIDToString(issue.ID),
+		"agent", stage.AgentName,
+		"status", stage.InProgressStatus,
+	)
+
+	return &updatedIssue
+}
+
+// AutoRevertIssueStatusOnFailure reverts an issue's status from in_* back to
+// the matching ready_* when the agent task for that stage failed. Posts a
+// system comment recording the run id and error, then re-triggers the
+// pipeline so the next agent run is dispatched automatically.
+//
+// CAS-safe (no-op when the issue status no longer matches the expected
+// in_*), idempotent against duplicate failure callbacks for the same issue,
+// and skipped entirely for chat tasks (no issue) or unrecognized statuses.
+//
+// The Classifier stage is special-cased: in_status="classifying" reverts to
+// "backlog" AND the Classifier assignee is cleared so the user can re-trigger
+// the Classifier by reassigning. Re-dispatch via TriggerPipeline only happens
+// for stages whose ready_* maps back into pipeline.Stages.
+func (s *TaskService) AutoRevertIssueStatusOnFailure(ctx context.Context, task db.AgentTaskQueue) {
+	if !task.IssueID.Valid {
+		return
+	}
+
+	issue, err := s.Queries.GetIssue(ctx, task.IssueID)
+	if err != nil {
+		slog.Debug("auto-revert: issue lookup failed", "task_id", util.UUIDToString(task.ID), "error", err)
+		return
+	}
+
+	readyStatus, ok := pipeline.RevertStatusFor(issue.Status)
+	if !ok {
+		// Issue is not in an in_* status — agent already advanced it (e.g. to
+		// ready_review) before crashing, or it was never in a stage status.
+		return
+	}
+
+	expectedStatus := issue.Status
+	isClassifier := expectedStatus == pipeline.ClassifierStage.InProgressStatus
+
+	revertedIssue, err := s.Queries.RevertIssueStatusIfMatching(ctx, db.RevertIssueStatusIfMatchingParams{
+		ID:             issue.ID,
+		NewStatus:      readyStatus,
+		ExpectedStatus: expectedStatus,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// CAS lost: another caller already reverted, or the agent moved
+			// status forward before crashing. Either way, do nothing.
+			return
+		}
+		slog.Warn("auto-revert: status revert failed",
+			"task_id", util.UUIDToString(task.ID),
+			"issue_id", util.UUIDToString(issue.ID),
+			"error", err,
+		)
+		return
+	}
+
+	// For the Classifier stage there is no ready_classifying — clear the
+	// assignee so the user can re-trigger by reassigning the Classifier agent.
+	if isClassifier {
+		cleared, err := s.Queries.ClearIssueAssigneeIfStatus(ctx, db.ClearIssueAssigneeIfStatusParams{
+			ID:             revertedIssue.ID,
+			ExpectedStatus: readyStatus,
+		})
+		if err == nil {
+			revertedIssue = cleared
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Warn("auto-revert: failed to clear classifier assignee",
+				"issue_id", util.UUIDToString(issue.ID),
+				"error", err,
+			)
+		}
+	}
+
+	// Build the system comment summarising the failure cause and revert.
+	runID := util.UUIDToString(task.ID)
+	if len(runID) >= 8 {
+		runID = runID[:8]
+	}
+	errSummary := redact.Text(task.Error.String)
+	if errSummary == "" {
+		errSummary = "no error message"
+	}
+	if len(errSummary) > errorSummaryMaxLen {
+		errSummary = errSummary[:errorSummaryMaxLen] + "…"
+	}
+	content := fmt.Sprintf("Run `%s` failed (`%s`); status auto-reverted to `%s` for re-dispatch.", runID, errSummary, readyStatus)
+	s.createAgentComment(ctx, revertedIssue.ID, task.AgentID, content, "system", task.TriggerCommentID)
+
+	slog.Info("auto-revert: status reverted",
+		"task_id", util.UUIDToString(task.ID),
+		"issue_id", util.UUIDToString(issue.ID),
+		"prev_status", expectedStatus,
+		"new_status", readyStatus,
+	)
+
+	// Broadcast the issue update so the frontend reflects the reverted state.
+	prefix := s.getIssuePrefix(revertedIssue.WorkspaceID)
+	s.Bus.Publish(events.Event{
+		Type:        protocol.EventIssueUpdated,
+		WorkspaceID: util.UUIDToString(revertedIssue.WorkspaceID),
+		ActorType:   "system",
+		ActorID:     "",
+		Payload: map[string]any{
+			"issue":          issueToMap(revertedIssue, prefix),
+			"status_changed": true,
+			"prev_status":    expectedStatus,
+		},
+	})
+
+	// Re-dispatch via the existing pipeline pickup. Classifier reverts to
+	// "backlog" with no assignee — there's no auto-pickup for backlog, so
+	// the user must reassign manually. Other stages re-trigger automatically.
+	if pipeline.IsReadyStatus(revertedIssue.Status) {
+		s.TriggerPipeline(ctx, revertedIssue)
+	}
 }
 
 // ReportProgress broadcasts a progress update via the event bus.
@@ -653,14 +865,20 @@ func (s *TaskService) createAgentComment(ctx context.Context, issueID, agentID p
 	// Expand bare issue identifiers (e.g. MUL-117) into mention links.
 	content = mention.ExpandIssueIdentifiers(ctx, s.Queries, issue.WorkspaceID, content)
 	comment, err := s.Queries.CreateComment(ctx, db.CreateCommentParams{
-		IssueID:    issueID,
-		AuthorType: "agent",
-		AuthorID:   agentID,
-		Content:    content,
-		Type:       commentType,
-		ParentID:   parentID,
+		IssueID:     issueID,
+		WorkspaceID: issue.WorkspaceID,
+		AuthorType:  "agent",
+		AuthorID:    agentID,
+		Content:     content,
+		Type:        commentType,
+		ParentID:    parentID,
 	})
 	if err != nil {
+		slog.Warn("createAgentComment: insert failed",
+			"issue_id", util.UUIDToString(issueID),
+			"agent_id", util.UUIDToString(agentID),
+			"error", err,
+		)
 		return
 	}
 	s.Bus.Publish(events.Event{
@@ -700,6 +918,7 @@ func issueToMap(issue db.Issue, issuePrefix string) map[string]any {
 		"creator_type":    issue.CreatorType,
 		"creator_id":      util.UUIDToString(issue.CreatorID),
 		"parent_issue_id": util.UUIDToPtr(issue.ParentIssueID),
+		"project_id":      util.UUIDToPtr(issue.ProjectID),
 		"position":        issue.Position,
 		"due_date":        util.TimestampToPtr(issue.DueDate),
 		"created_at":      util.TimestampToString(issue.CreatedAt),
