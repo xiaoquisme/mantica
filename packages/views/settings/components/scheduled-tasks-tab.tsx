@@ -278,7 +278,11 @@ export function ScheduledTasksTab() {
             <div className="space-y-2">
               <Label htmlFor="st-agent">Agent</Label>
               <Select value={formAgentId} onValueChange={(v) => { if (v) setFormAgentId(v); }}>
-                <SelectTrigger id="st-agent"><SelectValue placeholder="Select an agent" /></SelectTrigger>
+                <SelectTrigger id="st-agent">
+                  <SelectValue placeholder="Select an agent">
+                    {formAgentId ? agents.find((a) => a.id === formAgentId)?.name ?? formAgentId : undefined}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   {agents.map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
