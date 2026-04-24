@@ -45,6 +45,9 @@ import type {
   CreateProjectRequest,
   UpdateProjectRequest,
   ListProjectsResponse,
+  ScheduledTask,
+  CreateScheduledTaskRequest,
+  UpdateScheduledTaskRequest,
 } from "../types";
 import { type Logger, noopLogger } from "../logger";
 
@@ -720,6 +723,37 @@ export class ApiClient {
     return this.fetch("/api/repos/test", {
       method: "POST",
       body: JSON.stringify({ url, token: token || undefined }),
+    });
+  }
+
+  // Scheduled Tasks
+  async listScheduledTasks(): Promise<ScheduledTask[]> {
+    return this.fetch("/api/scheduled-tasks");
+  }
+
+  async createScheduledTask(data: CreateScheduledTaskRequest): Promise<ScheduledTask> {
+    return this.fetch("/api/scheduled-tasks", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateScheduledTask(id: string, data: UpdateScheduledTaskRequest): Promise<ScheduledTask> {
+    return this.fetch(`/api/scheduled-tasks/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteScheduledTask(id: string): Promise<void> {
+    await this.fetch(`/api/scheduled-tasks/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async runScheduledTaskNow(id: string): Promise<{ task_id: string; scheduled_task_id: string }> {
+    return this.fetch(`/api/scheduled-tasks/${id}/run`, {
+      method: "POST",
     });
   }
 }
