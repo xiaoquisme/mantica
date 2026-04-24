@@ -56,9 +56,9 @@ func (q *Queries) CreateScheduledAgentTask(ctx context.Context, arg CreateSchedu
 }
 
 const createScheduledTask = `-- name: CreateScheduledTask :one
-INSERT INTO scheduled_task (workspace_id, name, agent_id, schedule, prompt, enabled, next_run_at, created_by)
-VALUES ($1, $2, $3, $4, $5, $6, $8, $7)
-RETURNING id, workspace_id, name, agent_id, schedule, prompt, enabled, last_run_at, next_run_at, created_by, created_at, updated_at
+INSERT INTO scheduled_task (workspace_id, name, agent_id, schedule, enabled, next_run_at, created_by)
+VALUES ($1, $2, $3, $4, $5, $7, $6)
+RETURNING id, workspace_id, name, agent_id, schedule, enabled, last_run_at, next_run_at, created_by, created_at, updated_at
 `
 
 type CreateScheduledTaskParams struct {
@@ -66,7 +66,6 @@ type CreateScheduledTaskParams struct {
 	Name        string             `json:"name"`
 	AgentID     pgtype.UUID        `json:"agent_id"`
 	Schedule    string             `json:"schedule"`
-	Prompt      string             `json:"prompt"`
 	Enabled     bool               `json:"enabled"`
 	CreatedBy   pgtype.UUID        `json:"created_by"`
 	NextRunAt   pgtype.Timestamptz `json:"next_run_at"`
@@ -78,7 +77,6 @@ func (q *Queries) CreateScheduledTask(ctx context.Context, arg CreateScheduledTa
 		arg.Name,
 		arg.AgentID,
 		arg.Schedule,
-		arg.Prompt,
 		arg.Enabled,
 		arg.CreatedBy,
 		arg.NextRunAt,
@@ -90,7 +88,6 @@ func (q *Queries) CreateScheduledTask(ctx context.Context, arg CreateScheduledTa
 		&i.Name,
 		&i.AgentID,
 		&i.Schedule,
-		&i.Prompt,
 		&i.Enabled,
 		&i.LastRunAt,
 		&i.NextRunAt,
@@ -111,7 +108,7 @@ func (q *Queries) DeleteScheduledTask(ctx context.Context, id pgtype.UUID) error
 }
 
 const getScheduledTask = `-- name: GetScheduledTask :one
-SELECT id, workspace_id, name, agent_id, schedule, prompt, enabled, last_run_at, next_run_at, created_by, created_at, updated_at FROM scheduled_task WHERE id = $1
+SELECT id, workspace_id, name, agent_id, schedule, enabled, last_run_at, next_run_at, created_by, created_at, updated_at FROM scheduled_task WHERE id = $1
 `
 
 func (q *Queries) GetScheduledTask(ctx context.Context, id pgtype.UUID) (ScheduledTask, error) {
@@ -123,7 +120,6 @@ func (q *Queries) GetScheduledTask(ctx context.Context, id pgtype.UUID) (Schedul
 		&i.Name,
 		&i.AgentID,
 		&i.Schedule,
-		&i.Prompt,
 		&i.Enabled,
 		&i.LastRunAt,
 		&i.NextRunAt,
@@ -135,7 +131,7 @@ func (q *Queries) GetScheduledTask(ctx context.Context, id pgtype.UUID) (Schedul
 }
 
 const listDueScheduledTasks = `-- name: ListDueScheduledTasks :many
-SELECT id, workspace_id, name, agent_id, schedule, prompt, enabled, last_run_at, next_run_at, created_by, created_at, updated_at FROM scheduled_task
+SELECT id, workspace_id, name, agent_id, schedule, enabled, last_run_at, next_run_at, created_by, created_at, updated_at FROM scheduled_task
 WHERE enabled = true AND next_run_at <= now()
 ORDER BY next_run_at ASC
 `
@@ -155,7 +151,6 @@ func (q *Queries) ListDueScheduledTasks(ctx context.Context) ([]ScheduledTask, e
 			&i.Name,
 			&i.AgentID,
 			&i.Schedule,
-			&i.Prompt,
 			&i.Enabled,
 			&i.LastRunAt,
 			&i.NextRunAt,
@@ -174,7 +169,7 @@ func (q *Queries) ListDueScheduledTasks(ctx context.Context) ([]ScheduledTask, e
 }
 
 const listScheduledTasks = `-- name: ListScheduledTasks :many
-SELECT id, workspace_id, name, agent_id, schedule, prompt, enabled, last_run_at, next_run_at, created_by, created_at, updated_at FROM scheduled_task
+SELECT id, workspace_id, name, agent_id, schedule, enabled, last_run_at, next_run_at, created_by, created_at, updated_at FROM scheduled_task
 WHERE workspace_id = $1
 ORDER BY created_at ASC
 `
@@ -194,7 +189,6 @@ func (q *Queries) ListScheduledTasks(ctx context.Context, workspaceID pgtype.UUI
 			&i.Name,
 			&i.AgentID,
 			&i.Schedule,
-			&i.Prompt,
 			&i.Enabled,
 			&i.LastRunAt,
 			&i.NextRunAt,
@@ -218,7 +212,7 @@ UPDATE scheduled_task SET
     next_run_at = $2,
     updated_at = now()
 WHERE id = $1
-RETURNING id, workspace_id, name, agent_id, schedule, prompt, enabled, last_run_at, next_run_at, created_by, created_at, updated_at
+RETURNING id, workspace_id, name, agent_id, schedule, enabled, last_run_at, next_run_at, created_by, created_at, updated_at
 `
 
 type MarkScheduledTaskRunParams struct {
@@ -235,7 +229,6 @@ func (q *Queries) MarkScheduledTaskRun(ctx context.Context, arg MarkScheduledTas
 		&i.Name,
 		&i.AgentID,
 		&i.Schedule,
-		&i.Prompt,
 		&i.Enabled,
 		&i.LastRunAt,
 		&i.NextRunAt,
@@ -251,12 +244,11 @@ UPDATE scheduled_task SET
     name = COALESCE($2, name),
     agent_id = COALESCE($3, agent_id),
     schedule = COALESCE($4, schedule),
-    prompt = COALESCE($5, prompt),
-    enabled = COALESCE($6, enabled),
-    next_run_at = $7,
+    enabled = COALESCE($5, enabled),
+    next_run_at = $6,
     updated_at = now()
 WHERE id = $1
-RETURNING id, workspace_id, name, agent_id, schedule, prompt, enabled, last_run_at, next_run_at, created_by, created_at, updated_at
+RETURNING id, workspace_id, name, agent_id, schedule, enabled, last_run_at, next_run_at, created_by, created_at, updated_at
 `
 
 type UpdateScheduledTaskParams struct {
@@ -264,7 +256,6 @@ type UpdateScheduledTaskParams struct {
 	Name      pgtype.Text        `json:"name"`
 	AgentID   pgtype.UUID        `json:"agent_id"`
 	Schedule  pgtype.Text        `json:"schedule"`
-	Prompt    pgtype.Text        `json:"prompt"`
 	Enabled   pgtype.Bool        `json:"enabled"`
 	NextRunAt pgtype.Timestamptz `json:"next_run_at"`
 }
@@ -275,7 +266,6 @@ func (q *Queries) UpdateScheduledTask(ctx context.Context, arg UpdateScheduledTa
 		arg.Name,
 		arg.AgentID,
 		arg.Schedule,
-		arg.Prompt,
 		arg.Enabled,
 		arg.NextRunAt,
 	)
@@ -286,7 +276,6 @@ func (q *Queries) UpdateScheduledTask(ctx context.Context, arg UpdateScheduledTa
 		&i.Name,
 		&i.AgentID,
 		&i.Schedule,
-		&i.Prompt,
 		&i.Enabled,
 		&i.LastRunAt,
 		&i.NextRunAt,

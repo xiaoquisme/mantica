@@ -4,7 +4,6 @@ export interface ScheduledTask {
   name: string;
   agent_id: string;
   schedule: string;
-  prompt: string;
   enabled: boolean;
   last_run_at: string | null;
   next_run_at: string | null;
@@ -17,13 +16,11 @@ export interface CreateScheduledTaskRequest {
   name: string;
   agent_id: string;
   schedule: string;
-  prompt: string;
 }
 
 export interface UpdateScheduledTaskRequest {
   name?: string;
   agent_id?: string;
   schedule?: string;
-  prompt?: string;
   enabled?: boolean;
 }

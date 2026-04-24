@@ -7,7 +7,6 @@ import type { ScheduledTask, Agent } from "@multica/core/types";
 import { Input } from "@multica/ui/components/ui/input";
 import { Button } from "@multica/ui/components/ui/button";
 import { Card, CardContent } from "@multica/ui/components/ui/card";
-import { Textarea } from "@multica/ui/components/ui/textarea";
 import { Label } from "@multica/ui/components/ui/label";
 import {
   Select,
@@ -80,7 +79,6 @@ export function ScheduledTasksTab() {
   const [formAgentId, setFormAgentId] = useState("");
   const [formSchedulePreset, setFormSchedulePreset] = useState("*/30 * * * *");
   const [formCustomCron, setFormCustomCron] = useState("");
-  const [formPrompt, setFormPrompt] = useState("");
   const [creating, setCreating] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -107,8 +105,8 @@ export function ScheduledTasksTab() {
 
   const handleCreate = async () => {
     const schedule = formSchedulePreset === "custom" ? formCustomCron : formSchedulePreset;
-    if (!formName.trim() || !formAgentId || !schedule || !formPrompt.trim()) {
-      toast.error("All fields are required");
+    if (!formName.trim() || !formAgentId || !schedule) {
+      toast.error("Name, agent, and schedule are required");
       return;
     }
     setCreating(true);
@@ -117,7 +115,7 @@ export function ScheduledTasksTab() {
         name: formName.trim(),
         agent_id: formAgentId,
         schedule,
-        prompt: formPrompt.trim(),
+        prompt: "",
       });
       toast.success("Scheduled task created");
       setShowCreate(false);
@@ -165,7 +163,6 @@ export function ScheduledTasksTab() {
     setFormAgentId("");
     setFormSchedulePreset("*/30 * * * *");
     setFormCustomCron("");
-    setFormPrompt("");
   };
 
   return (
@@ -309,20 +306,10 @@ export function ScheduledTasksTab() {
                 />
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="st-prompt">Prompt</Label>
-              <Textarea
-                id="st-prompt"
-                value={formPrompt}
-                onChange={(e) => setFormPrompt(e.target.value)}
-                placeholder="Instructions for the agent when this task runs..."
-                rows={6}
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={creating || !formName.trim() || !formAgentId || !formPrompt.trim()}>
+            <Button onClick={handleCreate} disabled={creating || !formName.trim() || !formAgentId}>
               {creating ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>

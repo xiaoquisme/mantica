@@ -5,7 +5,6 @@ CREATE TABLE scheduled_task (
     name TEXT NOT NULL,
     agent_id UUID NOT NULL REFERENCES agent(id) ON DELETE CASCADE,
     schedule TEXT NOT NULL,
-    prompt TEXT NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT true,
     last_run_at TIMESTAMPTZ,
     next_run_at TIMESTAMPTZ,

@@ -95,7 +95,6 @@ type AgentTaskResponse struct {
 	ChatSessionID    string         `json:"chat_session_id,omitempty"`    // non-empty for chat tasks
 	ChatMessage      string         `json:"chat_message,omitempty"`       // user message for chat tasks
 	ScheduledTaskID  string         `json:"scheduled_task_id,omitempty"`  // non-empty for scheduled tasks
-	ScheduledPrompt  string         `json:"scheduled_prompt,omitempty"`   // prompt from scheduled task
 }
 
 // TaskAgentData holds agent info included in claim responses so the daemon

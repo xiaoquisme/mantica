@@ -98,7 +98,7 @@ func (s *TaskService) EnqueueTaskForIssue(ctx context.Context, issue db.Issue, t
 }
 
 // EnqueueScheduledTask creates a queued task triggered by a scheduled task.
-// The task has no issue_id — the agent works from the scheduled task's prompt.
+// The task has no issue_id — the agent works from its own instructions.
 func (s *TaskService) EnqueueScheduledTask(ctx context.Context, st db.ScheduledTask) (db.AgentTaskQueue, error) {
 	agent, err := s.Queries.GetAgent(ctx, st.AgentID)
 	if err != nil {

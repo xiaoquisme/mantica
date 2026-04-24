@@ -292,7 +292,6 @@ type ScheduledTask struct {
 	Name        string             `json:"name"`
 	AgentID     pgtype.UUID        `json:"agent_id"`
 	Schedule    string             `json:"schedule"`
-	Prompt      string             `json:"prompt"`
 	Enabled     bool               `json:"enabled"`
 	LastRunAt   pgtype.Timestamptz `json:"last_run_at"`
 	NextRunAt   pgtype.Timestamptz `json:"next_run_at"`
