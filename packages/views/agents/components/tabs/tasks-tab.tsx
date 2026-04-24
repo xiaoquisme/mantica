@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ListTodo } from "lucide-react";
+import { ListTodo, Clock } from "lucide-react";
 import type { Agent, AgentTask } from "@multica/core/types";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
 import { api } from "@multica/core/api";
@@ -80,7 +80,8 @@ export function TasksTab({ agent }: { agent: Agent }) {
           {sortedTasks.map((task) => {
             const config = taskStatusConfig[task.status] ?? taskStatusConfig.queued!;
             const Icon = config.icon;
-            const issue = issueMap.get(task.issue_id);
+            const issue = task.issue_id ? issueMap.get(task.issue_id) : null;
+            const isScheduled = !!task.scheduled_task_id;
             const isActive = task.status === "running" || task.status === "dispatched";
             const isRunning = task.status === "running";
 
@@ -102,18 +103,29 @@ export function TasksTab({ agent }: { agent: Agent }) {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    {issue && (
-                      <AppLink
-                        href={`/issues/${issue.identifier}`}
-                        className="shrink-0 text-xs font-mono text-muted-foreground hover:text-foreground hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {issue.identifier}
-                      </AppLink>
+                    {isScheduled ? (
+                      <>
+                        <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <span className={`text-sm truncate ${isActive ? "font-medium" : ""}`}>
+                          Scheduled Task
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {issue && (
+                          <AppLink
+                            href={`/issues/${issue.identifier}`}
+                            className="shrink-0 text-xs font-mono text-muted-foreground hover:text-foreground hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {issue.identifier}
+                          </AppLink>
+                        )}
+                        <span className={`text-sm truncate ${isActive ? "font-medium" : ""}`}>
+                          {issue?.title ?? (task.issue_id ? `Issue ${task.issue_id.slice(0, 8)}...` : "Task")}
+                        </span>
+                      </>
                     )}
-                    <span className={`text-sm truncate ${isActive ? "font-medium" : ""}`}>
-                      {issue?.title ?? `Issue ${task.issue_id.slice(0, 8)}...`}
-                    </span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
                     {isRunning && task.started_at
