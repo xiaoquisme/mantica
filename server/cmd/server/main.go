@@ -61,9 +61,6 @@ func main() {
 
 	r := NewRouter(pool, hub, bus)
 
-	// Create a TaskService for the scheduler (shares queries/hub/bus with handler).
-	taskService := service.NewTaskService(queries, hub, bus)
-
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: r,
