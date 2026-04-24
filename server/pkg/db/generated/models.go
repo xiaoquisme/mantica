@@ -79,6 +79,7 @@ type AgentTaskQueue struct {
 	WorkDir          pgtype.Text        `json:"work_dir"`
 	TriggerCommentID pgtype.UUID        `json:"trigger_comment_id"`
 	ChatSessionID    pgtype.UUID        `json:"chat_session_id"`
+	ScheduledTaskID  pgtype.UUID        `json:"scheduled_task_id"`
 }
 
 type Attachment struct {
@@ -283,6 +284,21 @@ type RuntimeUsage struct {
 	CacheWriteTokens int64              `json:"cache_write_tokens"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ScheduledTask struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	Name        string             `json:"name"`
+	AgentID     pgtype.UUID        `json:"agent_id"`
+	Schedule    string             `json:"schedule"`
+	Prompt      string             `json:"prompt"`
+	Enabled     bool               `json:"enabled"`
+	LastRunAt   pgtype.Timestamptz `json:"last_run_at"`
+	NextRunAt   pgtype.Timestamptz `json:"next_run_at"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Skill struct {

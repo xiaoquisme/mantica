@@ -97,6 +97,53 @@ func (s *TaskService) EnqueueTaskForIssue(ctx context.Context, issue db.Issue, t
 	return task, nil
 }
 
+// EnqueueScheduledTask creates a queued task triggered by a scheduled task.
+// The task has no issue_id — the agent works from the scheduled task's prompt.
+func (s *TaskService) EnqueueScheduledTask(ctx context.Context, st db.ScheduledTask) (db.AgentTaskQueue, error) {
+	agent, err := s.Queries.GetAgent(ctx, st.AgentID)
+	if err != nil {
+		return db.AgentTaskQueue{}, fmt.Errorf("load agent: %w", err)
+	}
+	if agent.ArchivedAt.Valid {
+		return db.AgentTaskQueue{}, fmt.Errorf("agent is archived")
+	}
+	if !agent.RuntimeID.Valid {
+		return db.AgentTaskQueue{}, fmt.Errorf("agent has no runtime")
+	}
+
+	task, err := s.Queries.CreateScheduledAgentTask(ctx, db.CreateScheduledAgentTaskParams{
+		AgentID:         st.AgentID,
+		RuntimeID:       agent.RuntimeID,
+		Priority:        1, // low priority for scheduled tasks
+		ScheduledTaskID: st.ID,
+	})
+	if err != nil {
+		return db.AgentTaskQueue{}, fmt.Errorf("create scheduled task: %w", err)
+	}
+
+	slog.Info("scheduled task enqueued",
+		"task_id", util.UUIDToString(task.ID),
+		"scheduled_task_id", util.UUIDToString(st.ID),
+		"agent_id", util.UUIDToString(st.AgentID),
+	)
+
+	workspaceID := util.UUIDToString(st.WorkspaceID)
+	s.Bus.Publish(events.Event{
+		Type:        protocol.EventTaskQueued,
+		WorkspaceID: workspaceID,
+		ActorType:   "system",
+		ActorID:     "",
+		Payload: map[string]any{
+			"task_id":           util.UUIDToString(task.ID),
+			"agent_id":         util.UUIDToString(st.AgentID),
+			"scheduled_task_id": util.UUIDToString(st.ID),
+			"status":           task.Status,
+		},
+	})
+
+	return task, nil
+}
+
 // EnqueueTaskForMention creates a queued task for a mentioned agent on an issue.
 // Unlike EnqueueTaskForIssue, this takes an explicit agent ID rather than
 // deriving it from the issue assignee.
@@ -812,6 +859,11 @@ func (s *TaskService) resolveTaskWorkspaceID(ctx context.Context, task db.AgentT
 	if task.ChatSessionID.Valid {
 		if cs, err := s.Queries.GetChatSession(ctx, task.ChatSessionID); err == nil {
 			return util.UUIDToString(cs.WorkspaceID)
+		}
+	}
+	if task.ScheduledTaskID.Valid {
+		if st, err := s.Queries.GetScheduledTask(ctx, task.ScheduledTaskID); err == nil {
+			return util.UUIDToString(st.WorkspaceID)
 		}
 	}
 	return ""

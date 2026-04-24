@@ -288,6 +288,17 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 				})
 			})
 
+			// Scheduled Tasks
+			r.Route("/api/scheduled-tasks", func(r chi.Router) {
+				r.Get("/", h.ListScheduledTasks)
+				r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Post("/", h.CreateScheduledTask)
+				r.Route("/{id}", func(r chi.Router) {
+					r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Put("/", h.UpdateScheduledTask)
+					r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Delete("/", h.DeleteScheduledTask)
+					r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Post("/run", h.RunScheduledTaskNow)
+				})
+			})
+
 			// Inbox
 			r.Route("/api/inbox", func(r chi.Router) {
 				r.Get("/", h.ListInbox)
