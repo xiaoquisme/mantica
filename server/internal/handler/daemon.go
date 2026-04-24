@@ -366,6 +366,21 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Scheduled task: populate workspace and prompt from the scheduled_task table.
+	if task.ScheduledTaskID.Valid {
+		if st, err := h.Queries.GetScheduledTask(r.Context(), task.ScheduledTaskID); err == nil {
+			resp.ScheduledTaskID = uuidToString(st.ID)
+			resp.ScheduledPrompt = st.Prompt
+			resp.WorkspaceID = uuidToString(st.WorkspaceID)
+			if ws, err := h.Queries.GetWorkspace(r.Context(), st.WorkspaceID); err == nil && ws.Repos != nil {
+				var repos []RepoData
+				if json.Unmarshal(ws.Repos, &repos) == nil && len(repos) > 0 {
+					resp.Repos = repos
+				}
+			}
+		}
+	}
+
 	slog.Info("task claimed by runtime", "task_id", uuidToString(task.ID), "runtime_id", runtimeID, "agent_id", uuidToString(task.AgentID), "prior_session", resp.PriorSessionID)
 	writeJSON(w, http.StatusOK, map[string]any{"task": resp})
 }
@@ -587,6 +602,11 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 	if workspaceID == "" && task.ChatSessionID.Valid {
 		if cs, err := h.Queries.GetChatSession(r.Context(), task.ChatSessionID); err == nil {
 			workspaceID = uuidToString(cs.WorkspaceID)
+		}
+	}
+	if workspaceID == "" && task.ScheduledTaskID.Valid {
+		if st, err := h.Queries.GetScheduledTask(r.Context(), task.ScheduledTaskID); err == nil {
+			workspaceID = uuidToString(st.WorkspaceID)
 		}
 	}
 

@@ -61,6 +61,9 @@ func main() {
 
 	r := NewRouter(pool, hub, bus)
 
+	// Create a TaskService for the scheduler (shares queries/hub/bus with handler).
+	taskService := service.NewTaskService(queries, hub, bus)
+
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: r,
@@ -72,6 +75,10 @@ func main() {
 	taskService := service.NewTaskService(queries, hub, bus)
 	sweepCtx, sweepCancel := context.WithCancel(context.Background())
 	go runRuntimeSweeper(sweepCtx, queries, bus, taskService)
+
+	// Start scheduled task scheduler.
+	schedulerCtx, schedulerCancel := context.WithCancel(context.Background())
+	go runScheduler(schedulerCtx, queries, taskService)
 
 	// Graceful shutdown
 	go func() {
@@ -88,6 +95,7 @@ func main() {
 
 	slog.Info("shutting down server")
 	sweepCancel()
+	schedulerCancel()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

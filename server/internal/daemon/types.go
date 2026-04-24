@@ -38,6 +38,8 @@ type Task struct {
 	TriggerCommentID string     `json:"trigger_comment_id,omitempty"` // comment that triggered this task
 	ChatSessionID    string     `json:"chat_session_id,omitempty"`    // non-empty for chat tasks
 	ChatMessage      string     `json:"chat_message,omitempty"`       // user message content for chat tasks
+	ScheduledTaskID  string     `json:"scheduled_task_id,omitempty"`  // non-empty for scheduled tasks
+	ScheduledPrompt  string     `json:"scheduled_prompt,omitempty"`   // prompt from the scheduled task
 }
 
 // AgentData holds agent details returned by the claim endpoint.
