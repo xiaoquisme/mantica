@@ -731,7 +731,7 @@ export class ApiClient {
     return this.fetch("/api/scheduled-tasks");
   }
 
-  async createScheduledTask(data: CreateScheduledTaskRequest): Promise<ScheduledTask> {
+  async createScheduledTask(data: CreateScheduledTaskRequest & { prompt?: string }): Promise<ScheduledTask> {
     return this.fetch("/api/scheduled-tasks", {
       method: "POST",
       body: JSON.stringify(data),

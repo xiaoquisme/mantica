@@ -16,7 +16,6 @@ func TestScheduledTasksCRUD(t *testing.T) {
 		"name":     "Test Patrol",
 		"agent_id": agentID,
 		"schedule": "*/30 * * * *",
-		"prompt":   "Check blocked issues and unblock if deps resolved.",
 	})
 	if resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -87,11 +86,6 @@ func TestScheduledTasksCRUD(t *testing.T) {
 	if updated["enabled"] != false {
 		t.Fatalf("expected enabled=false, got %v", updated["enabled"])
 	}
-	// Prompt should be preserved
-	if updated["prompt"] != "Check blocked issues and unblock if deps resolved." {
-		t.Fatalf("expected prompt to be preserved, got %q", updated["prompt"])
-	}
-
 	// Delete
 	resp = authRequest(t, "DELETE", "/api/scheduled-tasks/"+stID, nil)
 	if resp.StatusCode != 204 {
@@ -119,7 +113,6 @@ func TestScheduledTaskDuplicateName(t *testing.T) {
 		"name":     "Duplicate Name Test",
 		"agent_id": agentID,
 		"schedule": "0 * * * *",
-		"prompt":   "test prompt",
 	})
 	if resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -139,7 +132,6 @@ func TestScheduledTaskDuplicateName(t *testing.T) {
 		"name":     "Duplicate Name Test",
 		"agent_id": agentID,
 		"schedule": "0 * * * *",
-		"prompt":   "another prompt",
 	})
 	if resp.StatusCode != 409 {
 		body, _ := io.ReadAll(resp.Body)
@@ -157,7 +149,6 @@ func TestScheduledTaskInvalidCron(t *testing.T) {
 		"name":     "Bad Cron Test",
 		"agent_id": agentID,
 		"schedule": "not a cron",
-		"prompt":   "test",
 	})
 	if resp.StatusCode != 400 {
 		body, _ := io.ReadAll(resp.Body)
@@ -173,10 +164,9 @@ func TestScheduledTaskMissingFields(t *testing.T) {
 		name string
 		body map[string]any
 	}{
-		{"missing name", map[string]any{"agent_id": "x", "schedule": "* * * * *", "prompt": "p"}},
-		{"missing agent_id", map[string]any{"name": "n", "schedule": "* * * * *", "prompt": "p"}},
-		{"missing schedule", map[string]any{"name": "n", "agent_id": "x", "prompt": "p"}},
-		{"missing prompt", map[string]any{"name": "n", "agent_id": "x", "schedule": "* * * * *"}},
+		{"missing name", map[string]any{"agent_id": "x", "schedule": "* * * * *"}},
+		{"missing agent_id", map[string]any{"name": "n", "schedule": "* * * * *"}},
+		{"missing schedule", map[string]any{"name": "n", "agent_id": "x"}},
 	}
 
 	for _, tc := range tests {
@@ -201,7 +191,6 @@ func TestScheduledTaskRunNow(t *testing.T) {
 		"name":     "Run Now Test",
 		"agent_id": agentID,
 		"schedule": "0 0 1 1 *", // yearly — won't fire naturally
-		"prompt":   "This is a run-now test.",
 	})
 	if resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
@@ -249,7 +238,6 @@ func TestSchedulerProcessesDueTasks(t *testing.T) {
 		"name":     "Scheduler Due Test",
 		"agent_id": agentID,
 		"schedule": "* * * * *", // every minute
-		"prompt":   "Scheduler test prompt.",
 	})
 	if resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)

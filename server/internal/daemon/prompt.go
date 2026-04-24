@@ -43,7 +43,6 @@ func buildScheduledPrompt(task Task) string {
 	} else {
 		b.WriteString("You are an AI agent running a scheduled task in a Multica workspace.\n\n")
 	}
-	b.WriteString(task.ScheduledPrompt)
-	b.WriteString("\n")
+	b.WriteString("Run the task described in your instructions.\n")
 	return b.String()
 }

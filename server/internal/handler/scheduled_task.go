@@ -21,7 +21,6 @@ type ScheduledTaskResponse struct {
 	Name        string  `json:"name"`
 	AgentID     string  `json:"agent_id"`
 	Schedule    string  `json:"schedule"`
-	Prompt      string  `json:"prompt"`
 	Enabled     bool    `json:"enabled"`
 	LastRunAt   *string `json:"last_run_at"`
 	NextRunAt   *string `json:"next_run_at"`
@@ -37,7 +36,6 @@ func scheduledTaskToResponse(st db.ScheduledTask) ScheduledTaskResponse {
 		Name:        st.Name,
 		AgentID:     uuidToString(st.AgentID),
 		Schedule:    st.Schedule,
-		Prompt:      st.Prompt,
 		Enabled:     st.Enabled,
 		LastRunAt:   timestampToPtr(st.LastRunAt),
 		NextRunAt:   timestampToPtr(st.NextRunAt),
@@ -76,14 +74,13 @@ func (h *Handler) CreateScheduledTask(w http.ResponseWriter, r *http.Request) {
 		Name     string `json:"name"`
 		AgentID  string `json:"agent_id"`
 		Schedule string `json:"schedule"`
-		Prompt   string `json:"prompt"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Name == "" || req.AgentID == "" || req.Schedule == "" || req.Prompt == "" {
-		writeError(w, http.StatusBadRequest, "name, agent_id, schedule, and prompt are required")
+	if req.Name == "" || req.AgentID == "" || req.Schedule == "" {
+		writeError(w, http.StatusBadRequest, "name, agent_id, and schedule are required")
 		return
 	}
 
@@ -99,7 +96,6 @@ func (h *Handler) CreateScheduledTask(w http.ResponseWriter, r *http.Request) {
 		Name:        req.Name,
 		AgentID:     parseUUID(req.AgentID),
 		Schedule:    req.Schedule,
-		Prompt:      req.Prompt,
 		Enabled:     true,
 		NextRunAt:   pgtype.Timestamptz{Time: nextRun, Valid: true},
 		CreatedBy:   parseUUID(userID),
@@ -125,7 +121,6 @@ func (h *Handler) UpdateScheduledTask(w http.ResponseWriter, r *http.Request) {
 		Name     *string `json:"name"`
 		AgentID  *string `json:"agent_id"`
 		Schedule *string `json:"schedule"`
-		Prompt   *string `json:"prompt"`
 		Enabled  *bool   `json:"enabled"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -142,9 +137,6 @@ func (h *Handler) UpdateScheduledTask(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.AgentID != nil {
 		params.AgentID = parseUUID(*req.AgentID)
-	}
-	if req.Prompt != nil {
-		params.Prompt = pgtype.Text{String: *req.Prompt, Valid: true}
 	}
 	if req.Enabled != nil {
 		params.Enabled = pgtype.Bool{Bool: *req.Enabled, Valid: true}

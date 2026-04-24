@@ -1,6 +1,6 @@
 -- name: CreateScheduledTask :one
-INSERT INTO scheduled_task (workspace_id, name, agent_id, schedule, prompt, enabled, next_run_at, created_by)
-VALUES ($1, $2, $3, $4, $5, $6, sqlc.narg(next_run_at), $7)
+INSERT INTO scheduled_task (workspace_id, name, agent_id, schedule, enabled, next_run_at, created_by)
+VALUES ($1, $2, $3, $4, $5, sqlc.narg(next_run_at), $6)
 RETURNING *;
 
 -- name: GetScheduledTask :one
@@ -16,7 +16,6 @@ UPDATE scheduled_task SET
     name = COALESCE(sqlc.narg('name'), name),
     agent_id = COALESCE(sqlc.narg('agent_id'), agent_id),
     schedule = COALESCE(sqlc.narg('schedule'), schedule),
-    prompt = COALESCE(sqlc.narg('prompt'), prompt),
     enabled = COALESCE(sqlc.narg('enabled'), enabled),
     next_run_at = sqlc.narg('next_run_at'),
     updated_at = now()

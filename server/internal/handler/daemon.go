@@ -370,7 +370,6 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 	if task.ScheduledTaskID.Valid {
 		if st, err := h.Queries.GetScheduledTask(r.Context(), task.ScheduledTaskID); err == nil {
 			resp.ScheduledTaskID = uuidToString(st.ID)
-			resp.ScheduledPrompt = st.Prompt
 			resp.WorkspaceID = uuidToString(st.WorkspaceID)
 			if ws, err := h.Queries.GetWorkspace(r.Context(), st.WorkspaceID); err == nil && ws.Repos != nil {
 				var repos []RepoData
