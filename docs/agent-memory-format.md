@@ -7,9 +7,9 @@ able to do so with a plain text editor.
 
 The runtime tooling that consumes this format is delivered separately:
 
-- Reading memory at session start — TES-169
-- Writing memory after task completion — TES-170
-- Two-level memory (workspace + repo) — TES-184
+- Reading memory at session start
+- Writing memory after task completion
+- Two-level memory (workspace + repo)
 
 If the spec and the runtime ever disagree, treat it as a spec defect and fix
 this document. Do not let the two conventions drift.
