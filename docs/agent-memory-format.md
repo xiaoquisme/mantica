@@ -17,11 +17,22 @@ this document. Do not let the two conventions drift.
 
 ## 1. Overview
 
-A workspace's memory layer is a small, append-friendly directory of markdown
-files. Each file holds one *memory entry* — a single fact, lesson, or pointer
-that future agents in the workspace should know about. A single index file
-(`MEMORY.md`) lists every entry and is loaded into the agent's context at the
-start of each session so the agent can decide what is relevant.
+Memory is organised in **two levels** that agents load at session start and
+write to at session end. Each level is a small, append-friendly directory of
+markdown files. Each file holds one *memory entry* — a single fact, lesson,
+or pointer that future agents should know about. A single index file
+(`MEMORY.md`) in each level lists every entry in that level.
+
+**Level 1 — Workspace-level** (`workdir/memory/`):
+Cross-cutting knowledge that applies to multiple repos or to the workspace as
+a whole: team preferences, conventions shared across projects, stakeholder
+requirements. Survives workspace/session changes. Always present.
+
+**Level 2 — Repo-level** (`<repo-root>/memory/`):
+Knowledge specific to a single checked-out git repository: tech decisions,
+known bugs, project-specific references, repo conventions. Persists with the
+code via git — survives workspace resets and agent turnover. Only present when
+a repo is checked out.
 
 Design constraints:
 
@@ -40,6 +51,8 @@ Design constraints:
 
 ## 2. Directory Layout
 
+### 2.1 Workspace-level memory
+
 Memory lives at the workspace working-directory root in a directory called
 `memory/`:
 
@@ -53,10 +66,25 @@ Memory lives at the workspace working-directory root in a directory called
     └── reference_grafana.md
 ```
 
+### 2.2 Repo-level memory
+
+When a repository is checked out, repo-level memory lives inside that
+repository at its root in a directory also called `memory/`:
+
+```
+<workdir>/
+└── <repo-name>/
+    └── memory/
+        ├── MEMORY.md            # index — loaded when repo is checked out
+        ├── feedback_testing.md
+        └── reference_api_quirks.md
+```
+
 Rules:
 
-- The directory is always `memory/` and always at the workdir root.
-- `MEMORY.md` lives **inside** `memory/`, not at the workdir root.
+- The directory is always `memory/` — at `workdir/memory/` for workspace
+  level and at `<repo-root>/memory/` for repo level.
+- `MEMORY.md` lives **inside** `memory/`, not at the workdir or repo root.
 - Every `.md` file in `memory/` other than `MEMORY.md` is a memory entry and
   must conform to the schema in §3.
 - Subdirectories under `memory/` are not used in this phase. Keep the layout
@@ -64,35 +92,65 @@ Rules:
 
 ---
 
-## 3. Memory File Format
+## 3. Two-Level Read / Write Rules
+
+### 3.1 Read phase (session start)
+
+Agents must load memory in this order at the start of every session:
+
+1. Load **workspace-level** `memory/MEMORY.md` and every referenced entry
+   file. This is always done, even if the index does not exist yet (treat as
+   empty).
+2. If a repository is checked out, load **repo-level** `memory/MEMORY.md`
+   and every referenced entry file from that repo.
+3. When the same topic appears in both levels, **repo-level entries take
+   precedence** for decisions that are specific to that repository.
+
+### 3.2 Write phase (session end)
+
+After completing a task, apply this decision rule to each candidate memory:
+
+| Question | Answer | Write to |
+|---|---|---|
+| Is this knowledge specific to the checked-out repo? | Yes | Repo-level `<repo-root>/memory/`; commit the new/updated file to git |
+| Does this apply to multiple repos or the whole workspace? | Yes | Workspace-level `workdir/memory/` |
+
+When writing to repo-level memory, the new or updated file must be committed
+to the repository before the session ends. Use a `chore(N/A): update memory`
+commit on the repo's main branch so the entry survives for future agents in
+any workspace that checks out the same repo.
+
+---
+
+## 4. Memory File Format
 
 A memory entry is a UTF-8 markdown file with YAML frontmatter delimited by
 `---` lines. The frontmatter must be the very first content in the file.
 
-### 3.1 Frontmatter schema
+### 4.1 Frontmatter schema
 
 | Field         | Required | Type   | Constraint                                                                          |
 |---------------|----------|--------|-------------------------------------------------------------------------------------|
 | `name`        | yes      | string | Short title. ≤ 60 chars. Human-friendly, not the filename.                          |
-| `description` | yes      | string | One-line relevance hook. ≤ 150 chars. **Reused verbatim** in `MEMORY.md` (see §6).  |
-| `type`        | yes      | enum   | One of `user`, `feedback`, `project`, `reference`. Closed enum — see §4.            |
+| `description` | yes      | string | One-line relevance hook. ≤ 150 chars. **Reused verbatim** in `MEMORY.md` (see §7).  |
+| `type`        | yes      | enum   | One of `user`, `feedback`, `project`, `reference`. Closed enum — see §5.            |
 
 No other fields are defined in this phase. Writers must not invent new keys;
 readers must ignore unknown keys (and may warn).
 
-### 3.2 Body
+### 4.2 Body
 
 Everything after the closing `---` is the entry body. It is markdown. The
-required body shape depends on `type` — see §5.
+required body shape depends on `type` — see §6.
 
-### 3.3 Parse failures
+### 4.3 Parse failures
 
 Readers must skip and warn on any file in `memory/` that fails to parse. A
 single malformed entry must never abort loading the rest of the index.
 
 ---
 
-## 4. Memory Types
+## 5. Memory Types
 
 The `type` field is a closed enum. Adding a new value requires revising this
 spec; agents must not invent ad-hoc types.
@@ -104,7 +162,7 @@ spec; agents must not invent ad-hoc types.
 | `project`   | Non-derivable workspace facts: deadlines, in-flight initiatives, stakeholder asks.                       | Fast       |
 | `reference` | Pointers to external systems (Linear projects, dashboards, channels) and what they are for.              | Slow       |
 
-### 4.1 What NOT to save
+### 5.1 What NOT to save
 
 Do not create memory entries for any of the following — they are recoverable
 from the project itself or are too ephemeral to survive past the session:
@@ -123,7 +181,7 @@ clarify what was *surprising* or *non-obvious* and save only that.
 
 ---
 
-## 5. Body Structure by Type
+## 6. Body Structure by Type
 
 `feedback` and `project` entries decay or need judgement at the edge cases.
 For both, the body **must** start with the rule or fact, then include two
@@ -140,12 +198,12 @@ typical; multiple paragraphs are allowed when needed.
 
 ---
 
-## 6. MEMORY.md Index Format
+## 7. MEMORY.md Index Format
 
 `MEMORY.md` is a flat list of one-line pointers to every entry in the
 directory. It is **not** a memory entry and must not have frontmatter.
 
-### 6.1 Line format
+### 7.1 Line format
 
 Each entry is exactly one line in the following form:
 
@@ -161,14 +219,14 @@ Each entry is exactly one line in the following form:
   index and trust it matches the file.
 - The em-dash separator is `—` (U+2014), surrounded by single spaces.
 
-### 6.2 Ordering
+### 7.2 Ordering
 
 Group entries by type in this order: `user`, `feedback`, `project`,
 `reference`. Within a group, order is not significant; alphabetical by name
 is fine. Optional `## <Type>` subheadings are permitted for readability but
 not required.
 
-### 6.3 200-line limit
+### 7.3 200-line limit
 
 `MEMORY.md` is hard-capped at 200 lines (including any blank lines and
 optional subheadings). Lines past 200 are silently truncated by the reader,
@@ -180,7 +238,7 @@ this at write time.
 
 ---
 
-## 7. Naming Conventions
+## 8. Naming Conventions
 
 Entry filenames use semantic snake_case with a `.md` extension and should
 indicate the topic, not the date:
@@ -204,12 +262,12 @@ Date-based names (`2026-04-23-foo.md`) are not used.
 
 ---
 
-## 8. Examples
+## 9. Examples
 
 The following four entries and one index file are valid and copy-paste
 runnable against the schema above.
 
-### 8.1 `memory/user_role.md`
+### 9.1 `memory/user_role.md`
 
 ```markdown
 ---
@@ -228,7 +286,7 @@ backend patterns (e.g. "the Query cache is the read model; mutations are
 commands") and call out React-specific footguns explicitly.
 ```
 
-### 8.2 `memory/feedback_testing.md`
+### 9.2 `memory/feedback_testing.md`
 
 ```markdown
 ---
@@ -251,7 +309,7 @@ DB calls in integration tests. Pure unit tests of non-DB logic are still
 fine to mock.
 ```
 
-### 8.3 `memory/project_q2_freeze.md`
+### 9.3 `memory/project_q2_freeze.md`
 
 ```markdown
 ---
@@ -272,7 +330,7 @@ PR work — refactors, dependency bumps, doc-only changes — and ask whether
 it can wait. Hotfixes and revert-of-broken-main changes are still allowed.
 ```
 
-### 8.4 `memory/reference_grafana_latency.md`
+### 9.4 `memory/reference_grafana_latency.md`
 
 ```markdown
 ---
@@ -289,7 +347,7 @@ Check it before and after any change under `server/internal/handler/` or
 `server/internal/middleware/` that could affect request latency.
 ```
 
-### 8.5 `memory/MEMORY.md`
+### 9.5 `memory/MEMORY.md` (workspace-level index)
 
 ```markdown
 ## user
@@ -303,4 +361,36 @@ Check it before and after any change under `server/internal/handler/` or
 
 ## reference
 - [Oncall API latency dashboard](reference_grafana_latency.md) — grafana.internal/d/api-latency — oncall watches this for request-path regressions
+```
+
+### 9.6 Repo-level memory example (`<repo>/memory/feedback_db_driver.md`)
+
+This entry would be committed into the repository and loaded when any agent
+checks out that repo, regardless of which workspace it is working in.
+
+```markdown
+---
+name: Use pgx/v5 driver — never database/sql
+description: All DB access in this repo must use pgx/v5 directly, not database/sql wrapper
+type: feedback
+---
+
+All database access in this repository must go through `pgx/v5` directly.
+Do not use the `database/sql` standard-library wrapper.
+
+**Why:** The original team switched from `database/sql` to `pgx/v5` for
+full COPY protocol support and array-type scanning. Code using
+`database/sql` compiles but silently falls back to text encoding, which
+breaks bulk inserts.
+
+**How to apply:** Any new file under `internal/db/` must import
+`github.com/jackc/pgx/v5` and use `pgx.Pool`, not `sql.DB`. Review any
+PR that imports `database/sql` for this repo.
+```
+
+And its `<repo>/memory/MEMORY.md` index:
+
+```markdown
+## feedback
+- [Use pgx/v5 driver — never database/sql](feedback_db_driver.md) — All DB access in this repo must use pgx/v5 directly, not database/sql wrapper
 ```
