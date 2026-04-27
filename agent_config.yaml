@@ -157,19 +157,24 @@ skills:
       - **APPROVE**: Total >= 25/35 AND no single dimension scored 1
       - **REJECT**: Total < 25/35 OR any dimension scored 1
 
-      ## Bug Card Format (REJECT only)
+      ## Bug Card Creation (REJECT only)
 
-      For each issue found, create a bug card in Plane:
+      For each issue found, create a bug card. The `--parent` flag is **MANDATORY**:
 
-      - **Title**: `[Code Review] <concise description>`
+      ```
+      multica issue create \
+        --title "[Code Review] <concise description>" \
+        --description "<what is wrong, where in code, how to fix>" \
+        --parent <reviewed-issue-id>
+      ```
+
+      - Always pass `--parent <reviewed-issue-id>` — the ID of the issue currently under review.
+      - After creation, verify the response JSON contains `"parent_issue_id"` equal to the reviewed issue's ID. If not, stop and post a failure comment on the reviewed issue — do not set `ready_dev` on the malformed card.
       - **Severity**: `critical` (blocks functionality), `major` (significant issue), `minor` (style/improvement)
-      - **Description**: What is wrong, where in the code, and how to fix it
       - **AC Reference**: Which acceptance criterion is affected (if applicable)
 
-      ## Post-Creation Rule
-      After creating each bug card with `multica issue create`, immediately set its status:
+      After verifying parent, immediately set the bug card to `ready_dev`:
       `multica issue status <new-issue-id> ready_dev`
-      This is mandatory for every issue the Code Review agent creates.
 
       ## What NOT to Flag
 
@@ -870,8 +875,11 @@ agents:
       5. Check test coverage against acceptance criteria
       6. Score each dimension (1-5) with justification
       7. Verdict: APPROVE (>= 25/35) or REJECT (< 25/35)
-      8. If REJECT, create bug cards for each issue
-      8a. After creating each bug card, immediately run:
+      8. If REJECT, create bug cards for each issue using:
+         `multica issue create --title "..." --description "..." --parent <reviewed-issue-id>`
+         - The `--parent` flag is **MANDATORY** — always pass the ID of the issue under review
+         - After creation, verify the response JSON contains `"parent_issue_id"` equal to the reviewed issue's ID; if not, stop and flag the failure
+      8a. After creating each bug card and verifying parent_issue_id, immediately run:
           multica issue status <new-issue-id> ready_dev
 
       ## Git Workflow Rules
