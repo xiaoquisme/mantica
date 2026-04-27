@@ -37,6 +37,10 @@ func registerSubscriberListeners(bus *events.Bus, queries *db.Queries) {
 		// Subscribe @mentioned users in description
 		if issue.Description != nil && *issue.Description != "" {
 			for _, m := range parseMentions(*issue.Description) {
+				// Only member and agent mentions can be subscribers; skip issue/all mentions
+				if m.Type != "member" && m.Type != "agent" {
+					continue
+				}
 				addSubscriber(bus, queries, e.WorkspaceID, issue.ID, m.Type, m.ID, "mentioned")
 			}
 		}
@@ -71,6 +75,10 @@ func registerSubscriberListeners(bus *events.Bus, queries *db.Queries) {
 					}
 				}
 				for _, m := range newMentions {
+					// Only member and agent mentions can be subscribers; skip issue/all mentions
+					if m.Type != "member" && m.Type != "agent" {
+						continue
+					}
 					if !prevMentioned[m.Type+":"+m.ID] {
 						addSubscriber(bus, queries, e.WorkspaceID, issue.ID, m.Type, m.ID, "mentioned")
 					}
