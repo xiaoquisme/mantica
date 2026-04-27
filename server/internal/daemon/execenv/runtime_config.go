@@ -88,7 +88,8 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 	b.WriteString("**Step 0 — before your first action, do this:**\n\n")
 	b.WriteString("1. Read `memory/MEMORY.md` (the index of available memory files).\n")
 	b.WriteString("2. Read each referenced `memory/*.md` file that is relevant to your current task type (e.g. architect, dev, review).\n")
-	b.WriteString("3. Apply the recalled context when planning your first action.\n\n")
+	b.WriteString("3. If a repository is checked out, also read `<repo-root>/memory/MEMORY.md` and each referenced file there.\n")
+	b.WriteString("4. Apply the recalled context when planning your first action. Repo-level entries take precedence over workspace-level entries for repo-specific decisions.\n\n")
 	b.WriteString("**If `memory/MEMORY.md` does not exist**, treat memory as empty and proceed normally — this is a valid state for new workspaces.\n\n")
 	b.WriteString("Memory is **read-only** during this read phase. Memory entries are markdown files with frontmatter (`name`, `description`, `type ∈ {user, feedback, project, reference}`); use `./memory/` as the canonical location for Multica workspace memory and ignore any provider-private memory directory.\n\n")
 
@@ -182,6 +183,11 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 
 	b.WriteString("**When to write:** at the end of the session, after your work is done and before the final `multica issue status` transition. ")
 	b.WriteString("Do not write mid-session.\n\n")
+
+	b.WriteString("**Which level to write to** — apply this decision rule for each candidate memory:\n\n")
+	b.WriteString("- \"Is this knowledge specific to the checked-out repo?\" → write to repo's `<repo-root>/memory/` and commit the file to git\n")
+	b.WriteString("- \"Does this apply across multiple repos or the whole workspace?\" → write to `workdir/memory/`\n\n")
+	b.WriteString("When writing to repo-level memory, commit the new or updated file with a `chore(N/A): update memory` commit on the repo's main branch so it is available to future agents that check out the same repo.\n\n")
 
 	b.WriteString("**What to save** — only non-obvious, non-derivable knowledge. The `type` field is a closed enum:\n")
 	b.WriteString("- `user` — facts about the human (role, expertise, preferences) that tailor behaviour to them\n")
