@@ -1,4 +1,4 @@
-.PHONY: dev daemon cli multica build test migrate-up migrate-down sqlc seed clean setup start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down agent-apply
+.PHONY: dev daemon cli multica build test migrate-up migrate-down sqlc seed clean setup quickstart start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down agent-apply
 
 MAIN_ENV_FILE ?= .env
 WORKTREE_ENV_FILE ?= .env.worktree
@@ -49,6 +49,15 @@ setup:
 	cd server && go run ./cmd/migrate up
 	@echo ""
 	@echo "✓ Setup complete! Run 'make start' to launch the app."
+
+# One-click entry for new contributors: copy .env.example if needed, install deps, and launch
+quickstart:
+	@if [ ! -f "$(ENV_FILE)" ]; then \
+		echo "==> Creating $(ENV_FILE) from .env.example..."; \
+		cp .env.example $(ENV_FILE); \
+	fi
+	@$(MAKE) setup
+	@$(MAKE) start
 
 # Start all services (backend + frontend)
 start:

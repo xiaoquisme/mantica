@@ -152,20 +152,28 @@ For contributors working on the Multica codebase, see the [Contributing Guide](C
 **Prerequisites:** [Node.js](https://nodejs.org/) v20+, [pnpm](https://pnpm.io/) v10.28+, [Go](https://go.dev/) v1.26+, [Docker](https://www.docker.com/)
 
 ```bash
- pnpm install
- cp .env.example .env
- make setup
- make start
+make quickstart     # One-click: copy .env.example → .env, install deps, start DB, migrate, and launch
+```
 
- See CONTRIBUTING.md for the full development workflow, worktree support, testing,
- and troubleshooting.
+For more control, run the steps individually:
+
+```bash
+cp .env.example .env   # Edit JWT_SECRET and other secrets first
+make setup             # Install deps, start DB, run migrations
+make start             # Start backend + frontend
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development workflow, worktree support, testing, and troubleshooting.
 
 ## Commands
 
- make setup          # First-time: install deps, start DB, run migrations
- make start          # Start backend + frontend together
- make stop           # Stop app processes
- make test           # Run all tests (Go + TypeScript)
- make check          # Full verification: typecheck + unit tests + Go tests + E2E
- make agent-apply    # Apply agent_config.yaml to the workspace (upsert skills and agents)
-                     # Use AGENT_CONFIG_FILE=path/to/file.yaml to specify a different file
+```bash
+make quickstart     # One-click setup and launch (copies .env.example if .env is missing)
+make setup          # First-time: install deps, start DB, run migrations
+make start          # Start backend + frontend together
+make stop           # Stop app processes
+make test           # Run all tests (Go + TypeScript)
+make check          # Full verification: typecheck + unit tests + Go tests + E2E
+make agent-apply    # Apply agent_config.yaml to the workspace (upsert skills and agents)
+                    # Use AGENT_CONFIG_FILE=path/to/file.yaml to specify a different file
+```
