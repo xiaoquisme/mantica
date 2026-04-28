@@ -489,17 +489,17 @@ agents:
       4. Write acceptance criteria for each story
       5. **MANDATORY: Create each story as a sub-issue using the --parent flag** (see Sub-Issue Creation Rules below)
       6. After creation, **verify parent_issue_id** in the JSON response (see Verification Step below)
-      7. Set each sub-issue status to `ready_arch_design` immediately after successful verification
+      7. After all sub-issues are created and verified, set the parent Epic to `ready_arch_design` (sub-stories stay in `todo` — TL will unlock them after Epic-level arch design)
       8. Add an INVEST checklist as a comment on each story
 
       ## Sub-Issue Creation Rules
 
       **The --parent flag is MANDATORY and non-negotiable. Never omit it.**
 
-      When creating sub-issues from an Epic, you MUST always include `--parent <epic-id>`:
+      When creating sub-issues from an Epic, you MUST always include `--parent <epic-id>` and `--status todo`:
 
       ```
-      multica issue create --title "..." --description "..." --parent <epic-id>
+      multica issue create --title "..." --description "..." --parent <epic-id> --status todo
       ```
 
       - Replace `<epic-id>` with the actual ID of the parent Epic (the issue you are currently analyzing)
@@ -518,7 +518,7 @@ agents:
       - Set the Epic status to `blocked`
       - Stop processing
 
-      Only proceed to set the sub-issue status to `ready_arch_design` after confirming the parent link is correct.
+      Only proceed to create the next sub-issue after confirming the parent link is correct. Do NOT set the sub-story status — it stays `todo` until TL promotes it.
 
       ## Output
 
@@ -534,13 +534,13 @@ agents:
 
       **Allowed status transitions:**
       - Pick up: `ready_analyze` → set to `in_analyze`
-      - When analysis complete AND sub-stories were created: set each sub-story to `ready_arch_design`, then set the parent Epic to `blocked`
+      - When analysis complete AND sub-stories were created: set the parent Epic to `ready_arch_design` (sub-stories stay in `todo` — TL will lock tech constraints and unlock them)
       - When analysis complete AND no sub-stories needed (single deliverable): set the issue directly to `ready_arch_design`
 
       **Sub-issue creation rules:**
       - Do NOT set assignee on sub-issues — the pipeline will auto-assign the correct agent
-      - Always set each sub-issue to `ready_arch_design` after creation to trigger the pipeline
-      - Set the parent Epic to `blocked` only after all sub-issues are created and promoted
+      - Always create sub-issues with `--status todo` — do NOT promote them to `ready_arch_design`
+      - Set the parent Epic to `ready_arch_design` only after all sub-issues are created and verified
 
       **NEVER set status to any other value.** You must NOT set status to `done`, `in_dev`, `in_review`, or any status outside your stage.
 
@@ -573,6 +573,44 @@ agents:
        
 
       ## Steps
+
+      ### Step 0: Epic-Level vs Sub-Story-Level Detection
+
+      Run:
+      ```
+      multica issue list --output json
+      ```
+
+      Filter the result for items where `parent_issue_id` equals the current issue's ID AND `status` equals `"todo"`.
+
+      **If any `todo` children exist → Epic-level mode:**
+      1. Read the Epic description and all sub-story descriptions to identify shared constraints.
+      2. Determine: programming language, framework, shared data model/schema, cross-story constraints.
+      3. Post a "Tech Constraints" comment on the Epic:
+         ```
+         multica issue comment add <epic-id> --content "## Tech Constraints\n\n**Language**: ...\n**Framework**: ...\n**Shared schema**: ...\n**Cross-story constraints**: ..."
+         ```
+      4. Promote every `todo` sub-story to `ready_arch_design`:
+         ```
+         multica issue status <sub-issue-id> ready_arch_design   # repeat for each
+         ```
+      5. Set the Epic to `blocked`:
+         ```
+         multica issue status <current-issue-id> blocked
+         ```
+      6. **Stop — do not proceed to Steps 1–6.**
+
+      **If no `todo` children → sub-story mode:**
+      - Fetch this issue's `parent_issue_id`:
+        ```
+        multica issue get <current-issue-id> --output json
+        ```
+      - If a parent Epic exists, read its comments and find the `## Tech Constraints` entry:
+        ```
+        multica issue comment list <parent-epic-id> --output json
+        ```
+        Treat those constraints as **hard requirements**. Do NOT independently choose language or framework.
+      - Proceed to Step 1.
 
       ### Step 1: Understand the Story
       Read the story ACs and acceptance tests. Identify:
@@ -703,10 +741,11 @@ agents:
 
       **Allowed status transitions:**
       - Pick up: `ready_arch_design` → set to `in_arch_design`
+      - **Epic-level mode** (Step 0, todo children found): after posting Tech Constraints and promoting all sub-stories to `ready_arch_design` → set Epic to `blocked`
       - When design complete AND no fan-out: set to `ready_dev` (single-path)
       - When design complete AND you fanned out (Step 6): set each sub-issue to `ready_dev`, then set the current story to `blocked` (the parent is parked while children execute)
 
-      **NEVER set status to any other value.** You must NOT set status to `done`, `in_review`, or any status outside your stage. Your job ends when you move the issue to `ready_dev` (single-path) or `blocked` (fan-out).
+      **NEVER set status to any other value.** You must NOT set status to `done`, `in_review`, or any status outside your stage. Your job ends when you move the issue to `ready_dev` (single-path), `blocked` (fan-out or Epic-level).
     max_concurrent_tasks: 6
     visibility: workspace
 
