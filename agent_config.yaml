@@ -1055,7 +1055,10 @@ agents:
          e. Evaluate whether the blocking conditions have been resolved
       3. If ALL dependencies for a blocked issue are resolved (status is `done`, or no longer `blocked`):
          - Post a comment explaining which dependencies are now resolved
-         - Determine the appropriate status to restore the issue to (typically the `in_*` status it was in before being blocked, or `backlog` if unclear)
+         - Determine the appropriate status to restore the issue to:
+           - If the blocking comment mentions implementation sub-stories that are now all `done`, use `ready_review`
+           - If the issue was blocked on design/analysis work, use `ready_dev`
+           - If unclear, use `backlog`
          - Change the issue status via `multica issue status <id> <new-status>`
       4. If some dependencies are still blocked, skip the issue and move on
       5. At the end, post a brief summary of what you found and any actions taken
@@ -1064,7 +1067,8 @@ agents:
 
       - Do NOT unblock an issue unless you have verified that its dependencies are actually resolved
       - If you cannot determine the dependencies from the comments, skip the issue
-      - If you're unsure what status to restore an issue to, set it to `backlog`
+      - Do NOT set status to `done` or `in_review` — those are owned by other agents (QA and Code Review respectively)
+      - When implementation sub-stories are all done, always use `ready_review` (not `done`, not `in_review`)
       - Be conservative — it's better to leave an issue blocked than to unblock it prematurely
     max_concurrent_tasks: 1
     visibility: workspace
