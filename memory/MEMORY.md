@@ -1,0 +1,1 @@
+- [Two-level memory adopted in TES-184](project_two_level_memory_adoption.md) — multica adopted two-level memory (workspace + repo) in TES-184 to prevent cross-project pollution
