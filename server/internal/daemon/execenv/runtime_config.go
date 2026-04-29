@@ -34,7 +34,7 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 	var b strings.Builder
 
 	b.WriteString("# Multica Agent Runtime\n\n")
-	b.WriteString("You are a coding agent in the Multica platform. Use the `multica` CLI to interact with the platform.\n\n")
+	b.WriteString("You are a agent in the Multica platform. Use the `multica` CLI to interact with the platform.\n\n")
 
 	// Inject agent identity instructions before workflow commands.
 	if ctx.AgentInstructions != "" {
@@ -228,7 +228,7 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 
 	b.WriteString("## Output\n\n")
 	b.WriteString("Keep comments concise and natural — state the outcome, not the process.\n")
-	b.WriteString("Good: \"Fixed the login redirect. PR: https://...\"\n")
+	b.WriteString("Good: \"Fixed the login redirect. https://...\"\n")
 	b.WriteString("Bad: \"1. Read the issue 2. Found the bug in auth.go 3. Created branch 4. ...\"\n")
 
 	return b.String()
