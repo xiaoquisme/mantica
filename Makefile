@@ -183,3 +183,19 @@ agent-apply:
 # Cleanup
 clean:
 	rm -rf server/bin server/tmp
+
+# ---------- Production ----------
+PROD_COMPOSE := docker compose -f docker-compose.prod.yml --env-file .env.prod
+
+prod-up:
+	@test -f .env.prod || (echo "Missing .env.prod — copy from .env.prod.example" && exit 1)
+	$(PROD_COMPOSE) up -d --build
+
+prod-down:
+	$(PROD_COMPOSE) down
+
+prod-logs:
+	$(PROD_COMPOSE) logs -f
+
+prod-ps:
+	$(PROD_COMPOSE) ps

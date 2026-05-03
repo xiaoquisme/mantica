@@ -31,5 +31,8 @@
     "pg": "^8.20.0",
     "turbo": "^2.5.4",
     "typescript": "catalog:"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
   }
 }
