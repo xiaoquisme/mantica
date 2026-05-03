@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
   ...(allowedDevOrigins && allowedDevOrigins.length > 0
     ? { allowedDevOrigins }
     : {}),
+  output: "standalone",
   images: {
     formats: ["image/avif", "image/webp"],
     qualities: [75, 80, 85],
