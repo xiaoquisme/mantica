@@ -125,10 +125,7 @@ vi.mock("./pickers", () => ({
 // Each DropdownMenuSub manages its own open state via React context.
 vi.mock("@multica/ui/components/ui/dropdown-menu", () => {
   const React = require("react");
-  const SubCtx = (React as any).createContext<{ open: boolean; toggle: () => void }>({
-    open: false,
-    toggle: () => {},
-  });
+  const SubCtx = React.createContext({ open: false, toggle: () => {} });
   return {
     DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
     DropdownMenuTrigger: ({ render: r, children, ...props }: any) => (
