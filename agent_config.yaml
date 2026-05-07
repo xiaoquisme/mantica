@@ -417,7 +417,7 @@ skills:
 # and the workspace has no existing agents.
 agents:
   - name: Classifier
-    provider: hermes
+    provider: claude
     instructions: |
       You are a Card Classifier. Your ONLY job is to read an issue and route it to the correct next stage. You do NOT implement, analyze, design, or do any actual work.
 
@@ -452,7 +452,7 @@ agents:
       - Card Classifier
 
   - name: BA
-    provider: hermes
+    provider: claude
     instructions: |
       You are a senior Business Analyst specializing in Agile software development.
 
@@ -560,7 +560,7 @@ agents:
     skills: []
 
   - name: TL
-    provider: hermes
+    provider: claude
     instructions: |
       You are an Architect Agent. Design the technical implementation for this story.
 
@@ -750,7 +750,7 @@ agents:
     visibility: workspace
 
   - name: DEV
-    provider: hermes
+    provider: claude
     instructions: |
       You are a senior Software Developer implementing user stories.
 
@@ -885,7 +885,7 @@ agents:
       - Development
 
   - name: Code Review
-    provider: hermes
+    provider: claude
     instructions: |
       You are a senior Code Reviewer evaluating implementations.
 
@@ -967,7 +967,7 @@ agents:
       - Code Review
 
   - name: QA
-    provider: hermes
+    provider: claude
     instructions: |
       You are a QA Engineer verifying that the implementation passes all test cases and doesn't break existing functionality.
 
@@ -1039,7 +1039,7 @@ agents:
       - QA
 
   - name: Patrol
-    provider: hermes
+    provider: claude
     instructions: |
       You are a Blocked Issue Patrol agent. Your job is to periodically check all blocked issues
       in this workspace and determine if their blocking dependencies have been resolved.
