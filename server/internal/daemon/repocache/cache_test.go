@@ -238,9 +238,10 @@ func TestCreateWorktreeNotCached(t *testing.T) {
 	cacheRoot := t.TempDir()
 	cache := New(cacheRoot, testLogger())
 
+	// Use a local path that doesn't exist as a git repo to avoid network calls.
 	_, err := cache.CreateWorktree(WorktreeParams{
 		WorkspaceID: "ws-1",
-		RepoURL:     "https://github.com/org/nonexistent",
+		RepoURL:     "/nonexistent/local/repo",
 		WorkDir:     t.TempDir(),
 		AgentName:   "Agent",
 		TaskID:      "test-task-id",
@@ -248,8 +249,8 @@ func TestCreateWorktreeNotCached(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for uncached repo")
 	}
-	if !strings.Contains(err.Error(), "not found in cache") {
-		t.Errorf("expected 'not found in cache' error, got: %v", err)
+	if !strings.Contains(err.Error(), "not found in cache and on-demand clone failed") {
+		t.Errorf("expected 'not found in cache and on-demand clone failed' error, got: %v", err)
 	}
 }
 

@@ -39,6 +39,10 @@ type Cache struct {
 	// worktree admin dirs) don't tolerate parallel mutations on the same
 	// repo. Separate repos are independent and run concurrently.
 	repoLocks sync.Map // barePath -> *sync.Mutex
+	// tokens maps workspaceID+"|"+repoURL → token string. Populated by Sync
+	// and consumed by CreateWorktree for authenticated fetches and on-demand
+	// clones of private repos. In-memory only; repopulated by Sync on restart.
+	tokens sync.Map // workspaceID+"|"+repoURL -> string
 }
 
 // New creates a new repo cache rooted at the given directory.
@@ -55,6 +59,17 @@ func (c *Cache) lockForRepo(barePath string) *sync.Mutex {
 	newLock := &sync.Mutex{}
 	actual, _ := c.repoLocks.LoadOrStore(barePath, newLock)
 	return actual.(*sync.Mutex)
+}
+
+func (c *Cache) storeToken(workspaceID, repoURL, token string) {
+	c.tokens.Store(workspaceID+"|"+repoURL, token)
+}
+
+func (c *Cache) lookupToken(workspaceID, repoURL string) string {
+	if v, ok := c.tokens.Load(workspaceID + "|" + repoURL); ok {
+		return v.(string)
+	}
+	return ""
 }
 
 // Sync ensures all repos for a workspace are cloned (or fetched if already cached).
@@ -76,6 +91,7 @@ func (c *Cache) Sync(workspaceID string, repos []RepoInfo) error {
 		if repo.URL == "" {
 			continue
 		}
+		c.storeToken(workspaceID, repo.URL, repo.Token)
 		barePath := filepath.Join(wsDir, bareDirName(repo.URL))
 		authURL := injectToken(repo.URL, repo.Token)
 
@@ -306,9 +322,31 @@ type WorktreeResult struct {
 // at the target path (reused environment), it updates the existing worktree to
 // the latest remote default branch instead of failing.
 func (c *Cache) CreateWorktree(params WorktreeParams) (*WorktreeResult, error) {
+	token := c.lookupToken(params.WorkspaceID, params.RepoURL)
+	authURL := injectToken(params.RepoURL, token)
+
 	barePath := c.Lookup(params.WorkspaceID, params.RepoURL)
 	if barePath == "" {
-		return nil, fmt.Errorf("repo not found in cache: %s (workspace: %s)", params.RepoURL, params.WorkspaceID)
+		// Repo not in cache — attempt an on-demand bare clone.
+		wsDir := filepath.Join(c.root, params.WorkspaceID)
+		if err := os.MkdirAll(wsDir, 0o755); err != nil {
+			return nil, fmt.Errorf("create workspace cache dir: %w", err)
+		}
+		barePath = filepath.Join(wsDir, bareDirName(params.RepoURL))
+		repoLock := c.lockForRepo(barePath)
+		repoLock.Lock()
+		if !isBareRepo(barePath) {
+			c.logger.Info("repo checkout: on-demand clone", "url", params.RepoURL)
+			if err := gitCloneBare(authURL, barePath); err != nil {
+				repoLock.Unlock()
+				hint := ""
+				if token == "" {
+					hint = " (private repo? add a token in workspace settings)"
+				}
+				return nil, fmt.Errorf("repo not found in cache and on-demand clone failed%s: %w", hint, err)
+			}
+		}
+		repoLock.Unlock()
 	}
 
 	// Serialize concurrent CreateWorktree calls on the same bare repo. Git's
@@ -318,11 +356,12 @@ func (c *Cache) CreateWorktree(params WorktreeParams) (*WorktreeResult, error) {
 	repoLock.Lock()
 	defer repoLock.Unlock()
 
-	// Fetch latest from origin. This also migrates the bare cache's refspec
-	// to the modern remote-tracking layout on first run, so subsequent fetches
-	// never collide with the refs/heads/agent/* branches that worktree creation
-	// locks in this same bare repo.
-	if err := gitFetch(barePath, ""); err != nil {
+	// Fetch latest from origin using the stored token for authentication.
+	// This also migrates the bare cache's refspec to the modern remote-tracking
+	// layout on first run, so subsequent fetches never collide with the
+	// refs/heads/agent/* branches that worktree creation locks in this same
+	// bare repo.
+	if err := gitFetch(barePath, authURL); err != nil {
 		// Non-fatal: preserve cached state and continue, but make the warning
 		// loud enough that it's findable in the daemon log. The agent will
 		// receive an older snapshot than the remote head.
