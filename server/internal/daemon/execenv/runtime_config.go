@@ -57,6 +57,13 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 	b.WriteString("- `multica issue run-messages <task-id> [--since <seq>] --output json` — List messages for a specific execution run (supports incremental fetch)\n")
 	b.WriteString("- `multica attachment download <id> [-o <dir>]` — Download an attachment file locally by ID\n\n")
 
+	b.WriteString("### Memory\n")
+	b.WriteString("- `multica memory list [--type X] [--limit N]` — List memory entries (FTS5 SQLite backend)\n")
+	b.WriteString("- `multica memory search <query> [--limit N]` — Full-text search across memory entries\n")
+	b.WriteString("- `multica memory add --type X --name \"...\" --description \"...\" [--body \"...\"] [--expires-after 30d]` — Add or update a memory entry\n")
+	b.WriteString("- `multica memory gc [--older-than 30d]` — Delete expired and old memory entries\n")
+	b.WriteString("- `multica memory migrate` — Import legacy memory/*.md files into the SQLite database\n\n")
+
 	b.WriteString("### Write\n")
 	b.WriteString("- `multica issue create --title \"...\" [--description \"...\"] [--priority X] [--assignee X] [--parent <issue-id>] [--status X]` — Create a new issue\n")
 	b.WriteString("- `multica issue assign <id> --to <name>` — Assign an issue to a member or agent by name (use --unassign to remove assignee)\n")

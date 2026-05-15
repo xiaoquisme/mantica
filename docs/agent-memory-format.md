@@ -395,3 +395,56 @@ And its `<repo>/memory/MEMORY.md` index:
 ## feedback
 - [Use pgx/v5 driver — never database/sql](feedback_db_driver.md) — All DB access in this repo must use pgx/v5 directly, not database/sql wrapper
 ```
+
+---
+
+## 10. SQLite Backend (TES-28)
+
+Starting with TES-28, workspace-level memory (`workdir/memory/`) is backed by a
+SQLite database at `{WorkspacesRoot}/{WorkspaceID}/memory.db`. The database uses
+**WAL mode** for concurrent-safe access by multiple parallel tasks.
+
+### 10.1 Schema
+
+| Table | Purpose |
+|---|---|
+| `memory_entries` | Primary store: id, workspace_id, type, name, description, body, created_at, updated_at, expires_at |
+| `memory_fts_content` | FTS5 content table backing the virtual table |
+| `memory_fts` | FTS5 virtual table indexed on name + description + body |
+
+Vector search (`memory_vec`) is reserved for Phase 2 when `sqlite-vec` extension
+is available via `MULTICA_SQLITE_VEC_PATH`.
+
+### 10.2 CLI Access
+
+Agents interact with the SQLite backend via the `multica memory` command group:
+
+```
+multica memory list [--type X] [--limit N]
+multica memory search <query> [--limit N]
+multica memory add --type X --name "..." --description "..." [--body "..."] [--expires-after 30d]
+multica memory gc [--older-than 30d]
+multica memory migrate
+```
+
+`multica memory migrate` performs a one-time import of existing `memory/*.md`
+files into the database. Agents in new workspaces should run `migrate` once to
+import any legacy entries.
+
+### 10.3 Markdown exports (backward compatibility)
+
+Every write to the SQLite store simultaneously exports a human-readable
+markdown file to `memory/entries/<id>.md` and rewrites `memory/MEMORY.md`.
+Agents that still read the flat-file index work unchanged.
+
+### 10.4 TTL / GC
+
+Entries can be given a TTL via `--expires-after 30d`. The `gc` command deletes
+expired entries and, optionally, project/feedback entries older than a given
+duration. This replaces the previous requirement for manual index pruning.
+
+### 10.5 Fallback for old workspaces
+
+If `memory.db` does not exist (e.g. legacy workspace), the daemon creates it
+automatically on next task start. Until then, agents fall back to reading
+`memory/MEMORY.md` directly (AC-6 fallback).
