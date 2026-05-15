@@ -424,6 +424,51 @@ func TestMemoryDBRebuildIndexContainsAllTypes(t *testing.T) {
 	}
 }
 
+func TestMemoryDBGCClearsFTSIndex(t *testing.T) {
+	t.Parallel()
+	db := openTestMemoryDB(t)
+
+	// Add an entry with a unique keyword.
+	past := time.Now().UTC().Add(-time.Hour)
+	saved, err := db.Add(MemoryEntry{
+		Type:        "project",
+		Name:        "ghost-entry",
+		Description: "ghost description",
+		Body:        "uniqueghostkeyword",
+		ExpiresAt:   &past,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify FTS content row exists before GC.
+	var preFTSCount int
+	if err := db.db.QueryRow(`SELECT count(*) FROM memory_fts_content WHERE entry_id = ?`, saved.ID).Scan(&preFTSCount); err != nil {
+		t.Fatal(err)
+	}
+	if preFTSCount != 1 {
+		t.Fatalf("expected 1 FTS content row before GC, got %d", preFTSCount)
+	}
+
+	// GC must delete the expired entry.
+	n, gcErr := db.GC(0)
+	if gcErr != nil {
+		t.Fatalf("GC failed: %v", gcErr)
+	}
+	if n != 1 {
+		t.Errorf("expected 1 deleted by GC, got %d", n)
+	}
+
+	// After GC the FTS content row must also be gone (no ghost in the index).
+	var postFTSCount int
+	if err := db.db.QueryRow(`SELECT count(*) FROM memory_fts_content WHERE entry_id = ?`, saved.ID).Scan(&postFTSCount); err != nil {
+		t.Fatal(err)
+	}
+	if postFTSCount != 0 {
+		t.Errorf("ghost FTS content row remains after GC: got %d rows, want 0", postFTSCount)
+	}
+}
+
 // openTestMemoryDB is a helper that opens a MemoryDB in a temp dir.
 func openTestMemoryDB(t *testing.T) *MemoryDB {
 	t.Helper()

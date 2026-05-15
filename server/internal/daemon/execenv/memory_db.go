@@ -313,9 +313,45 @@ func (m *MemoryDB) Delete(id string) error {
 
 // GC deletes entries whose expires_at is in the past. It also removes entries
 // older than olderThan (if non-zero) for project and feedback types.
+// FTS content rows are cleaned up in the same transaction to prevent ghost
+// search results from lingering in the index after deletion.
 func (m *MemoryDB) GC(olderThan time.Duration) (int64, error) {
 	now := time.Now().UTC().Format(time.RFC3339)
-	res, err := m.db.Exec(`DELETE FROM memory_entries WHERE workspace_id = ? AND expires_at IS NOT NULL AND expires_at <= ?`, m.workspaceID, now)
+
+	tx, err := m.db.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("gc begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	// Collect IDs of expired entries so we can clean up their FTS rows.
+	expiredRows, err := tx.Query(
+		`SELECT id FROM memory_entries WHERE workspace_id = ? AND expires_at IS NOT NULL AND expires_at <= ?`,
+		m.workspaceID, now,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("gc query expired: %w", err)
+	}
+	var expiredIDs []string
+	for expiredRows.Next() {
+		var id string
+		if err := expiredRows.Scan(&id); err == nil {
+			expiredIDs = append(expiredIDs, id)
+		}
+	}
+	expiredRows.Close()
+
+	// Delete FTS index rows for expired entries before removing the entries.
+	for _, id := range expiredIDs {
+		if err := deleteFTSRows(tx, id); err != nil {
+			return 0, fmt.Errorf("gc delete fts for %s: %w", id, err)
+		}
+	}
+
+	res, err := tx.Exec(
+		`DELETE FROM memory_entries WHERE workspace_id = ? AND expires_at IS NOT NULL AND expires_at <= ?`,
+		m.workspaceID, now,
+	)
 	if err != nil {
 		return 0, fmt.Errorf("gc expired entries: %w", err)
 	}
@@ -323,7 +359,28 @@ func (m *MemoryDB) GC(olderThan time.Duration) (int64, error) {
 
 	if olderThan > 0 {
 		cutoff := time.Now().UTC().Add(-olderThan).Format(time.RFC3339)
-		res2, err2 := m.db.Exec(`
+
+		// Collect IDs of old project/feedback entries.
+		oldRows, err := tx.Query(`
+SELECT id FROM memory_entries
+WHERE workspace_id = ?
+  AND type IN ('project', 'feedback')
+  AND updated_at < ?`, m.workspaceID, cutoff)
+		if err == nil {
+			var oldIDs []string
+			for oldRows.Next() {
+				var id string
+				if err := oldRows.Scan(&id); err == nil {
+					oldIDs = append(oldIDs, id)
+				}
+			}
+			oldRows.Close()
+			for _, id := range oldIDs {
+				_ = deleteFTSRows(tx, id)
+			}
+		}
+
+		res2, err2 := tx.Exec(`
 DELETE FROM memory_entries
 WHERE workspace_id = ?
   AND type IN ('project', 'feedback')
@@ -333,8 +390,34 @@ WHERE workspace_id = ?
 			n += n2
 		}
 	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("gc commit: %w", err)
+	}
 	_ = m.rebuildIndex()
 	return n, nil
+}
+
+// deleteFTSRows removes the FTS5 index entry and the content row for a given
+// entry ID. It must be called within the same transaction as the DELETE on
+// memory_entries to keep the index consistent.
+func deleteFTSRows(tx interface {
+	QueryRow(string, ...any) *sql.Row
+	Exec(string, ...any) (sql.Result, error)
+}, entryID string) error {
+	var rowid int64
+	if err := tx.QueryRow(`SELECT rowid FROM memory_fts_content WHERE entry_id = ?`, entryID).Scan(&rowid); err != nil {
+		// No FTS row — nothing to clean up.
+		return nil
+	}
+	var name, desc, body string
+	_ = tx.QueryRow(`SELECT name, description, body FROM memory_fts_content WHERE entry_id = ?`, entryID).Scan(&name, &desc, &body)
+	if _, err := tx.Exec(`INSERT INTO memory_fts(memory_fts, rowid, name, description, body) VALUES ('delete', ?, ?, ?, ?)`,
+		rowid, name, desc, body); err != nil {
+		return err
+	}
+	_, err := tx.Exec(`DELETE FROM memory_fts_content WHERE entry_id = ?`, entryID)
+	return err
 }
 
 // MigrateFromFiles reads all *.md files in memDir (except MEMORY.md) and
