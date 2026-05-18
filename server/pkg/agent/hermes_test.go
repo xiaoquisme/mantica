@@ -240,3 +240,51 @@ func TestSessionIDRegex(t *testing.T) {
 		})
 	}
 }
+
+// ── extractSessionID tests (stderr) ──
+
+func TestExtractSessionIDFromStderr(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		input  string
+		wantID string
+	}{
+		{
+			name:   "hermes stderr with session_id",
+			input:  "some debug output\nsession_id: 20260518_095230_de3068cd\n",
+			wantID: "20260518_095230_de3068cd",
+		},
+		{
+			name:   "session_id with surrounding whitespace",
+			input:  "\nsession_id: abc123\n\n",
+			wantID: "abc123",
+		},
+		{
+			name:   "no session_id in stderr",
+			input:  "just some error output\nnothing useful here\n",
+			wantID: "",
+		},
+		{
+			name:   "empty stderr",
+			input:  "",
+			wantID: "",
+		},
+		{
+			name:   "session_id mixed with error lines",
+			input:  "Warning: something\nError: something else\nsession_id: my_session_123\n",
+			wantID: "my_session_123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := extractSessionID(tt.input)
+			if got != tt.wantID {
+				t.Errorf("extractSessionID() = %q, want %q", got, tt.wantID)
+			}
+		})
+	}
+}

@@ -866,6 +866,11 @@ func (d *Daemon) handleTask(ctx context.Context, task Task) {
 			if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("complete task failed: %s", err.Error())); failErr != nil {
 				taskLog.Error("fail task fallback also failed", "error", failErr)
 			}
+		} else {
+			// Backfill tool_use/tool_result messages from Hermes session JSONL.
+			// Hermes quiet mode only outputs final text, but the session file
+			// contains full tool call data that we can extract post-hoc.
+			go d.ExtractAndSendSessionMessages(task.ID, result.SessionID, taskLog)
 		}
 	}
 }
