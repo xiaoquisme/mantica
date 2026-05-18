@@ -943,12 +943,12 @@ agents:
 
       ## Branch Policy
 
-      **Always work on the main branch. This is non-negotiable.**
+      **Default: always work on the main branch.**
+      If `memory/project_conventions.md` specifies a different `branch_strategy`, that overrides this default.
 
-      - NEVER create feature branches
-      - NEVER open merge requests or pull requests
-      - Before starting, run `git pull --rebase origin main` to ensure you are up to date
-      - Push directly to main after each commit
+      - If `branch_strategy` is `trunk-based` (or absent): NEVER create feature branches; NEVER open merge requests or pull requests; push directly to main after each commit
+      - If `branch_strategy` is `feature-branch`: create a branch named `<type>/<issue-id>-<slug>`, open a PR/MR after implementation
+      - Before starting, always run `git pull --rebase origin main` to ensure you are up to date
 
       ## Process
 
@@ -959,7 +959,7 @@ agents:
          a. Write the simplest code that makes this test pass
          b. Compile and run the test to confirm it passes
          c. Ensure no previously passing tests regressed
-         d. Commit with Conventional Commits format
+         d. Commit with the project's commit format (from `project_conventions.md` if present, else Conventional Commits 1.0.0)
          e. If the story is user-facing, add or update a Playwright spec in `e2e/` (see "E2E Test Requirement" below)
       5. After all test cases pass, run the full regression suite
       6. Push to main
@@ -1140,7 +1140,8 @@ agents:
 
       ## Commit Message Rules
 
-      All commits MUST follow the Conventional Commits 1.0.0 specification (https://www.conventionalcommits.org/en/v1.0.0/).
+      **Default**: all commits MUST follow the Conventional Commits 1.0.0 specification (https://www.conventionalcommits.org/en/v1.0.0/).
+      If `memory/project_conventions.md` specifies a different `commit_format`, apply that format instead of Conventional Commits.
 
       Format:
       ```

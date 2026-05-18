@@ -912,3 +912,74 @@ func TestEnsureSymlinkRepairsBrokenLink(t *testing.T) {
 		t.Errorf("content = %q, want %q", data, "real")
 	}
 }
+
+func TestInjectRuntimeConfigContainsProjectConventionsStep(t *testing.T) {
+	t.Parallel()
+
+	// Step 0 must include instructions to check project_conventions.md (step 5)
+	// and apply conventions with override priority (step 6).
+	wantPhrases := []string{
+		"project_conventions.md",
+		"branch_strategy",
+		"commit_format",
+		"status_transitions",
+		"override",
+	}
+
+	for _, provider := range []string{"claude", "codex", "opencode", "openclaw", "hermes"} {
+		provider := provider
+		t.Run(provider, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+
+			ctx := TaskContextForEnv{IssueID: "conventions-step-test"}
+			if err := InjectRuntimeConfig(dir, provider, ctx); err != nil {
+				t.Fatalf("InjectRuntimeConfig failed: %v", err)
+			}
+
+			fileName := "AGENTS.md"
+			if provider == "claude" {
+				fileName = "CLAUDE.md"
+			}
+			content, err := os.ReadFile(filepath.Join(dir, fileName))
+			if err != nil {
+				t.Fatalf("failed to read %s: %v", fileName, err)
+			}
+			s := string(content)
+			for _, want := range wantPhrases {
+				if !strings.Contains(s, want) {
+					t.Errorf("%s missing %q", fileName, want)
+				}
+			}
+		})
+	}
+}
+
+func TestInjectRuntimeConfigConventionsPrecedesWorkflow(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	ctx := TaskContextForEnv{IssueID: "precedence-test"}
+	if err := InjectRuntimeConfig(dir, "claude", ctx); err != nil {
+		t.Fatalf("InjectRuntimeConfig failed: %v", err)
+	}
+	content, err := os.ReadFile(filepath.Join(dir, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("failed to read CLAUDE.md: %v", err)
+	}
+	s := string(content)
+
+	// project_conventions.md loading (step 5) must appear inside the
+	// Step 0 block, which in turn must appear before ### Workflow.
+	convIdx := strings.Index(s, "project_conventions.md")
+	flowIdx := strings.Index(s, "### Workflow")
+	if convIdx < 0 {
+		t.Fatal("CLAUDE.md missing project_conventions.md reference")
+	}
+	if flowIdx < 0 {
+		t.Fatal("CLAUDE.md missing ### Workflow section")
+	}
+	if convIdx > flowIdx {
+		t.Errorf("project_conventions.md reference (pos %d) must appear before ### Workflow (pos %d)", convIdx, flowIdx)
+	}
+}
