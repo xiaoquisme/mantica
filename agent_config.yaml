@@ -195,14 +195,128 @@ skills:
 
       # Development Skill
 
+      ## Step 0: Load Memory
+
+      Before any other action, load workspace and repo-level memory:
+
+      1. Read `memory/MEMORY.md` (workspace-level index).
+      2. Read each referenced `memory/*.md` file relevant to your current task.
+      3. If a repo is checked out, also read `<repo-root>/memory/MEMORY.md` and each referenced file there.
+      4. Repo-level entries take precedence over workspace-level entries for repo-specific decisions.
+
+      ## Step 0.5: Convention Discovery (first run only)
+
+      Run this step **before** following the Branch Policy and Git Practices below.
+
+      ### Detect whether conventions are already initialised
+
+      Run:
+      ```
+      multica memory search "project conventions" --limit 1
+      ```
+      Also check whether `<repo-root>/memory/project_conventions.md` exists on disk.
+
+      - **If either check returns a result** → load the `project_conventions.md` entry, apply the
+        `branch_strategy` and `commit_format` values in place of the hardcoded defaults below,
+        and **skip the rest of Step 0.5**.
+      - **If neither exists** → proceed through the discovery sub-steps below.
+
+      ### Discover branch strategy
+
+      Run the following commands and analyse the output:
+      ```
+      git log --oneline --decorate -50
+      cat CONTRIBUTING.md 2>/dev/null || true
+      ls .github/workflows/ 2>/dev/null || true
+      git remote show origin 2>/dev/null | grep "HEAD branch"
+      ```
+
+      Infer `branch_strategy`:
+      - Recent 50 commits all on main/master with no `Merge branch` lines → `trunk-based`
+      - Otherwise (feature branches, open PRs referenced in log) → `feature-branch`
+
+      Infer `default_branch` from `git remote show origin` output.
+
+      ### Discover commit message convention
+
+      Run:
+      ```
+      git log --format="%s" -30
+      ```
+
+      Analyse the subject lines:
+      - Majority match `<type>(<scope>): <desc>` → `conventional-commits`
+      - Majority start with `:emoji:` → `gitmoji`
+      - No clear pattern → `free-form`
+
+      Pick one representative line as `commit_example`.
+
+      ### Handle low-confidence cases
+
+      If fewer than 10 commits exist, CONTRIBUTING.md is absent, and no CI workflow files are present:
+      post a comment on the current issue asking the user to confirm:
+      1. Branch strategy (trunk-based or feature-branch)
+      2. Commit message format (Conventional Commits, Gitmoji, or free-form)
+
+      Wait for the user's reply before persisting conventions. Do **not** guess when data is
+      insufficient.
+
+      ### Persist discovered conventions
+
+      When confidence is sufficient, persist to both workspace memory and repo-level memory:
+
+      **1. Workspace memory (SQLite):**
+      ```
+      multica memory add \
+        --type project \
+        --name "Project conventions" \
+        --description "Branch strategy, commit format, and workflow conventions for this repo" \
+        --body "<discovered content>"
+      ```
+
+      The `<body>` must be a valid memory entry following `docs/agent-memory-format.md` §6:
+      ```markdown
+      branch_strategy: trunk-based | feature-branch
+      default_branch: <name>
+      commit_format: conventional-commits | gitmoji | free-form
+      commit_example: "<one real example from git log>"
+
+      **Why:** Discovered from git log, CONTRIBUTING.md, and CI config on first agent run.
+
+      **How to apply:** Use branch_strategy to decide whether to push directly to main or open a
+      PR. Use commit_format to format all commit messages. Override the hardcoded defaults in
+      the Development skill with these project-specific values.
+      ```
+
+      **2. Repo-level memory file:**
+      Write `<repo-root>/memory/project_conventions.md` with the same frontmatter and body,
+      then commit and push:
+      ```
+      # Write the file (use the same content as the --body above, with YAML frontmatter)
+      git add memory/project_conventions.md
+      git commit -m "chore(N/A): update memory — add project_conventions"
+      git push origin HEAD:main
+      ```
+
+      Also append a pointer line to `<repo-root>/memory/MEMORY.md` under `## project`:
+      ```
+      - [Project conventions](project_conventions.md) — Branch strategy, commit format, and workflow conventions for this repo
+      ```
+
       ## Branch Policy
 
-      **Always work on the main branch. This is non-negotiable.**
+      **Default (used when no `project_conventions.md` exists):**
+      Always work on the main branch.
 
       - NEVER create feature branches
       - NEVER open merge requests or pull requests
       - Before starting, run `git pull --rebase origin main` to ensure you are up to date
       - Push directly to main after each commit
+
+      **When `project_conventions.md` is loaded:**
+      Follow the `branch_strategy` value from that file:
+      - `trunk-based` → apply the default policy above
+      - `feature-branch` → create a feature branch per story, open a PR/MR, do not push directly to main
 
       ## Implementation Workflow
 
@@ -213,9 +327,9 @@ skills:
          a. Write the simplest code that makes this test pass
          b. Compile and run the test to confirm it passes
          c. Ensure no previously passing tests regressed
-         d. Commit with Conventional Commits format
+         d. Commit with the project's commit format (from `project_conventions.md` if present, else Conventional Commits 1.0.0)
       5. After all test cases pass, run the full regression suite
-      6. Push to main
+      6. Push to main (or open a PR, if `branch_strategy: feature-branch`)
 
       ## Test-Driven Rules
 
@@ -235,10 +349,17 @@ skills:
 
       ## Git Practices
 
-      - One commit per logical change — not one giant commit at the end
+      **Default (no `project_conventions.md`):**
       - All commits MUST follow Conventional Commits 1.0.0: `<type>(<issue-id>): <description>`
       - Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
       - issue-id: the story/issue identifier (e.g. TES-30). Use N/A if no issue exists.
+
+      **When `project_conventions.md` is loaded:**
+      - Use the `commit_format` from that file; use `commit_example` as a style reference.
+      - Conventional Commits format is only required when `commit_format: conventional-commits`.
+
+      **Always:**
+      - One commit per logical change — not one giant commit at the end
       - Never force-push or amend shared commits
       - Stage specific files, never `git add -A`
 
