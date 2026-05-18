@@ -381,6 +381,68 @@ skills:
       2. Add a comment on the story with the failure details
       3. Flag the story for human review rather than guessing
 
+      ## Convention Update Detection
+
+      When a task is **comment-triggered**, scan the triggering comment for convention update instructions
+      before doing any other work. An update instruction is any phrase that signals the user wants to
+      change a persisted project convention. Trigger keywords (case-insensitive):
+
+      - "切换为 / switch to / change to" + a convention value (e.g. "switch to feature-branch workflow")
+      - "更新约定 / update convention / update conventions"
+      - "改为 / 修改为" + a convention field value
+
+      ### Convention Update Workflow
+
+      If a convention update instruction is detected:
+
+      1. **Read the current conventions** from `memory/project_conventions.md` (repo-level) or via
+         `multica memory search "project_conventions" --limit 1`. If neither exists, treat it as an
+         empty document — create it from scratch with only the mentioned fields.
+
+      2. **Identify which fields to update** — only the fields explicitly mentioned in the instruction.
+         Do NOT touch fields that are not referenced. Supported fields and allowed values:
+         - `branch_strategy`: `trunk-based` | `feature-branch`
+         - `commit_format`: `conventional-commits` | `gitmoji` | `free-form` | `<custom-pattern>`
+         - `status_transitions.allowed`: list of `<from> → <to>` pairs
+
+      3. **Apply the update** — overwrite only the mentioned fields, preserving all others verbatim.
+
+      4. **Append a timestamped change record** to the `## Change Log` section of
+         `memory/project_conventions.md`:
+         ```
+         - <ISO-8601 timestamp>: <field> changed from "<old-value>" to "<new-value>" (requested by user via comment)
+         ```
+         If no `## Change Log` section exists, append it at the end of the file.
+
+      5. **Persist** the updated file:
+         - Write to `<repo-root>/memory/project_conventions.md`
+         - Update the SQLite backend: `multica memory add --type project --name "project_conventions" --description "Branch strategy, commit format, and status workflow for this project" --body "<full updated body>"`
+         - Commit the file: `git add memory/project_conventions.md && git commit -m "chore(N/A): update memory — update project_conventions" && git push origin HEAD:main`
+
+      6. **Post a confirmation comment** replying to the triggering comment:
+         ```
+         multica issue comment add <issue-id> --parent <trigger-comment-id> --content "..."
+         ```
+         The confirmation comment must summarise:
+         - Which fields were updated (old value → new value)
+         - Which fields were left unchanged
+         - The timestamp of the change record appended to the log
+
+      7. **Stop** — do not continue with any other task work after posting the confirmation comment.
+         Convention updates are self-contained operations.
+
+      ### Rules
+
+      - Only update fields explicitly named in the instruction. Ambiguous instructions that do not name a
+        specific field must trigger a clarifying reply instead of a guess.
+      - Never delete or rewrite the full file; merge changes surgically.
+      - If `memory/project_conventions.md` does not exist, create it using the schema from Story 1
+        (TES-31) with only the fields mentioned in the update instruction populated, and all others
+        omitted.
+      - The update is idempotent: applying the same instruction twice results in one change-log entry,
+        not two (check whether the current value already matches the requested value; if so, reply
+        "no change needed" and stop).
+
   - name: QA
     description: QA verification skill for BA Verifier and QA Verifier agents. Provides acceptance criteria verification methodology, regression testing process, and bug reporting format. Use when verifying implementations post-development.
     content: |
