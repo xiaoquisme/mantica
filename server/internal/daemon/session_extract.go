@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"log/slog"
@@ -11,32 +12,52 @@ import (
 	"strings"
 )
 
-// extractSessionToolMessages reads a Hermes session JSONL file and returns
-// structured tool_use/tool_result messages suitable for ReportTaskMessages.
+// extractSessionToolMessages reads a Hermes session file (JSONL or JSON)
+// and returns structured tool_use/tool_result messages suitable for ReportTaskMessages.
 //
 // This bridges the gap between Hermes's quiet mode (which only outputs final
 // text) and Multica's task_message table (which needs per-tool-call data).
-// The session JSONL contains full assistant(tool_calls) + tool(result) pairs.
+// The session file contains full assistant(tool_calls) + tool(result) pairs.
+//
+// Supported formats:
+//   - JSONL: one JSON object per line (local CLI ~/.hermes/sessions/*.jsonl)
+//   - JSON: single object with "messages" array (daemon ~/.hermes/sessions/session_*.json)
 func extractSessionToolMessages(sessionFilePath string) []TaskMessageData {
-	f, err := os.Open(sessionFilePath)
+	data, err := os.ReadFile(sessionFilePath)
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
 
+	// Detect format: try parsing as single JSON first
+	var entries []json.RawMessage
+	var singleObj struct {
+		Messages []json.RawMessage `json:"messages"`
+	}
+	if err := json.Unmarshal(data, &singleObj); err == nil && len(singleObj.Messages) > 0 {
+		// Single JSON format with messages array
+		entries = singleObj.Messages
+	} else {
+		// JSONL format: one JSON per line
+		scanner := bufio.NewScanner(bytes.NewReader(data))
+		scanner.Buffer(make([]byte, 0, 2*1024*1024), 20*1024*1024)
+		for scanner.Scan() {
+			line := scanner.Bytes()
+			if len(line) > 0 {
+				entries = append(entries, json.RawMessage(line))
+			}
+		}
+	}
+
+	return parseToolMessages(entries)
+}
+
+// parseToolMessages extracts tool_use and tool_result pairs from session entries.
+func parseToolMessages(entries []json.RawMessage) []TaskMessageData {
 	var messages []TaskMessageData
 	pendingToolUses := map[string]string{} // call_id -> tool_name
 	seq := 1000 // start high to avoid collision with daemon's live messages
 
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 0, 2*1024*1024), 20*1024*1024)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue
-		}
-
+	for _, raw := range entries {
 		var entry struct {
 			Role             string `json:"role"`
 			Timestamp        string `json:"timestamp"`
@@ -54,7 +75,7 @@ func extractSessionToolMessages(sessionFilePath string) []TaskMessageData {
 			Name             string `json:"name"`
 		}
 
-		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+		if err := json.Unmarshal(raw, &entry); err != nil {
 			continue
 		}
 
@@ -83,14 +104,13 @@ func extractSessionToolMessages(sessionFilePath string) []TaskMessageData {
 					pendingToolUses[callID] = toolName
 				}
 
-				s := seq
-				seq++
 				messages = append(messages, TaskMessageData{
-					Seq:   int(s),
+					Seq:   seq,
 					Type:  "tool_use",
 					Tool:  toolName,
 					Input: inputJSON,
 				})
+				seq++
 			}
 
 		case "tool":
@@ -110,14 +130,13 @@ func extractSessionToolMessages(sessionFilePath string) []TaskMessageData {
 				}
 			}
 
-			s := seq
-			seq++
 			messages = append(messages, TaskMessageData{
-				Seq:    int(s),
+				Seq:    seq,
 				Type:   "tool_result",
 				Tool:   toolName,
 				Output: output,
 			})
+			seq++
 		}
 	}
 
@@ -126,6 +145,9 @@ func extractSessionToolMessages(sessionFilePath string) []TaskMessageData {
 
 // findSessionFile locates the session JSONL file for a given session_id.
 // It searches in ~/.hermes/sessions/ for files matching the session_id pattern.
+// Hermes stores sessions as either:
+//   - {session_id}.jsonl  (local CLI)
+//   - session_{session_id}.json  (daemon/remote)
 func findSessionFile(sessionID string) string {
 	if sessionID == "" {
 		return ""
@@ -138,10 +160,18 @@ func findSessionFile(sessionID string) string {
 
 	sessionsDir := filepath.Join(home, ".hermes", "sessions")
 
-	// Direct match: {session_id}.jsonl
-	direct := filepath.Join(sessionsDir, sessionID+".jsonl")
-	if _, err := os.Stat(direct); err == nil {
-		return direct
+	// Try all known naming patterns
+	candidates := []string{
+		filepath.Join(sessionsDir, sessionID+".jsonl"),
+		filepath.Join(sessionsDir, sessionID+".json"),
+		filepath.Join(sessionsDir, "session_"+sessionID+".jsonl"),
+		filepath.Join(sessionsDir, "session_"+sessionID+".json"),
+	}
+
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
 	}
 
 	// Fuzzy match: find files containing the session_id
@@ -150,25 +180,25 @@ func findSessionFile(sessionID string) string {
 		return ""
 	}
 
-	var candidates []string
+	var matches []string
 	for _, e := range entries {
-		if strings.Contains(e.Name(), sessionID) && strings.HasSuffix(e.Name(), ".jsonl") {
-			candidates = append(candidates, filepath.Join(sessionsDir, e.Name()))
+		if strings.Contains(e.Name(), sessionID) {
+			matches = append(matches, filepath.Join(sessionsDir, e.Name()))
 		}
 	}
 
-	if len(candidates) == 0 {
+	if len(matches) == 0 {
 		return ""
 	}
 
 	// Return the most recently modified
-	sort.Slice(candidates, func(i, j int) bool {
-		si, _ := os.Stat(candidates[i])
-		sj, _ := os.Stat(candidates[j])
+	sort.Slice(matches, func(i, j int) bool {
+		si, _ := os.Stat(matches[i])
+		sj, _ := os.Stat(matches[j])
 		return si.ModTime().After(sj.ModTime())
 	})
 
-	return candidates[0]
+	return matches[0]
 }
 
 // ExtractAndSendSessionMessages finds the session file for a completed task
