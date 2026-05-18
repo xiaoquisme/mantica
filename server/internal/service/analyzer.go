@@ -197,19 +197,46 @@ func classifyFailure(errMsg string, r *AnalysisResult) string {
 	}
 }
 
-// isErrorMessage checks if a tool output looks like an error.
+// isErrorMessage checks if a tool output looks like a real error.
+// Avoids false positives from test output, grep results, or log lines
+// that happen to contain the word "error".
 func isErrorMessage(output string) bool {
 	lower := strings.ToLower(output)
-	indicators := []string{
-		"error:", "traceback", "exception:", "failed:",
-		"permission denied", "not found", "exit status 1",
-		"fatal:", "panic:",
+
+	// Strong indicators: these almost always mean a real error
+	strongIndicators := []string{
+		"traceback (most recent call last):",
+		"fatal error:",
+		"panic:",
+		"segmentation fault",
+		"oom-killer",
+		"killed",
 	}
-	for _, ind := range indicators {
+	for _, ind := range strongIndicators {
 		if strings.Contains(lower, ind) {
 			return true
 		}
 	}
+
+	// Exit code patterns: "exit status 1", "exited with error code"
+	if strings.Contains(lower, "exit status") && !strings.Contains(lower, "exit status 0") {
+		// But not if it's just test output showing exit codes
+		if !strings.Contains(lower, "--- pass") && !strings.Contains(lower, "--- ok") {
+			return true
+		}
+	}
+
+	// Command failure patterns
+	if strings.HasPrefix(strings.TrimSpace(lower), "error:") ||
+		strings.HasPrefix(strings.TrimSpace(lower), "error ") {
+		return true
+	}
+
+	// Permission / not found
+	if strings.Contains(lower, "permission denied") && !strings.Contains(lower, "test_") {
+		return true
+	}
+
 	return false
 }
 

@@ -55,6 +55,40 @@ type AgentRuntime struct {
 	OwnerID     pgtype.UUID        `json:"owner_id"`
 }
 
+type AgentScore struct {
+	ID              pgtype.UUID        `json:"id"`
+	AgentID         pgtype.UUID        `json:"agent_id"`
+	WorkspaceID     pgtype.UUID        `json:"workspace_id"`
+	OverallScore    float64            `json:"overall_score"`
+	TaskTypeScores  []byte             `json:"task_type_scores"`
+	TotalTasks      int32              `json:"total_tasks"`
+	SuccessfulTasks int32              `json:"successful_tasks"`
+	FailedTasks     int32              `json:"failed_tasks"`
+	SuccessRate     float64            `json:"success_rate"`
+	AvgToolCount    float64            `json:"avg_tool_count"`
+	AvgErrorCount   float64            `json:"avg_error_count"`
+	AvgErrorRate    float64            `json:"avg_error_rate"`
+	ScoreTrend      string             `json:"score_trend"`
+	TrendSamples    int32              `json:"trend_samples"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
+type AgentScoreHistory struct {
+	ID          pgtype.UUID        `json:"id"`
+	AgentID     pgtype.UUID        `json:"agent_id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	TaskID      pgtype.UUID        `json:"task_id"`
+	TaskType    pgtype.Text        `json:"task_type"`
+	ScoreBefore float64            `json:"score_before"`
+	ScoreAfter  float64            `json:"score_after"`
+	ScoreDelta  float64            `json:"score_delta"`
+	Success     bool               `json:"success"`
+	ToolCount   int32              `json:"tool_count"`
+	ErrorCount  int32              `json:"error_count"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type AgentSkill struct {
 	AgentID   pgtype.UUID        `json:"agent_id"`
 	SkillID   pgtype.UUID        `json:"skill_id"`

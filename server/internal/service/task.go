@@ -30,14 +30,17 @@ type TaskService struct {
 	Hub      *realtime.Hub
 	Bus      *events.Bus
 	Analyzer *Analyzer
+	Scorer   *Scorer
 }
 
 func NewTaskService(q *db.Queries, hub *realtime.Hub, bus *events.Bus) *TaskService {
+	logger := slog.Default()
 	return &TaskService{
 		Queries:  q,
 		Hub:      hub,
 		Bus:      bus,
-		Analyzer: NewAnalyzer(q, slog.Default()),
+		Analyzer: NewAnalyzer(q, logger),
+		Scorer:   NewScorer(q, logger),
 	}
 }
 
@@ -415,10 +418,19 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 	// Post-task analysis (async, non-blocking)
 	if s.Analyzer != nil {
 		go func() {
-			// Use a separate context since the request context may be cancelled
 			bgCtx := context.Background()
 			if _, err := s.Analyzer.AnalyzeAndSave(bgCtx, task.ID); err != nil {
 				slog.Warn("post-task analysis failed", "task_id", util.UUIDToString(task.ID), "error", err)
+			}
+			// Update agent score after analysis
+			if s.Scorer != nil && task.AgentID.Valid {
+				wsID := s.resolveTaskWorkspaceID(bgCtx, task)
+				if wsID != "" {
+					wsUUID := util.ParseUUID(wsID)
+					if err := s.Scorer.ScoreTask(bgCtx, task.ID, task.AgentID, wsUUID); err != nil {
+						slog.Warn("agent scoring failed", "task_id", util.UUIDToString(task.ID), "error", err)
+					}
+				}
 			}
 		}()
 	}
@@ -471,6 +483,16 @@ func (s *TaskService) FailTask(ctx context.Context, taskID pgtype.UUID, errMsg s
 			bgCtx := context.Background()
 			if _, err := s.Analyzer.AnalyzeAndSave(bgCtx, task.ID); err != nil {
 				slog.Warn("post-task analysis failed", "task_id", util.UUIDToString(task.ID), "error", err)
+			}
+			// Update agent score for failed tasks too
+			if s.Scorer != nil && task.AgentID.Valid {
+				wsID := s.resolveTaskWorkspaceID(bgCtx, task)
+				if wsID != "" {
+					wsUUID := util.ParseUUID(wsID)
+					if err := s.Scorer.ScoreTask(bgCtx, task.ID, task.AgentID, wsUUID); err != nil {
+						slog.Warn("agent scoring failed", "task_id", util.UUIDToString(task.ID), "error", err)
+					}
+				}
 			}
 		}()
 	}
