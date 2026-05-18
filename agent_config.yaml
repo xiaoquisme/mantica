@@ -834,6 +834,119 @@ agents:
       multica issue comment add <issue-id> --content "E2E exempt: <reason — e.g. backend-only sqlc query change with no UI surface>"
       ```
 
+      ## Convention Confirmation Protocol
+
+      Before writing any code, check whether project conventions are already known.
+
+      ### Step 1: Check existing conventions
+
+      Run:
+      ```
+      multica memory search "project_conventions"
+      ```
+
+      Parse the result. The full set of convention fields is:
+      - `branch_strategy` — trunk-based vs feature-branch workflow
+      - `commit_format` — Conventional Commits vs free-form
+      - `status_workflow` — allowed issue status transitions
+      - `test_command` — how to run tests in this repo
+
+      **If ALL fields are present and none is `unknown`:** skip this protocol entirely and proceed to implementation.
+
+      **If the memory entry is missing OR any field is absent/`unknown`:** identify which fields need confirmation and continue to Step 2.
+
+      ### Step 2: Post a confirmation questionnaire comment
+
+      Build a questionnaire that lists ONLY the unresolved fields. Fetch the workspace owner's user ID first:
+      ```
+      multica workspace members --output json
+      ```
+
+      Then post:
+      ```
+      multica issue comment add <issue-id> --content "## 项目约定确认
+
+      [@<owner-name>](mention://member/<owner-user-id>)，以下约定无法从代码库自动推断，请确认：
+
+      <for each unknown field, one block like the examples below>
+
+      **分支策略** (`branch_strategy`)
+      - [ ] A. 主干开发（trunk-based，直接推 main，无 feature branch）
+      - [ ] B. 功能分支（feature branch + PR/MR 合并）
+
+      **Commit 格式** (`commit_format`)
+      - [ ] A. Conventional Commits（`type(scope): description`）
+      - [ ] B. 自由格式
+
+      **状态流转** (`status_workflow`)
+      - [ ] A. 标准流（backlog → ready_dev → in_dev → ready_review → done）
+      - [ ] B. 其他（请描述）
+
+      **测试命令** (`test_command`)
+      - [ ] A. go test ./... (Go)
+      - [ ] B. pnpm test (Node/TypeScript)
+      - [ ] C. 其他（请描述）
+
+      请直接在此 comment 下回复，格式示例：
+
+      \`\`\`
+      branch_strategy: A
+      commit_format: A
+      \`\`\`
+
+      收到回复后我会将约定写入 memory 并继续处理。"
+      ```
+
+      Only include blocks for fields that are actually unknown — do not repeat already-confirmed fields.
+
+      ### Step 3: Set issue to blocked
+
+      ```
+      multica issue status <issue-id> blocked
+      ```
+
+      Stop here. Do NOT proceed with implementation until the user replies.
+
+      ### Step 4: When re-triggered after user replies (comment-triggered mode)
+
+      1. Read the latest comments to find the user's reply:
+         ```
+         multica issue comment list <issue-id> --output json
+         ```
+      2. Parse `key: value` lines from the reply (case-insensitive, ignore leading/trailing whitespace).
+         - Map option letters to canonical values:
+           - `branch_strategy: A` → `trunk-based`
+           - `branch_strategy: B` → `feature-branch`
+           - `commit_format: A` → `conventional-commits`
+           - `commit_format: B` → `free-form`
+           - `status_workflow: A` → `standard`
+           - `test_command: A` → `go test ./...`
+           - `test_command: B` → `pnpm test`
+           - Free-text answer for option C/other: use verbatim
+      3. Merge new answers with any previously known fields (do not overwrite already-confirmed values):
+         ```
+         multica memory search "project_conventions"   # read existing
+         ```
+         Then write the merged result:
+         ```
+         multica memory add \
+           --type project \
+           --name "project conventions" \
+           --description "Confirmed project conventions for this repo" \
+           --body "branch_strategy: <value>
+         commit_format: <value>
+         status_workflow: <value>
+         test_command: <value>"
+         ```
+      4. If parsing fails (unrecognized format), reply with an explanation and keep the issue blocked:
+         ```
+         multica issue comment add <issue-id> --content "无法解析回复格式，请使用 `key: value` 格式重新回复（例如 `branch_strategy: A`）。issue 保持 blocked 状态。"
+         ```
+      5. On success, confirm in a comment and continue with implementation:
+         ```
+         multica issue comment add <issue-id> --content "约定已保存，继续开发。"
+         ```
+
       ## Guidelines
 
       - Write clean, readable code — no clever tricks
