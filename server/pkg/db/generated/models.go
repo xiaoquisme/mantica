@@ -321,6 +321,25 @@ type SkillFile struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type TaskAnalysis struct {
+	ID               pgtype.UUID        `json:"id"`
+	TaskID           pgtype.UUID        `json:"task_id"`
+	ToolCount        int32              `json:"tool_count"`
+	ErrorCount       int32              `json:"error_count"`
+	UniqueTools      int32              `json:"unique_tools"`
+	TotalDurationMs  int64              `json:"total_duration_ms"`
+	MessageCount     int32              `json:"message_count"`
+	FailureClass     pgtype.Text        `json:"failure_class"`
+	FailureDetail    pgtype.Text        `json:"failure_detail"`
+	ToolUsage        []byte             `json:"tool_usage"`
+	HasRetryPattern  pgtype.Bool        `json:"has_retry_pattern"`
+	HasErrorRecovery pgtype.Bool        `json:"has_error_recovery"`
+	LongestToolMs    pgtype.Int8        `json:"longest_tool_ms"`
+	Summary          pgtype.Text        `json:"summary"`
+	ImprovementHint  pgtype.Text        `json:"improvement_hint"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
 type TaskMessage struct {
 	ID        pgtype.UUID        `json:"id"`
 	TaskID    pgtype.UUID        `json:"task_id"`

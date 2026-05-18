@@ -26,13 +26,19 @@ import (
 const errorSummaryMaxLen = 200
 
 type TaskService struct {
-	Queries *db.Queries
-	Hub     *realtime.Hub
-	Bus     *events.Bus
+	Queries  *db.Queries
+	Hub      *realtime.Hub
+	Bus      *events.Bus
+	Analyzer *Analyzer
 }
 
 func NewTaskService(q *db.Queries, hub *realtime.Hub, bus *events.Bus) *TaskService {
-	return &TaskService{Queries: q, Hub: hub, Bus: bus}
+	return &TaskService{
+		Queries:  q,
+		Hub:      hub,
+		Bus:      bus,
+		Analyzer: NewAnalyzer(q, slog.Default()),
+	}
 }
 
 // EnqueueTaskForIssue creates a queued task for an agent-assigned issue.
@@ -406,6 +412,17 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 	// Broadcast
 	s.broadcastTaskEvent(ctx, protocol.EventTaskCompleted, task)
 
+	// Post-task analysis (async, non-blocking)
+	if s.Analyzer != nil {
+		go func() {
+			// Use a separate context since the request context may be cancelled
+			bgCtx := context.Background()
+			if _, err := s.Analyzer.AnalyzeAndSave(bgCtx, task.ID); err != nil {
+				slog.Warn("post-task analysis failed", "task_id", util.UUIDToString(task.ID), "error", err)
+			}
+		}()
+	}
+
 	return &task, nil
 }
 
@@ -447,6 +464,16 @@ func (s *TaskService) FailTask(ctx context.Context, taskID pgtype.UUID, errMsg s
 
 	// Broadcast
 	s.broadcastTaskEvent(ctx, protocol.EventTaskFailed, task)
+
+	// Post-task analysis for failed tasks (async, non-blocking)
+	if s.Analyzer != nil {
+		go func() {
+			bgCtx := context.Background()
+			if _, err := s.Analyzer.AnalyzeAndSave(bgCtx, task.ID); err != nil {
+				slog.Warn("post-task analysis failed", "task_id", util.UUIDToString(task.ID), "error", err)
+			}
+		}()
+	}
 
 	return &task, nil
 }
