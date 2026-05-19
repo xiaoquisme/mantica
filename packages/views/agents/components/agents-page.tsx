@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 import { Bot, Plus, Archive } from "lucide-react";
-import type { CreateAgentRequest, UpdateAgentRequest } from "@multica/core/types";
+import type { CreateAgentRequest, UpdateAgentRequest, AgentScore } from "@multica/core/types";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -30,6 +30,7 @@ export function AgentsPage() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [showArchived, setShowArchived] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [scores, setScores] = useState<AgentScore[]>([]);
   const { data: runtimes = [], isLoading: runtimesLoading } = useQuery(runtimeListOptions(wsId));
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "multica_agents_layout",
@@ -48,6 +49,11 @@ export function AgentsPage() {
       setSelectedId(filteredAgents[0]!.id);
     }
   }, [filteredAgents, selectedId]);
+
+  // Fetch agent scores
+  useEffect(() => {
+    api.listAgentScores().then(setScores).catch(() => {});
+  }, []);
 
   const handleCreate = async (data: CreateAgentRequest) => {
     const agent = await api.createAgent(data);
@@ -183,6 +189,7 @@ export function AgentsPage() {
                 <AgentListItem
                   key={agent.id}
                   agent={agent}
+                  score={scores.find((s) => s.agent_id === agent.id)}
                   isSelected={agent.id === selectedId}
                   onClick={() => setSelectedId(agent.id)}
                 />

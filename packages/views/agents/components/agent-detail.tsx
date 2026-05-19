@@ -36,14 +36,16 @@ import { SkillsTab } from "./tabs/skills-tab";
 import { TasksTab } from "./tabs/tasks-tab";
 import { SettingsTab } from "./tabs/settings-tab";
 import { PerformanceTab } from "./tabs/performance-tab";
+import { OverviewTab } from "./tabs/overview-tab";
 
 function getRuntimeDevice(agent: Agent, runtimes: RuntimeDevice[]): RuntimeDevice | undefined {
   return runtimes.find((runtime) => runtime.id === agent.runtime_id);
 }
 
-type DetailTab = "instructions" | "skills" | "tasks" | "performance" | "settings";
+type DetailTab = "overview" | "instructions" | "skills" | "tasks" | "performance" | "settings";
 
 const detailTabs: { id: DetailTab; label: string; icon: typeof FileText }[] = [
+  { id: "overview", label: "Overview", icon: Activity },
   { id: "instructions", label: "Instructions", icon: FileText },
   { id: "skills", label: "Skills", icon: BookOpenText },
   { id: "tasks", label: "Tasks", icon: ListTodo },
@@ -66,7 +68,7 @@ export function AgentDetail({
 }) {
   const st = statusConfig[agent.status];
   const runtimeDevice = getRuntimeDevice(agent, runtimes);
-  const [activeTab, setActiveTab] = useState<DetailTab>("instructions");
+  const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [confirmArchive, setConfirmArchive] = useState(false);
   const isArchived = !!agent.archived_at;
 
@@ -151,6 +153,7 @@ export function AgentDetail({
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto p-6">
+        {activeTab === "overview" && <OverviewTab agent={agent} />}
         {activeTab === "instructions" && (
           <InstructionsTab
             agent={agent}
