@@ -223,6 +223,8 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 
 			// Agents
 			r.Route("/api/agents", func(r chi.Router) {
+				r.Get("/scores", h.ListAgentScores)
+				r.Get("/summary", h.GetSmartSummary)
 				r.Get("/", h.ListAgents)
 				r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Post("/", h.CreateAgent)
 				r.Get("/scores", h.ListAgentScores)
@@ -233,11 +235,11 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 					r.Post("/archive", h.ArchiveAgent)
 					r.Post("/restore", h.RestoreAgent)
 					r.Get("/tasks", h.ListAgentTasks)
-				r.Get("/skills", h.ListAgentSkills)
-				r.Put("/skills", h.SetAgentSkills)
-				r.Get("/score", h.GetAgentScore)
-				r.Get("/score/history", h.GetAgentScoreHistory)
-				r.Get("/hints", h.GetAgentHints)
+					r.Get("/skills", h.ListAgentSkills)
+					r.Put("/skills", h.SetAgentSkills)
+					r.Get("/score", h.GetAgentScore)
+					r.Get("/score/history", h.GetAgentScoreHistory)
+					r.Get("/hints", h.GetAgentHints)
 				})
 			})
 
