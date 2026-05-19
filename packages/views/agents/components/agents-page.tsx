@@ -184,7 +184,7 @@ export function AgentsPage() {
               )}
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="grid gap-2 p-2">
               {filteredAgents.map((agent) => (
                 <AgentListItem
                   key={agent.id}
