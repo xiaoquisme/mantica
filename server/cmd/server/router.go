@@ -241,6 +241,7 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 
 			// Agent Scores & Analysis
 			r.Get("/api/agents/scores", h.ListAgentScores)
+		r.Get("/api/agents/summary", h.GetSmartSummary)
 			r.Get("/api/tasks/{id}/analysis", h.GetTaskAnalysis)
 			r.Get("/api/analysis/failed", h.ListFailedAnalyses)
 

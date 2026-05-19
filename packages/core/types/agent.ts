@@ -244,3 +244,19 @@ export interface AgentHintsResponse {
   agent_id: string;
   hints: AgentHint[];
 }
+
+export interface AgentInsight {
+  type: "warning" | "success" | "info";
+  agent_id: string;
+  agent_name: string;
+  title: string;
+  detail: string;
+  action?: string;
+  action_id?: string;
+}
+
+export interface SmartSummaryResponse {
+  generated_at: string;
+  insights: AgentInsight[];
+  summary: string;
+}
