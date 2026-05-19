@@ -231,10 +231,17 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 					r.Post("/archive", h.ArchiveAgent)
 					r.Post("/restore", h.RestoreAgent)
 					r.Get("/tasks", h.ListAgentTasks)
-					r.Get("/skills", h.ListAgentSkills)
-					r.Put("/skills", h.SetAgentSkills)
+				r.Get("/skills", h.ListAgentSkills)
+				r.Put("/skills", h.SetAgentSkills)
+				r.Get("/score", h.GetAgentScore)
+				r.Get("/score/history", h.GetAgentScoreHistory)
 				})
 			})
+
+			// Agent Scores & Analysis
+			r.Get("/api/agents/scores", h.ListAgentScores)
+			r.Get("/api/tasks/{id}/analysis", h.GetTaskAnalysis)
+			r.Get("/api/analysis/failed", h.ListFailedAnalyses)
 
 			// Config apply
 			r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Post("/api/config/apply", h.ApplyConfig)

@@ -31,6 +31,7 @@ type TaskService struct {
 	Bus      *events.Bus
 	Analyzer *Analyzer
 	Scorer   *Scorer
+	Evolver  *Evolver
 }
 
 func NewTaskService(q *db.Queries, hub *realtime.Hub, bus *events.Bus) *TaskService {
@@ -41,6 +42,7 @@ func NewTaskService(q *db.Queries, hub *realtime.Hub, bus *events.Bus) *TaskServ
 		Bus:      bus,
 		Analyzer: NewAnalyzer(q, logger),
 		Scorer:   NewScorer(q, logger),
+		Evolver:  NewEvolver(q, logger),
 	}
 }
 
@@ -429,6 +431,16 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 					wsUUID := util.ParseUUID(wsID)
 					if err := s.Scorer.ScoreTask(bgCtx, task.ID, task.AgentID, wsUUID); err != nil {
 						slog.Warn("agent scoring failed", "task_id", util.UUIDToString(task.ID), "error", err)
+					}
+					// Auto-evolve: extract skills or generate improvement hints
+					if s.Evolver != nil {
+						if result, err := s.Evolver.AnalyzeAndEvolve(bgCtx, task.ID, task.AgentID, wsUUID); err != nil {
+							slog.Warn("auto-evolution failed", "task_id", util.UUIDToString(task.ID), "error", err)
+						} else if result.SkillExtracted {
+							slog.Info("skill auto-extracted", "task_id", util.UUIDToString(task.ID), "skill", result.SkillName)
+						} else if result.ImprovementHint != "" {
+							slog.Warn("improvement hint generated", "task_id", util.UUIDToString(task.ID), "hint", result.ImprovementHint)
+						}
 					}
 				}
 			}
