@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 import {
   Bot, Plus, Archive, AlertTriangle, CheckCircle, Info,
-  TrendingUp, TrendingDown, Minus, Lightbulb, Send,
+  TrendingUp, TrendingDown, Minus, Lightbulb,
 } from "lucide-react";
 import type { CreateAgentRequest, UpdateAgentRequest, AgentScore, AgentInsight, SmartSummaryResponse } from "@multica/core/types";
 import {
@@ -13,7 +13,6 @@ import {
   ResizableHandle,
 } from "@multica/ui/components/ui/resizable";
 import { Button } from "@multica/ui/components/ui/button";
-import { Input } from "@multica/ui/components/ui/input";
 import { toast } from "sonner";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
 import { api } from "@multica/core/api";
@@ -91,99 +90,6 @@ function SmartSummary({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-// ── Chat Panel ──
-
-function AgentChat({ agents, scores }: { agents: any[]; scores: AgentScore[] }) {
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
-  const [input, setInput] = useState("");
-
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const q = input.trim().toLowerCase();
-    setMessages((prev) => [...prev, { role: "user", content: input }]);
-    setInput("");
-
-    // Simple rule-based responses (can be replaced with LLM later)
-    let reply = "";
-
-    if (q.includes("失败") || q.includes("fail")) {
-      // Find agents with low win rate
-      const lowAgents = scores.filter((s) => s.success_rate < 0.8 && s.total_tasks > 5);
-      if (lowAgents.length > 0) {
-        reply = "以下 agent 成功率低于 80%:\n" + lowAgents.map((a) =>
-          `- ${a.agent_name}: ${(a.success_rate * 100).toFixed(0)}% (${a.total_tasks} tasks)`
-        ).join("\n");
-      } else {
-        reply = "所有 agent 成功率都在 80% 以上。";
-      }
-    } else if (q.includes("最好") || q.includes("best") || q.includes("最强")) {
-      const sorted = [...scores].sort((a, b) => b.overall_score - a.overall_score);
-      if (sorted.length > 0) {
-        reply = "表现最好的 agent:\n" + sorted.slice(0, 3).map((a, i) =>
-          `${i + 1}. ${a.agent_name}: ${a.overall_score.toFixed(0)} ELO, ${(a.success_rate * 100).toFixed(0)}% win`
-        ).join("\n");
-      }
-    } else if (q.includes("趋势") || q.includes("trend")) {
-      const declining = scores.filter((s) => s.score_trend === "declining");
-      const improving = scores.filter((s) => s.score_trend === "improving");
-      reply = `趋势分析:\n- 上升中: ${improving.map((a) => a.agent_name).join(", ") || "无"}\n- 下降中: ${declining.map((a) => a.agent_name).join(", ") || "无"}\n- 稳定: ${scores.filter((s) => s.score_trend === "stable").map((a) => a.agent_name).join(", ")}`;
-    } else if (q.includes("多少") || q.includes("统计") || q.includes("how many")) {
-      const total = scores.reduce((acc, s) => acc + s.total_tasks, 0);
-      const wins = scores.reduce((acc, s) => acc + s.successful_tasks, 0);
-      reply = `总览:\n- ${scores.length} 个 agent\n- ${total} 个任务\n- ${wins} 次成功\n- 整体成功率: ${total > 0 ? ((wins / total) * 100).toFixed(0) : 0}%`;
-    } else if (q.includes("qa") || q.includes("QA")) {
-      const qa = scores.find((s) => s.agent_name.toLowerCase() === "qa");
-      if (qa) {
-        reply = `QA Agent:\n- 评分: ${qa.overall_score.toFixed(0)} ELO\n- 成功率: ${(qa.success_rate * 100).toFixed(0)}%\n- 任务数: ${qa.total_tasks}\n- 趋势: ${qa.score_trend}\n- 平均错误率: ${(qa.avg_error_rate * 100).toFixed(0)}%`;
-      } else {
-        reply = "未找到 QA agent。";
-      }
-    } else {
-      reply = "可以问我:\n- 哪个 agent 失败最多？\n- 哪个 agent 表现最好？\n- agent 趋势如何？\n- 总体统计是多少？\n- QA agent 怎么样？";
-    }
-
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-    }, 300);
-  };
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 && (
-          <div className="text-sm text-muted-foreground text-center py-8">
-            <Bot className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
-            Ask me about your agents
-          </div>
-        )}
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-              msg.role === "user"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted"
-            }`}>
-              {msg.content}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="border-t p-3 flex gap-2">
-        <Input
-          placeholder="Ask about your agents..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          className="text-sm"
-        />
-        <Button size="icon-sm" onClick={handleSend}>
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
     </div>
   );
 }
@@ -339,25 +245,17 @@ export function AgentsPage() {
 
       <ResizableHandle />
 
-      {/* Right: Detail + Chat */}
+      {/* Right: Detail */}
       <ResizablePanel id="detail" minSize="50%">
         {selected ? (
-          <ResizablePanelGroup orientation="vertical" className="h-full">
-            <ResizablePanel id="detail-content" defaultSize={70} minSize={40}>
-              <AgentDetail
-                key={selected.id}
-                agent={selected}
-                runtimes={runtimes}
-                onUpdate={handleUpdate}
-                onArchive={handleArchive}
-                onRestore={handleRestore}
-              />
-            </ResizablePanel>
-            <ResizableHandle />
-            <ResizablePanel id="chat" defaultSize={30} minSize={15}>
-              <AgentChat agents={agents} scores={scores} />
-            </ResizablePanel>
-          </ResizablePanelGroup>
+          <AgentDetail
+            key={selected.id}
+            agent={selected}
+            runtimes={runtimes}
+            onUpdate={handleUpdate}
+            onArchive={handleArchive}
+            onRestore={handleRestore}
+          />
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
             <Bot className="h-10 w-10 text-muted-foreground/30" />
