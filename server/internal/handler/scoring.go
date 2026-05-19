@@ -68,7 +68,15 @@ func (h *Handler) GetAgentScore(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID: parseUUID(workspaceID),
 	})
 	if err != nil {
-		writeError(w, http.StatusNotFound, "score not found")
+		// Return default score instead of 404
+		agent, _ := h.Queries.GetAgent(r.Context(), parseUUID(agentID))
+		writeJSON(w, http.StatusOK, AgentScoreResponse{
+			AgentID:      agentID,
+			AgentName:    agent.Name,
+			OverallScore: 1000.0,
+			TaskTypeScores: map[string]any{},
+			ScoreTrend:   "stable",
+		})
 		return
 	}
 
