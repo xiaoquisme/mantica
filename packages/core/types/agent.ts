@@ -231,3 +231,16 @@ export interface TaskAnalysis {
 export interface TaskAnalysisWithAgent extends TaskAnalysis {
   agent_id: string;
 }
+
+export interface AgentHint {
+  failure_class: string;
+  improvement_hint: string;
+  summary: string;
+  occurrence_count: number;
+  last_seen: string;
+}
+
+export interface AgentHintsResponse {
+  agent_id: string;
+  hints: AgentHint[];
+}

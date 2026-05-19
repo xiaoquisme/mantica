@@ -52,6 +52,7 @@ import type {
   AgentScoreHistoryEntry,
   TaskAnalysis,
   TaskAnalysisWithAgent,
+  AgentHintsResponse,
 } from "../types";
 import { type Logger, noopLogger } from "../logger";
 
@@ -594,6 +595,10 @@ export class ApiClient {
 
   async listFailedAnalyses(limit = 20): Promise<TaskAnalysisWithAgent[]> {
     return this.fetch(`/api/analysis/failed?limit=${limit}`);
+  }
+
+  async getAgentHints(agentId: string, days = 7): Promise<AgentHintsResponse> {
+    return this.fetch(`/api/agents/${agentId}/hints?days=${days}`);
   }
 
   // Personal Access Tokens

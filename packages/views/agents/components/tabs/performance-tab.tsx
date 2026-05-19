@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TrendingUp, TrendingDown, Minus, Activity, AlertTriangle, CheckCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Lightbulb, AlertCircle } from "lucide-react";
 import { api } from "@multica/core/api";
-import type { AgentScore, AgentScoreHistoryEntry } from "@multica/core/types";
+import type { AgentScore, AgentScoreHistoryEntry, AgentHint } from "@multica/core/types";
 
 function TrendIcon({ trend }: { trend: string }) {
   if (trend === "improving") return <TrendingUp className="h-4 w-4 text-green-500" />;
@@ -32,15 +32,18 @@ function ScoreBar({ value, max = 1200, label }: { value: number; max?: number; l
 export function PerformanceTab({ agentId }: { agentId: string }) {
   const [score, setScore] = useState<AgentScore | null>(null);
   const [history, setHistory] = useState<AgentScoreHistoryEntry[]>([]);
+  const [hints, setHints] = useState<AgentHint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       api.getAgentScore(agentId).catch(() => null),
       api.getAgentScoreHistory(agentId, 20).catch(() => []),
-    ]).then(([s, h]) => {
+      api.getAgentHints(agentId, 7).catch(() => ({ agent_id: agentId, hints: [] })),
+    ]).then(([s, h, hintResp]) => {
       setScore(s);
       setHistory(h);
+      setHints(hintResp?.hints ?? []);
       setLoading(false);
     });
   }, [agentId]);
@@ -95,6 +98,36 @@ export function PerformanceTab({ agentId }: { agentId: string }) {
         <ScoreBar value={score.avg_error_count} max={30} label="Avg Errors per Task" />
         <ScoreBar value={score.avg_error_rate * 100} max={100} label="Error Rate %" />
       </div>
+
+      {/* Improvement Hints */}
+      {hints.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-yellow-500" />
+            Lessons Learned
+          </h4>
+          <div className="space-y-2">
+            {hints.map((hint, i) => (
+              <div key={i} className="rounded-md border border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono bg-yellow-200 dark:bg-yellow-900 px-1.5 py-0.5 rounded">
+                        {hint.failure_class}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {hint.occurrence_count}x
+                      </span>
+                    </div>
+                    <p className="text-sm">{hint.improvement_hint}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent History */}
       {history.length > 0 && (
