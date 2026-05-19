@@ -235,6 +235,7 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 				r.Put("/skills", h.SetAgentSkills)
 				r.Get("/score", h.GetAgentScore)
 				r.Get("/score/history", h.GetAgentScoreHistory)
+				r.Get("/hints", h.GetAgentHints)
 				})
 			})
 

@@ -97,6 +97,121 @@ func (q *Queries) CreateTaskAnalysis(ctx context.Context, arg CreateTaskAnalysis
 	return i, err
 }
 
+const getAgentImprovementHints = `-- name: GetAgentImprovementHints :many
+SELECT
+    ta.failure_class,
+    ta.improvement_hint,
+    ta.summary,
+    COUNT(*) as occurrence_count,
+    MAX(ta.created_at) as last_seen
+FROM task_analysis ta
+JOIN agent_task_queue atq ON ta.task_id = atq.id
+WHERE atq.agent_id = $1
+AND ta.failure_class IS NOT NULL
+AND ta.improvement_hint IS NOT NULL
+AND ta.improvement_hint != ''
+AND ta.created_at > $2
+GROUP BY ta.failure_class, ta.improvement_hint, ta.summary
+ORDER BY occurrence_count DESC
+LIMIT $3
+`
+
+type GetAgentImprovementHintsParams struct {
+	AgentID   pgtype.UUID        `json:"agent_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Limit     int32              `json:"limit"`
+}
+
+type GetAgentImprovementHintsRow struct {
+	FailureClass    pgtype.Text `json:"failure_class"`
+	ImprovementHint pgtype.Text `json:"improvement_hint"`
+	Summary         pgtype.Text `json:"summary"`
+	OccurrenceCount int64       `json:"occurrence_count"`
+	LastSeen        interface{} `json:"last_seen"`
+}
+
+func (q *Queries) GetAgentImprovementHints(ctx context.Context, arg GetAgentImprovementHintsParams) ([]GetAgentImprovementHintsRow, error) {
+	rows, err := q.db.Query(ctx, getAgentImprovementHints, arg.AgentID, arg.CreatedAt, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAgentImprovementHintsRow{}
+	for rows.Next() {
+		var i GetAgentImprovementHintsRow
+		if err := rows.Scan(
+			&i.FailureClass,
+			&i.ImprovementHint,
+			&i.Summary,
+			&i.OccurrenceCount,
+			&i.LastSeen,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAgentRecentSuccesses = `-- name: GetAgentRecentSuccesses :many
+SELECT
+    ta.summary,
+    ta.tool_usage::text as tools_used,
+    ta.output_language,
+    ta.communication_quality,
+    ta.created_at
+FROM task_analysis ta
+JOIN agent_task_queue atq ON ta.task_id = atq.id
+WHERE atq.agent_id = $1
+AND atq.status = 'completed'
+AND ta.failure_class IS NULL
+AND ta.tool_count > 0
+ORDER BY ta.created_at DESC
+LIMIT $2
+`
+
+type GetAgentRecentSuccessesParams struct {
+	AgentID pgtype.UUID `json:"agent_id"`
+	Limit   int32       `json:"limit"`
+}
+
+type GetAgentRecentSuccessesRow struct {
+	Summary              pgtype.Text        `json:"summary"`
+	ToolsUsed            string             `json:"tools_used"`
+	OutputLanguage       pgtype.Text        `json:"output_language"`
+	CommunicationQuality pgtype.Float8      `json:"communication_quality"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetAgentRecentSuccesses(ctx context.Context, arg GetAgentRecentSuccessesParams) ([]GetAgentRecentSuccessesRow, error) {
+	rows, err := q.db.Query(ctx, getAgentRecentSuccesses, arg.AgentID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetAgentRecentSuccessesRow{}
+	for rows.Next() {
+		var i GetAgentRecentSuccessesRow
+		if err := rows.Scan(
+			&i.Summary,
+			&i.ToolsUsed,
+			&i.OutputLanguage,
+			&i.CommunicationQuality,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFailureClassCounts = `-- name: GetFailureClassCounts :many
 SELECT failure_class, COUNT(*) as cnt
 FROM task_analysis

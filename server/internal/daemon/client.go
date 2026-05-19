@@ -279,3 +279,23 @@ func (c *Client) getJSON(ctx context.Context, path string, respBody any) error {
 	}
 	return json.NewDecoder(resp.Body).Decode(respBody)
 }
+
+// AgentHint represents an improvement hint for an agent.
+type AgentHint struct {
+	FailureClass    string `json:"failure_class"`
+	ImprovementHint string `json:"improvement_hint"`
+	Summary         string `json:"summary"`
+	OccurrenceCount int64  `json:"occurrence_count"`
+}
+
+// GetAgentHints fetches improvement hints for an agent from the server.
+func (c *Client) GetAgentHints(ctx context.Context, agentID string) ([]AgentHint, error) {
+	var resp struct {
+		AgentID string      `json:"agent_id"`
+		Hints   []AgentHint `json:"hints"`
+	}
+	if err := c.getJSON(ctx, fmt.Sprintf("/api/agents/%s/hints", agentID), &resp); err != nil {
+		return nil, err
+	}
+	return resp.Hints, nil
+}

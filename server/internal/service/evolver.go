@@ -221,27 +221,96 @@ func generateSkillContent(task db.AgentTaskQueue, messages []db.TaskMessage, too
 	b.WriteString("# Auto-Extracted Workflow\n\n")
 	b.WriteString(fmt.Sprintf("Extracted from task %s\n\n", util.UUIDToString(task.ID)[:8]))
 
-	b.WriteString("## Tool Sequence\n\n")
-	for i, tool := range toolSeq {
-		b.WriteString(fmt.Sprintf("%d. `%s`\n", i+1, tool))
+	// Summary of what was accomplished
+	b.WriteString("## Summary\n\n")
+	textMsgs := filterMessages(messages, "text")
+	if len(textMsgs) > 0 {
+		// Use the first text message as summary (agent's final output)
+		content := textMsgs[0].Content.String
+		if len(content) > 500 {
+			content = content[:500] + "..."
+		}
+		b.WriteString(content + "\n\n")
+	}
+
+	// Tool sequence with context
+	b.WriteString("## Workflow Steps\n\n")
+	step := 1
+	for _, m := range messages {
+		if m.Type != "tool_use" || m.Tool.String == "" {
+			continue
+		}
+		toolName := m.Tool.String
+		var input map[string]any
+		if m.Input != nil {
+			json.Unmarshal(m.Input, &input)
+		}
+
+		// Describe the step
+		switch toolName {
+		case "terminal":
+			if cmd, ok := input["command"]; ok {
+				b.WriteString(fmt.Sprintf("%d. **Run command**: `%v`\n", step, cmd))
+			}
+		case "read_file":
+			if path, ok := input["path"]; ok {
+				b.WriteString(fmt.Sprintf("%d. **Read file**: `%v`\n", step, path))
+			}
+		case "write_file":
+			if path, ok := input["path"]; ok {
+				b.WriteString(fmt.Sprintf("%d. **Write file**: `%v`\n", step, path))
+			}
+		case "patch":
+			if path, ok := input["path"]; ok {
+				b.WriteString(fmt.Sprintf("%d. **Edit file**: `%v`\n", step, path))
+			}
+		case "search_files":
+			if pattern, ok := input["pattern"]; ok {
+				b.WriteString(fmt.Sprintf("%d. **Search**: `%v`\n", step, pattern))
+			}
+		case "execute_code":
+			b.WriteString(fmt.Sprintf("%d. **Execute Python script**\n", step))
+		default:
+			b.WriteString(fmt.Sprintf("%d. **%s**\n", step, toolName))
+		}
+		step++
 	}
 	b.WriteString("\n")
 
-	// Include key tool inputs
-	b.WriteString("## Key Operations\n\n")
-	for _, m := range messages {
-		if m.Type == "tool_use" && m.Input != nil {
-			var input map[string]any
-			json.Unmarshal(m.Input, &input)
-			if cmd, ok := input["command"]; ok {
-				b.WriteString(fmt.Sprintf("- `%s`: `%v`\n", m.Tool.String, cmd))
-			} else if path, ok := input["path"]; ok {
-				b.WriteString(fmt.Sprintf("- `%s`: %v\n", m.Tool.String, path))
+	// Pitfalls section: errors encountered and how they were resolved
+	errorMsgs := filterMessages(messages, "tool_result")
+	var pitfalls []string
+	for _, m := range errorMsgs {
+		if isErrorMessage(m.Output.String) {
+			output := m.Output.String
+			if len(output) > 200 {
+				output = output[:200] + "..."
 			}
+			pitfalls = append(pitfalls, output)
 		}
+	}
+	if len(pitfalls) > 0 {
+		b.WriteString("## Pitfalls Encountered\n\n")
+		for i, p := range pitfalls {
+			if i >= 3 {
+				break // limit to 3
+			}
+			b.WriteString(fmt.Sprintf("- %s\n", p))
+		}
+		b.WriteString("\n")
 	}
 
 	return b.String()
+}
+
+func filterMessages(messages []db.TaskMessage, msgType string) []db.TaskMessage {
+	var result []db.TaskMessage
+	for _, m := range messages {
+		if m.Type == msgType {
+			result = append(result, m)
+		}
+	}
+	return result
 }
 
 func generateImprovementHint(failureClass string, analysis db.TaskAnalysis, consecutive int) string {

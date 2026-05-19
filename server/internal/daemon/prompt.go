@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -23,6 +24,37 @@ func BuildPrompt(task Task) string {
 	}
 	fmt.Fprintf(&b, "Your assigned issue ID is: %s\n\n", task.IssueID)
 	fmt.Fprintf(&b, "Run `multica issue get %s --output json` to understand your task and complete it.\n", task.IssueID)
+	return b.String()
+}
+
+// BuildPromptWithHints constructs a task prompt and appends improvement hints
+// from the agent's recent failure history. This closes the feedback loop:
+// failures → analysis → hints → better prompts → better outcomes.
+func BuildPromptWithHints(task Task, client *Client) string {
+	prompt := BuildPrompt(task)
+
+	if task.Agent == nil || task.AgentID == "" {
+		return prompt
+	}
+
+	hints, err := client.GetAgentHints(context.Background(), task.AgentID)
+	if err != nil || len(hints) == 0 {
+		return prompt
+	}
+
+	var b strings.Builder
+	b.WriteString(prompt)
+	b.WriteString("\n---\n")
+	b.WriteString("## Lessons from Recent Tasks\n\n")
+	b.WriteString("Based on your recent task history, here are patterns to avoid:\n\n")
+
+	for i, h := range hints {
+		fmt.Fprintf(&b, "%d. **%s** (seen %d times): %s\n",
+			i+1, h.FailureClass, h.OccurrenceCount, h.ImprovementHint)
+	}
+
+	b.WriteString("\nApply these lessons to avoid repeating the same mistakes.\n")
+
 	return b.String()
 }
 

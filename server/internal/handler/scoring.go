@@ -270,3 +270,64 @@ func formatTS(ts pgtype.Timestamptz) string {
 	}
 	return ts.Time.Format(time.RFC3339)
 }
+
+// ── Improvement Hints Endpoint ──
+
+type ImprovementHint struct {
+	FailureClass    string `json:"failure_class"`
+	ImprovementHint string `json:"improvement_hint"`
+	Summary         string `json:"summary"`
+	OccurrenceCount int64  `json:"occurrence_count"`
+	LastSeen        string `json:"last_seen"`
+}
+
+type AgentHintsResponse struct {
+	AgentID string             `json:"agent_id"`
+	Hints   []ImprovementHint  `json:"hints"`
+}
+
+// GetAgentHints returns improvement hints for an agent based on recent failures.
+func (h *Handler) GetAgentHints(w http.ResponseWriter, r *http.Request) {
+	agentID := chi.URLParam(r, "id")
+	days := 7
+	if d := r.URL.Query().Get("days"); d != "" {
+		if parsed, err := strconv.Atoi(d); err == nil && parsed > 0 && parsed <= 30 {
+			days = parsed
+		}
+	}
+
+	since := time.Now().AddDate(0, 0, -days)
+
+	hints, err := h.Queries.GetAgentImprovementHints(r.Context(), db.GetAgentImprovementHintsParams{
+		AgentID: parseUUID(agentID),
+		CreatedAt: pgtype.Timestamptz{Time: since, Valid: true},
+		Limit:     10,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get hints")
+		return
+	}
+
+	var resp []ImprovementHint
+	for _, h := range hints {
+		lastSeen := ""
+		if t, ok := h.LastSeen.(time.Time); ok {
+			lastSeen = t.Format(time.RFC3339)
+		}
+		resp = append(resp, ImprovementHint{
+			FailureClass:    h.FailureClass.String,
+			ImprovementHint: h.ImprovementHint.String,
+			Summary:         h.Summary.String,
+			OccurrenceCount: h.OccurrenceCount,
+			LastSeen:        lastSeen,
+		})
+	}
+	if resp == nil {
+		resp = []ImprovementHint{}
+	}
+
+	writeJSON(w, http.StatusOK, AgentHintsResponse{
+		AgentID: agentID,
+		Hints:   resp,
+	})
+}

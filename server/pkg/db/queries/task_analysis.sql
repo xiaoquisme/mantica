@@ -54,3 +54,37 @@ ORDER BY total_count DESC;
 UPDATE task_analysis
 SET summary = $2, improvement_hint = $3
 WHERE task_id = $1;
+
+-- name: GetAgentImprovementHints :many
+SELECT
+    ta.failure_class,
+    ta.improvement_hint,
+    ta.summary,
+    COUNT(*) as occurrence_count,
+    MAX(ta.created_at) as last_seen
+FROM task_analysis ta
+JOIN agent_task_queue atq ON ta.task_id = atq.id
+WHERE atq.agent_id = $1
+AND ta.failure_class IS NOT NULL
+AND ta.improvement_hint IS NOT NULL
+AND ta.improvement_hint != ''
+AND ta.created_at > $2
+GROUP BY ta.failure_class, ta.improvement_hint, ta.summary
+ORDER BY occurrence_count DESC
+LIMIT $3;
+
+-- name: GetAgentRecentSuccesses :many
+SELECT
+    ta.summary,
+    ta.tool_usage::text as tools_used,
+    ta.output_language,
+    ta.communication_quality,
+    ta.created_at
+FROM task_analysis ta
+JOIN agent_task_queue atq ON ta.task_id = atq.id
+WHERE atq.agent_id = $1
+AND atq.status = 'completed'
+AND ta.failure_class IS NULL
+AND ta.tool_count > 0
+ORDER BY ta.created_at DESC
+LIMIT $2;
