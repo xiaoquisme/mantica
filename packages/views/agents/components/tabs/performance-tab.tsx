@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Minus, Activity, AlertTriangle, CheckCircle } from "lucide-react";
-import { api } from "@multica/core/api/client";
+import { api } from "@multica/core/api";
 import type { AgentScore, AgentScoreHistoryEntry } from "@multica/core/types";
 
 function TrendIcon({ trend }: { trend: string }) {

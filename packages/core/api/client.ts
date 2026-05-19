@@ -48,6 +48,10 @@ import type {
   ScheduledTask,
   CreateScheduledTaskRequest,
   UpdateScheduledTaskRequest,
+  AgentScore,
+  AgentScoreHistoryEntry,
+  TaskAnalysis,
+  TaskAnalysisWithAgent,
 } from "../types";
 import { type Logger, noopLogger } from "../logger";
 
