@@ -8,24 +8,31 @@
       "id": "bg_title",
       "x": 50,
       "y": 30,
-      "width": 1200,
+      "width": 1300,
       "height": 60,
       "backgroundColor": "#1e1e1e",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_title", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_title",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_title",
       "x": 55,
       "y": 40,
-      "width": 1190,
+      "width": 1290,
       "height": 40,
       "text": "Multica Self-Training System Architecture",
       "fontSize": 28,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#ffffff",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -33,31 +40,37 @@
       "originalText": "Multica Self-Training System Architecture",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "zone_data",
       "x": 50,
-      "y": 120,
-      "width": 340,
-      "height": 500,
+      "y": 130,
+      "width": 320,
+      "height": 460,
       "backgroundColor": "#e9ecef",
       "fillStyle": "solid",
       "strokeColor": "#868e96",
       "strokeStyle": "dashed",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_zone_data", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_zone_data",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_zone_data",
       "x": 60,
-      "y": 130,
-      "width": 320,
-      "height": 30,
+      "y": 140,
+      "width": 300,
+      "height": 25,
       "text": "Data Layer (PostgreSQL)",
       "fontSize": 20,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#495057",
       "textAlign": "center",
       "verticalAlign": "top",
@@ -65,30 +78,36 @@
       "originalText": "Data Layer (PostgreSQL)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "db_task_message",
       "x": 80,
       "y": 180,
-      "width": 280,
-      "height": 80,
+      "width": 260,
+      "height": 75,
       "backgroundColor": "#c3fae8",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_db_task_message", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_db_task_message",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_db_task_message",
       "x": 85,
       "y": 185,
-      "width": 270,
-      "height": 70,
+      "width": 250,
+      "height": 65,
       "text": "task_message\n(tool_use / tool_result /\nthinking / text / error)",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -96,30 +115,36 @@
       "originalText": "task_message\n(tool_use / tool_result /\nthinking / text / error)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "db_task_queue",
       "x": 80,
-      "y": 280,
-      "width": 280,
-      "height": 80,
+      "y": 275,
+      "width": 260,
+      "height": 75,
       "backgroundColor": "#c3fae8",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_db_task_queue", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_db_task_queue",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_db_task_queue",
       "x": 85,
-      "y": 285,
-      "width": 270,
-      "height": 70,
+      "y": 280,
+      "width": 250,
+      "height": 65,
       "text": "agent_task_queue\n(queued -> dispatched ->\nrunning -> completed/failed)",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -127,30 +152,36 @@
       "originalText": "agent_task_queue\n(queued -> dispatched ->\nrunning -> completed/failed)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "db_task_analysis",
       "x": 80,
-      "y": 380,
-      "width": 280,
-      "height": 80,
+      "y": 370,
+      "width": 260,
+      "height": 75,
       "backgroundColor": "#d0bfff",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_db_task_analysis", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_db_task_analysis",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_db_task_analysis",
       "x": 85,
-      "y": 385,
-      "width": 270,
-      "height": 70,
+      "y": 375,
+      "width": 250,
+      "height": 65,
       "text": "task_analysis\n(failure_class / quality_score /\nerror_pattern / improvement_hint)",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -158,30 +189,36 @@
       "originalText": "task_analysis\n(failure_class / quality_score /\nerror_pattern / improvement_hint)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "db_agent_score",
       "x": 80,
-      "y": 480,
-      "width": 280,
-      "height": 80,
+      "y": 465,
+      "width": 260,
+      "height": 75,
       "backgroundColor": "#d0bfff",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_db_agent_score", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_db_agent_score",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_db_agent_score",
       "x": 85,
-      "y": 485,
-      "width": 270,
-      "height": 70,
+      "y": 470,
+      "width": 250,
+      "height": 65,
       "text": "agent_score\n(ELO overall_score /\ntask_type_scores / score_trend)",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -189,31 +226,37 @@
       "originalText": "agent_score\n(ELO overall_score /\ntask_type_scores / score_trend)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "zone_pipeline",
-      "x": 430,
-      "y": 120,
-      "width": 460,
-      "height": 500,
+      "x": 440,
+      "y": 130,
+      "width": 420,
+      "height": 460,
       "backgroundColor": "#f8f9fa",
       "fillStyle": "solid",
       "strokeColor": "#868e96",
       "strokeStyle": "dashed",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_zone_pipeline", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_zone_pipeline",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_zone_pipeline",
-      "x": 440,
-      "y": 130,
-      "width": 440,
-      "height": 30,
+      "x": 450,
+      "y": 140,
+      "width": 400,
+      "height": 25,
       "text": "Processing Pipeline (Go Services)",
       "fontSize": 20,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#495057",
       "textAlign": "center",
       "verticalAlign": "top",
@@ -221,30 +264,36 @@
       "originalText": "Processing Pipeline (Go Services)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "svc_task_service",
-      "x": 470,
+      "x": 480,
       "y": 180,
-      "width": 180,
+      "width": 160,
       "height": 70,
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_svc_task", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_svc_task",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_svc_task",
-      "x": 475,
+      "x": 485,
       "y": 185,
-      "width": 170,
+      "width": 150,
       "height": 60,
       "text": "TaskService\nCompleteTask\nFailTask",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -252,30 +301,36 @@
       "originalText": "TaskService\nCompleteTask\nFailTask",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "svc_events_bus",
-      "x": 690,
+      "x": 680,
       "y": 180,
-      "width": 180,
+      "width": 160,
       "height": 70,
       "backgroundColor": "#ffd8a8",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_svc_events", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_svc_events",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_svc_events",
-      "x": 695,
+      "x": 685,
       "y": 185,
-      "width": 170,
+      "width": 150,
       "height": 60,
       "text": "events.Bus\ntask:analyze\ntask:complete",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -283,43 +338,69 @@
       "originalText": "events.Bus\ntask:analyze\ntask:complete",
       "autoResize": true
     },
-
     {
       "type": "arrow",
       "id": "a_task_to_events",
-      "x": 655,
+      "x": 645,
       "y": 215,
       "width": 30,
       "height": 0,
-      "points": [[0, 0], [30, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          30,
+          0
+        ]
+      ],
       "endArrowhead": "arrow",
-      "startBinding": { "elementId": "svc_task_service", "fixedPoint": [1, 0.5] },
-      "endBinding": { "elementId": "svc_events_bus", "fixedPoint": [0, 0.5] }
+      "startBinding": {
+        "elementId": "svc_task_service",
+        "fixedPoint": [
+          1,
+          0.5
+        ]
+      },
+      "endBinding": {
+        "elementId": "svc_events_bus",
+        "fixedPoint": [
+          0,
+          0.5
+        ]
+      }
     },
-
     {
       "type": "rectangle",
       "id": "svc_analyzer",
-      "x": 470,
-      "y": 300,
-      "width": 180,
+      "x": 480,
+      "y": 290,
+      "width": 160,
       "height": 80,
       "backgroundColor": "#b2f2bb",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_svc_analyzer", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_svc_analyzer",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_svc_analyzer",
-      "x": 475,
-      "y": 305,
-      "width": 170,
+      "x": 485,
+      "y": 295,
+      "width": 150,
       "height": 70,
       "text": "Analyzer\n(task:analyze)\nextract features,\nclassify failures",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -327,30 +408,36 @@
       "originalText": "Analyzer\n(task:analyze)\nextract features,\nclassify failures",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "svc_scorer",
-      "x": 470,
-      "y": 420,
-      "width": 180,
+      "x": 480,
+      "y": 400,
+      "width": 160,
       "height": 80,
       "backgroundColor": "#b2f2bb",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_svc_scorer", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_svc_scorer",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_svc_scorer",
-      "x": 475,
-      "y": 425,
-      "width": 170,
+      "x": 485,
+      "y": 405,
+      "width": 150,
       "height": 70,
       "text": "Scorer\n(task:complete)\nELO rating update,\ntask_type_scores",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -358,30 +445,36 @@
       "originalText": "Scorer\n(task:complete)\nELO rating update,\ntask_type_scores",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "svc_evolver",
-      "x": 470,
-      "y": 540,
-      "width": 180,
+      "x": 480,
+      "y": 510,
+      "width": 160,
       "height": 70,
       "backgroundColor": "#ffc9c9",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_svc_evolver", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_svc_evolver",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_svc_evolver",
-      "x": 475,
-      "y": 545,
-      "width": 170,
+      "x": 485,
+      "y": 515,
+      "width": 150,
       "height": 60,
       "text": "Evolver\nauto skill extract,\nimprovement hints",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -389,72 +482,171 @@
       "originalText": "Evolver\nauto skill extract,\nimprovement hints",
       "autoResize": true
     },
-
     {
       "type": "arrow",
       "id": "a_events_to_analyzer",
-      "x": 660,
+      "x": 720,
       "y": 255,
       "width": 0,
-      "height": 40,
-      "points": [[0, 0], [-100, 45]],
+      "height": 30,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -80,
+          35
+        ]
+      ],
       "endArrowhead": "arrow",
       "strokeStyle": "dashed",
-      "startBinding": { "elementId": "svc_events_bus", "fixedPoint": [0.5, 1] },
-      "endBinding": { "elementId": "svc_analyzer", "fixedPoint": [1, 0.3] }
+      "startBinding": {
+        "elementId": "svc_events_bus",
+        "fixedPoint": [
+          0.3,
+          1
+        ]
+      },
+      "endBinding": {
+        "elementId": "svc_analyzer",
+        "fixedPoint": [
+          1,
+          0.3
+        ]
+      }
     },
-
     {
       "type": "arrow",
       "id": "a_events_to_scorer",
-      "x": 730,
+      "x": 750,
       "y": 255,
       "width": 0,
-      "height": 160,
-      "points": [[0, 0], [-140, 165]],
+      "height": 140,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -130,
+          150
+        ]
+      ],
       "endArrowhead": "arrow",
       "strokeStyle": "dashed",
-      "startBinding": { "elementId": "svc_events_bus", "fixedPoint": [0.5, 1] },
-      "endBinding": { "elementId": "svc_scorer", "fixedPoint": [1, 0.5] }
+      "startBinding": {
+        "elementId": "svc_events_bus",
+        "fixedPoint": [
+          0.7,
+          1
+        ]
+      },
+      "endBinding": {
+        "elementId": "svc_scorer",
+        "fixedPoint": [
+          1,
+          0.3
+        ]
+      }
     },
-
     {
       "type": "arrow",
-      "id": "a_analyzer_to_evolver",
+      "id": "a_analyzer_to_scorer",
       "x": 560,
-      "y": 385,
+      "y": 375,
       "width": 0,
-      "height": 150,
-      "points": [[0, 0], [0, 150]],
+      "height": 20,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          20
+        ]
+      ],
       "endArrowhead": "arrow",
-      "startBinding": { "elementId": "svc_analyzer", "fixedPoint": [0.5, 1] },
-      "endBinding": { "elementId": "svc_evolver", "fixedPoint": [0.5, 0] }
+      "startBinding": {
+        "elementId": "svc_analyzer",
+        "fixedPoint": [
+          0.5,
+          1
+        ]
+      },
+      "endBinding": {
+        "elementId": "svc_scorer",
+        "fixedPoint": [
+          0.5,
+          0
+        ]
+      }
     },
-
+    {
+      "type": "arrow",
+      "id": "a_scorer_to_evolver",
+      "x": 560,
+      "y": 485,
+      "width": 0,
+      "height": 20,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          20
+        ]
+      ],
+      "endArrowhead": "arrow",
+      "startBinding": {
+        "elementId": "svc_scorer",
+        "fixedPoint": [
+          0.5,
+          1
+        ]
+      },
+      "endBinding": {
+        "elementId": "svc_evolver",
+        "fixedPoint": [
+          0.5,
+          0
+        ]
+      }
+    },
     {
       "type": "rectangle",
       "id": "zone_output",
       "x": 930,
-      "y": 120,
+      "y": 130,
       "width": 320,
-      "height": 500,
+      "height": 460,
       "backgroundColor": "#fff3bf",
       "fillStyle": "solid",
       "strokeColor": "#868e96",
       "strokeStyle": "dashed",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_zone_output", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_zone_output",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_zone_output",
       "x": 940,
-      "y": 130,
+      "y": 140,
       "width": 300,
-      "height": 30,
+      "height": 25,
       "text": "Outputs & Feedback Loop",
       "fontSize": 20,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#495057",
       "textAlign": "center",
       "verticalAlign": "top",
@@ -462,19 +654,25 @@
       "originalText": "Outputs & Feedback Loop",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "out_perf_tab",
       "x": 960,
       "y": 180,
       "width": 260,
-      "height": 70,
+      "height": 75,
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_out_perf", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_out_perf",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
@@ -482,10 +680,10 @@
       "x": 965,
       "y": 185,
       "width": 250,
-      "height": 60,
+      "height": 65,
       "text": "Performance Tab\n(success rate, trends,\nerror distribution)",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -493,19 +691,25 @@
       "originalText": "Performance Tab\n(success rate, trends,\nerror distribution)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "out_skill_extract",
       "x": 960,
       "y": 280,
       "width": 260,
-      "height": 70,
+      "height": 75,
       "backgroundColor": "#b2f2bb",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_out_skill", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_out_skill",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
@@ -513,10 +717,10 @@
       "x": 965,
       "y": 285,
       "width": 250,
-      "height": 60,
+      "height": 65,
       "text": "Auto Skill Extraction\n(quality > 80 ->\nLLM summarize -> skill)",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -524,19 +728,25 @@
       "originalText": "Auto Skill Extraction\n(quality > 80 ->\nLLM summarize -> skill)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "out_improvement_hints",
       "x": 960,
       "y": 380,
       "width": 260,
-      "height": 70,
+      "height": 75,
       "backgroundColor": "#ffc9c9",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_out_hints", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_out_hints",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
@@ -544,10 +754,10 @@
       "x": 965,
       "y": 385,
       "width": 250,
-      "height": 60,
+      "height": 65,
       "text": "Improvement Hints\n(2+ same failures ->\nLLM -> inject next run)",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -555,19 +765,25 @@
       "originalText": "Improvement Hints\n(2+ same failures ->\nLLM -> inject next run)",
       "autoResize": true
     },
-
     {
       "type": "rectangle",
       "id": "out_task_routing",
       "x": 960,
       "y": 480,
       "width": 260,
-      "height": 70,
+      "height": 75,
       "backgroundColor": "#ffd8a8",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_out_routing", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_out_routing",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
@@ -575,10 +791,10 @@
       "x": 965,
       "y": 485,
       "width": 250,
-      "height": 60,
+      "height": 65,
       "text": "Smart Task Routing\n(assign by task_type_scores,\nalert on declining agents)",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
@@ -586,338 +802,452 @@
       "originalText": "Smart Task Routing\n(assign by task_type_scores,\nalert on declining agents)",
       "autoResize": true
     },
-
     {
       "type": "arrow",
       "id": "a_scorer_to_perf",
-      "x": 655,
-      "y": 460,
-      "width": 300,
+      "x": 645,
+      "y": 420,
+      "width": 310,
       "height": 0,
-      "points": [[0, 0], [300, -260]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          310,
+          -220
+        ]
+      ],
       "endArrowhead": "arrow",
-      "startBinding": { "elementId": "svc_scorer", "fixedPoint": [1, 0.5] },
-      "endBinding": { "elementId": "out_perf_tab", "fixedPoint": [0, 0.5] }
+      "startBinding": {
+        "elementId": "svc_scorer",
+        "fixedPoint": [
+          1,
+          0.3
+        ]
+      },
+      "endBinding": {
+        "elementId": "out_perf_tab",
+        "fixedPoint": [
+          0,
+          0.5
+        ]
+      }
     },
-
-    {
-      "type": "arrow",
-      "id": "a_evolver_to_skill",
-      "x": 655,
-      "y": 570,
-      "width": 300,
-      "height": 0,
-      "points": [[0, 0], [300, -270]],
-      "endArrowhead": "arrow",
-      "startBinding": { "elementId": "svc_evolver", "fixedPoint": [1, 0.3] },
-      "endBinding": { "elementId": "out_skill_extract", "fixedPoint": [0, 0.5] }
-    },
-
-    {
-      "type": "arrow",
-      "id": "a_evolver_to_hints",
-      "x": 655,
-      "y": 575,
-      "width": 300,
-      "height": 0,
-      "points": [[0, 0], [300, -175]],
-      "endArrowhead": "arrow",
-      "startBinding": { "elementId": "svc_evolver", "fixedPoint": [1, 0.7] },
-      "endBinding": { "elementId": "out_improvement_hints", "fixedPoint": [0, 0.5] }
-    },
-
     {
       "type": "arrow",
       "id": "a_scorer_to_routing",
-      "x": 655,
+      "x": 645,
       "y": 460,
-      "width": 300,
+      "width": 310,
       "height": 0,
-      "points": [[0, 0], [300, 40]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          310,
+          40
+        ]
+      ],
       "endArrowhead": "arrow",
-      "startBinding": { "elementId": "svc_scorer", "fixedPoint": [1, 0.8] },
-      "endBinding": { "elementId": "out_task_routing", "fixedPoint": [0, 0.5] }
+      "startBinding": {
+        "elementId": "svc_scorer",
+        "fixedPoint": [
+          1,
+          0.8
+        ]
+      },
+      "endBinding": {
+        "elementId": "out_task_routing",
+        "fixedPoint": [
+          0,
+          0.5
+        ]
+      }
     },
-
+    {
+      "type": "arrow",
+      "id": "a_evolver_to_skill",
+      "x": 645,
+      "y": 530,
+      "width": 310,
+      "height": 0,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          310,
+          -230
+        ]
+      ],
+      "endArrowhead": "arrow",
+      "startBinding": {
+        "elementId": "svc_evolver",
+        "fixedPoint": [
+          1,
+          0.3
+        ]
+      },
+      "endBinding": {
+        "elementId": "out_skill_extract",
+        "fixedPoint": [
+          0,
+          0.5
+        ]
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "a_evolver_to_hints",
+      "x": 645,
+      "y": 550,
+      "width": 310,
+      "height": 0,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          310,
+          -150
+        ]
+      ],
+      "endArrowhead": "arrow",
+      "startBinding": {
+        "elementId": "svc_evolver",
+        "fixedPoint": [
+          1,
+          0.7
+        ]
+      },
+      "endBinding": {
+        "elementId": "out_improvement_hints",
+        "fixedPoint": [
+          0,
+          0.5
+        ]
+      }
+    },
     {
       "type": "rectangle",
       "id": "bg_feedback_arrow",
-      "x": 930,
-      "y": 640,
-      "width": 320,
+      "x": 960,
+      "y": 575,
+      "width": 260,
       "height": 50,
       "backgroundColor": "#e7f5ff",
       "fillStyle": "solid",
       "strokeColor": "#1971c2",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_feedback", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_feedback",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_feedback",
-      "x": 935,
-      "y": 645,
-      "width": 310,
+      "x": 965,
+      "y": 580,
+      "width": 250,
       "height": 40,
-      "text": "Feedback: skills + hints inject\ninto next agent prompt",
+      "text": "Feedback: skills + hints\ninject into next agent prompt",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1971c2",
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "bg_feedback_arrow",
-      "originalText": "Feedback: skills + hints inject\ninto next agent prompt",
+      "originalText": "Feedback: skills + hints\ninject into next agent prompt",
       "autoResize": true
     },
-
     {
       "type": "arrow",
       "id": "a_feedback_loop",
-      "x": 1250,
+      "x": 1090,
       "y": 560,
       "width": 0,
-      "height": 75,
-      "points": [[0, 0], [0, 75]],
+      "height": 10,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          10
+        ]
+      ],
       "endArrowhead": "arrow",
       "strokeColor": "#1971c2",
       "strokeWidth": 3,
-      "startBinding": { "elementId": "out_task_routing", "fixedPoint": [0.5, 1] },
-      "endBinding": { "elementId": "bg_feedback_arrow", "fixedPoint": [0.5, 0] }
+      "startBinding": {
+        "elementId": "out_task_routing",
+        "fixedPoint": [
+          0.5,
+          1
+        ]
+      },
+      "endBinding": {
+        "elementId": "bg_feedback_arrow",
+        "fixedPoint": [
+          0.5,
+          0
+        ]
+      }
     },
-
     {
       "type": "rectangle",
       "id": "zone_trigger",
       "x": 50,
-      "y": 650,
-      "width": 840,
-      "height": 60,
+      "y": 620,
+      "width": 860,
+      "height": 50,
       "backgroundColor": "#e9ecef",
       "fillStyle": "solid",
       "strokeColor": "#868e96",
       "strokeStyle": "dashed",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_zone_trigger", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_zone_trigger",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_zone_trigger",
       "x": 55,
-      "y": 655,
-      "width": 830,
-      "height": 50,
-      "text": "Trigger Flow: TaskService.CompleteTask / FailTask  ->  events.Bus(task:analyze)  ->  Analyzer  ->  Scorer  ->  Evolver",
+      "y": 625,
+      "width": 850,
+      "height": 40,
+      "text": "Trigger: TaskService -> events.Bus(task:analyze) -> Analyzer -> Scorer -> Evolver",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#495057",
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "zone_trigger",
-      "originalText": "Trigger Flow: TaskService.CompleteTask / FailTask  ->  events.Bus(task:analyze)  ->  Analyzer  ->  Scorer  ->  Evolver",
+      "originalText": "Trigger: TaskService -> events.Bus(task:analyze) -> Analyzer -> Scorer -> Evolver",
       "autoResize": true
     },
-
-    {
-      "type": "rectangle",
-      "id": "phase1_label",
-      "x": 80,
-      "y": 570,
-      "width": 280,
-      "height": 30,
-      "backgroundColor": "#c3fae8",
-      "fillStyle": "solid",
-      "strokeColor": "#2f9e44",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_phase1", "type": "text" }]
-    },
-    {
-      "type": "text",
-      "id": "t_phase1",
-      "x": 85,
-      "y": 573,
-      "width": 270,
-      "height": 25,
-      "text": "Phase 1: Structured Logs",
-      "fontSize": 14,
-      "fontFamily": 1,
-      "strokeColor": "#2f9e44",
-      "textAlign": "center",
-      "verticalAlign": "middle",
-      "containerId": "phase1_label",
-      "originalText": "Phase 1: Structured Logs",
-      "autoResize": true
-    },
-
-    {
-      "type": "rectangle",
-      "id": "phase2_label",
-      "x": 470,
-      "y": 300,
-      "width": 180,
-      "height": 0,
-      "backgroundColor": "transparent",
-      "fillStyle": "solid",
-      "strokeColor": "transparent"
-    },
-
-    {
-      "type": "rectangle",
-      "id": "phase_label_2",
-      "x": 470,
-      "y": 390,
-      "width": 180,
-      "height": 25,
-      "backgroundColor": "#b2f2bb",
-      "fillStyle": "solid",
-      "strokeColor": "#2f9e44",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_phase2", "type": "text" }]
-    },
-    {
-      "type": "text",
-      "id": "t_phase2",
-      "x": 475,
-      "y": 392,
-      "width": 170,
-      "height": 20,
-      "text": "Phase 2+3",
-      "fontSize": 14,
-      "fontFamily": 1,
-      "strokeColor": "#2f9e44",
-      "textAlign": "center",
-      "verticalAlign": "middle",
-      "containerId": "phase_label_2",
-      "originalText": "Phase 2+3",
-      "autoResize": true
-    },
-
-    {
-      "type": "rectangle",
-      "id": "phase_label_4",
-      "x": 470,
-      "y": 615,
-      "width": 180,
-      "height": 25,
-      "backgroundColor": "#ffc9c9",
-      "fillStyle": "solid",
-      "strokeColor": "#c92a2a",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_phase4", "type": "text" }]
-    },
-    {
-      "type": "text",
-      "id": "t_phase4",
-      "x": 475,
-      "y": 617,
-      "width": 170,
-      "height": 20,
-      "text": "Phase 4: Evolution",
-      "fontSize": 14,
-      "fontFamily": 1,
-      "strokeColor": "#c92a2a",
-      "textAlign": "center",
-      "verticalAlign": "middle",
-      "containerId": "phase_label_4",
-      "originalText": "Phase 4: Evolution",
-      "autoResize": true
-    },
-
-    {
-      "type": "arrow",
-      "id": "a_data_to_analyzer",
-      "x": 365,
-      "y": 420,
-      "width": 100,
-      "height": 0,
-      "points": [[0, 0], [100, -100]],
-      "endArrowhead": "arrow",
-      "startBinding": { "elementId": "db_task_analysis", "fixedPoint": [1, 0.5] },
-      "endBinding": { "elementId": "svc_analyzer", "fixedPoint": [0, 0.7] }
-    },
-
-    {
-      "type": "arrow",
-      "id": "a_task_msg_to_analyzer",
-      "x": 365,
-      "y": 220,
-      "width": 100,
-      "height": 0,
-      "points": [[0, 0], [100, 120]],
-      "endArrowhead": "arrow",
-      "strokeStyle": "dashed",
-      "startBinding": { "elementId": "db_task_message", "fixedPoint": [1, 0.5] },
-      "endBinding": { "elementId": "svc_analyzer", "fixedPoint": [0, 0.3] }
-    },
-
-    {
-      "type": "arrow",
-      "id": "a_queue_to_scorer",
-      "x": 365,
-      "y": 320,
-      "width": 100,
-      "height": 0,
-      "points": [[0, 0], [100, 140]],
-      "endArrowhead": "arrow",
-      "strokeStyle": "dashed",
-      "startBinding": { "elementId": "db_task_queue", "fixedPoint": [1, 0.5] },
-      "endBinding": { "elementId": "svc_scorer", "fixedPoint": [0, 0.5] }
-    },
-
-    {
-      "type": "arrow",
-      "id": "a_scorer_to_agent_score",
-      "x": 470,
-      "y": 460,
-      "width": 0,
-      "height": 0,
-      "points": [[0, 0], [-100, 50]],
-      "endArrowhead": "arrow",
-      "startBinding": { "elementId": "svc_scorer", "fixedPoint": [0, 0.5] },
-      "endBinding": { "elementId": "db_agent_score", "fixedPoint": [1, 0.5] }
-    },
-
     {
       "type": "rectangle",
       "id": "daemon_box",
       "x": 50,
-      "y": 740,
-      "width": 340,
+      "y": 700,
+      "width": 320,
       "height": 70,
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeColor": "#1e1e1e",
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "t_daemon", "type": "text" }]
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "t_daemon",
+          "type": "text"
+        }
+      ]
     },
     {
       "type": "text",
       "id": "t_daemon",
       "x": 55,
-      "y": 745,
-      "width": 330,
+      "y": 705,
+      "width": 310,
       "height": 60,
-      "text": "Daemon (agent runtime)\ncaptures tool_use/tool_result,\ncalculates duration_ms, error_class",
+      "text": "Daemon (agent runtime)\ncaptures tool_use / tool_result,\ncalculates duration_ms, error_class",
       "fontSize": 16,
-      "fontFamily": 1,
+      "fontFamily": 2,
       "strokeColor": "#1e1e1e",
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "daemon_box",
-      "originalText": "Daemon (agent runtime)\ncaptures tool_use/tool_result,\ncalculates duration_ms, error_class",
+      "originalText": "Daemon (agent runtime)\ncaptures tool_use / tool_result,\ncalculates duration_ms, error_class",
       "autoResize": true
     },
-
     {
       "type": "arrow",
       "id": "a_daemon_to_task_msg",
-      "x": 220,
-      "y": 740,
+      "x": 210,
+      "y": 700,
       "width": 0,
       "height": 75,
-      "points": [[0, 0], [0, -75]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          -75
+        ]
+      ],
       "endArrowhead": "arrow",
-      "startBinding": { "elementId": "daemon_box", "fixedPoint": [0.5, 0] },
-      "endBinding": { "elementId": "db_task_message", "fixedPoint": [0.5, 1] }
+      "startBinding": {
+        "elementId": "daemon_box",
+        "fixedPoint": [
+          0.5,
+          0
+        ]
+      },
+      "endBinding": {
+        "elementId": "db_task_message",
+        "fixedPoint": [
+          0.5,
+          1
+        ]
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "a_data_to_analyzer",
+      "x": 345,
+      "y": 405,
+      "width": 130,
+      "height": 0,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          130,
+          -85
+        ]
+      ],
+      "endArrowhead": "arrow",
+      "strokeStyle": "dashed",
+      "startBinding": {
+        "elementId": "db_task_analysis",
+        "fixedPoint": [
+          1,
+          0.5
+        ]
+      },
+      "endBinding": {
+        "elementId": "svc_analyzer",
+        "fixedPoint": [
+          0,
+          0.7
+        ]
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "a_task_msg_to_analyzer",
+      "x": 345,
+      "y": 220,
+      "width": 130,
+      "height": 0,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          130,
+          110
+        ]
+      ],
+      "endArrowhead": "arrow",
+      "strokeStyle": "dashed",
+      "startBinding": {
+        "elementId": "db_task_message",
+        "fixedPoint": [
+          1,
+          0.5
+        ]
+      },
+      "endBinding": {
+        "elementId": "svc_analyzer",
+        "fixedPoint": [
+          0,
+          0.3
+        ]
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "a_queue_to_scorer",
+      "x": 345,
+      "y": 310,
+      "width": 130,
+      "height": 0,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          130,
+          130
+        ]
+      ],
+      "endArrowhead": "arrow",
+      "strokeStyle": "dashed",
+      "startBinding": {
+        "elementId": "db_task_queue",
+        "fixedPoint": [
+          1,
+          0.5
+        ]
+      },
+      "endBinding": {
+        "elementId": "svc_scorer",
+        "fixedPoint": [
+          0,
+          0.5
+        ]
+      }
+    },
+    {
+      "type": "arrow",
+      "id": "a_scorer_to_agent_score",
+      "x": 480,
+      "y": 440,
+      "width": 0,
+      "height": 0,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -135,
+          60
+        ]
+      ],
+      "endArrowhead": "arrow",
+      "startBinding": {
+        "elementId": "svc_scorer",
+        "fixedPoint": [
+          0,
+          0.5
+        ]
+      },
+      "endBinding": {
+        "elementId": "db_agent_score",
+        "fixedPoint": [
+          1,
+          0.5
+        ]
+      }
     }
   ],
   "appState": {

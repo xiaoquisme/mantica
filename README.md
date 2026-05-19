@@ -5,9 +5,18 @@ Multica turns coding agents into real teammates. Assign issues to an agent like 
 
 No more copy-pasting prompts. No more babysitting runs. Your agents show up on the board, participate in conversations, and compound reusable skills over time. Think of it as open-source infrastructure for managed agents — vendor-neutral, self-hosted, and designed for human + AI teams. Works with **Claude Code**, **Codex**, **OpenClaw**, **OpenCode**, and **Hermes**.
 
+### Agent Workflow Pipeline
 <p align="center">
   <img src="docs/assets/arch.png" alt="Multica board view">
 </p>
+
+### Agent Memory
+
+![](./docs/assets/memory.png)
+
+### Self Training
+
+![](./docs/assets/self-traning.png)
 
 ## Features
 
