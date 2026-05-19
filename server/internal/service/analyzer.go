@@ -36,6 +36,12 @@ type AnalysisResult struct {
 	HasRetryPattern  bool
 	HasErrorRecovery bool
 	LongestToolMs    int64
+	// New dimensions
+	OutputLanguage       string  // "zh", "en", "mixed", "unknown"
+	OutputLength         int32   // total character count of final output
+	ToolEfficiency       float64 // unique_tools / tool_count (higher = more diverse, less repetitive)
+	FirstAttemptSuccess  bool    // no errors at all
+	CommunicationQuality float64 // 0-1 score based on output length and structure
 }
 
 // ToolStats tracks per-tool metrics.
@@ -120,6 +126,28 @@ func (a *Analyzer) AnalyzeTask(ctx context.Context, taskID pgtype.UUID) (*Analys
 
 	result.HasErrorRecovery = hadError && lastSuccessAfterError
 
+	// New dimensions
+	result.FirstAttemptSuccess = !hadError && result.ErrorCount == 0
+
+	// Tool efficiency: unique / total (higher = less repetitive)
+	if result.ToolCount > 0 {
+		result.ToolEfficiency = float64(result.UniqueTools) / float64(result.ToolCount)
+	}
+
+	// Output language and length from text messages
+	for _, msg := range messages {
+		if msg.Type == "text" && msg.Content.Valid {
+			content := msg.Content.String
+			result.OutputLength += int32(len(content))
+			if result.OutputLanguage == "" {
+				result.OutputLanguage = detectLanguage(content)
+			}
+		}
+	}
+
+	// Communication quality: based on output length and structure
+	result.CommunicationQuality = scoreCommunication(result.OutputLength, task.Status)
+
 	// Determine failure class for failed tasks
 	if task.Status == "failed" {
 		errMsg := task.Error.String
@@ -138,20 +166,25 @@ func (a *Analyzer) SaveAnalysis(ctx context.Context, taskID pgtype.UUID, r *Anal
 	toolUsageJSON, _ := json.Marshal(r.ToolUsage)
 
 	_, err := a.Queries.CreateTaskAnalysis(ctx, db.CreateTaskAnalysisParams{
-		TaskID:           taskID,
-		ToolCount:        r.ToolCount,
-		ErrorCount:       r.ErrorCount,
-		UniqueTools:      r.UniqueTools,
-		TotalDurationMs:  r.TotalDurationMs,
-		MessageCount:     r.MessageCount,
-		FailureClass:     pgtype.Text{String: r.FailureClass, Valid: r.FailureClass != ""},
-		FailureDetail:    pgtype.Text{String: r.FailureDetail, Valid: r.FailureDetail != ""},
-		ToolUsage:        toolUsageJSON,
-		HasRetryPattern:  pgtype.Bool{Bool: r.HasRetryPattern, Valid: true},
-		HasErrorRecovery: pgtype.Bool{Bool: r.HasErrorRecovery, Valid: true},
-		LongestToolMs:    pgtype.Int8{Int64: r.LongestToolMs, Valid: r.LongestToolMs > 0},
-		Summary:          pgtype.Text{},
-		ImprovementHint:  pgtype.Text{},
+		TaskID:               taskID,
+		ToolCount:            r.ToolCount,
+		ErrorCount:           r.ErrorCount,
+		UniqueTools:          r.UniqueTools,
+		TotalDurationMs:      r.TotalDurationMs,
+		MessageCount:         r.MessageCount,
+		FailureClass:         pgtype.Text{String: r.FailureClass, Valid: r.FailureClass != ""},
+		FailureDetail:        pgtype.Text{String: r.FailureDetail, Valid: r.FailureDetail != ""},
+		ToolUsage:            toolUsageJSON,
+		HasRetryPattern:      pgtype.Bool{Bool: r.HasRetryPattern, Valid: true},
+		HasErrorRecovery:     pgtype.Bool{Bool: r.HasErrorRecovery, Valid: true},
+		LongestToolMs:        pgtype.Int8{Int64: r.LongestToolMs, Valid: r.LongestToolMs > 0},
+		Summary:              pgtype.Text{},
+		ImprovementHint:      pgtype.Text{},
+		OutputLanguage:       pgtype.Text{String: r.OutputLanguage, Valid: r.OutputLanguage != ""},
+		OutputLength:         pgtype.Int4{Int32: r.OutputLength, Valid: true},
+		ToolEfficiency:       pgtype.Float8{Float64: r.ToolEfficiency, Valid: true},
+		FirstAttemptSuccess:  pgtype.Bool{Bool: r.FirstAttemptSuccess, Valid: true},
+		CommunicationQuality: pgtype.Float8{Float64: r.CommunicationQuality, Valid: true},
 	})
 	return err
 }
@@ -247,8 +280,67 @@ func uuidToStr(u pgtype.UUID) string {
 	if !u.Valid {
 		return ""
 	}
-	// Convert UUID bytes to hex string
 	b := u.Bytes
 	return fmt.Sprintf("%x-%x-%x-%x-%x",
 		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
+
+// detectLanguage identifies the primary language of a text.
+// Returns "zh" for Chinese, "en" for English, "mixed" for both.
+func detectLanguage(text string) string {
+	zhCount := 0
+	enCount := 0
+
+	for _, r := range text {
+		if r >= 0x4E00 && r <= 0x9FFF {
+			// CJK Unified Ideographs
+			zhCount++
+		} else if r >= 0x3400 && r <= 0x4DBF {
+			// CJK Extension A
+			zhCount++
+		} else if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			enCount++
+		}
+	}
+
+	total := zhCount + enCount
+	if total == 0 {
+		return "unknown"
+	}
+
+	zhRatio := float64(zhCount) / float64(total)
+	enRatio := float64(enCount) / float64(total)
+
+	if zhRatio > 0.3 && enRatio > 0.3 {
+		return "mixed"
+	}
+	if zhRatio > enRatio {
+		return "zh"
+	}
+	return "en"
+}
+
+// scoreCommunication rates the quality of the agent's output.
+// Factors: length (too short = bad, reasonable = good), structure (has markdown = good).
+func scoreCommunication(outputLen int32, taskStatus string) float64 {
+	if taskStatus != "completed" {
+		return 0.0
+	}
+
+	// Length scoring
+	var lengthScore float64
+	switch {
+	case outputLen < 20:
+		lengthScore = 0.2 // too terse
+	case outputLen < 100:
+		lengthScore = 0.6 // brief but acceptable
+	case outputLen < 500:
+		lengthScore = 1.0 // good length
+	case outputLen < 2000:
+		lengthScore = 0.8 // a bit verbose
+	default:
+		lengthScore = 0.5 // very long, likely unfocused
+	}
+
+	return lengthScore
 }

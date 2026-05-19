@@ -18,26 +18,33 @@ INSERT INTO task_analysis (
     total_duration_ms, message_count,
     failure_class, failure_detail,
     tool_usage, has_retry_pattern, has_error_recovery,
-    longest_tool_ms, summary, improvement_hint
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-RETURNING id, task_id, tool_count, error_count, unique_tools, total_duration_ms, message_count, failure_class, failure_detail, tool_usage, has_retry_pattern, has_error_recovery, longest_tool_ms, summary, improvement_hint, created_at
+    longest_tool_ms, summary, improvement_hint,
+    output_language, output_length, tool_efficiency,
+    first_attempt_success, communication_quality
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+RETURNING id, task_id, tool_count, error_count, unique_tools, total_duration_ms, message_count, failure_class, failure_detail, tool_usage, has_retry_pattern, has_error_recovery, longest_tool_ms, summary, improvement_hint, created_at, output_language, output_length, tool_efficiency, first_attempt_success, communication_quality
 `
 
 type CreateTaskAnalysisParams struct {
-	TaskID           pgtype.UUID `json:"task_id"`
-	ToolCount        int32       `json:"tool_count"`
-	ErrorCount       int32       `json:"error_count"`
-	UniqueTools      int32       `json:"unique_tools"`
-	TotalDurationMs  int64       `json:"total_duration_ms"`
-	MessageCount     int32       `json:"message_count"`
-	FailureClass     pgtype.Text `json:"failure_class"`
-	FailureDetail    pgtype.Text `json:"failure_detail"`
-	ToolUsage        []byte      `json:"tool_usage"`
-	HasRetryPattern  pgtype.Bool `json:"has_retry_pattern"`
-	HasErrorRecovery pgtype.Bool `json:"has_error_recovery"`
-	LongestToolMs    pgtype.Int8 `json:"longest_tool_ms"`
-	Summary          pgtype.Text `json:"summary"`
-	ImprovementHint  pgtype.Text `json:"improvement_hint"`
+	TaskID               pgtype.UUID   `json:"task_id"`
+	ToolCount            int32         `json:"tool_count"`
+	ErrorCount           int32         `json:"error_count"`
+	UniqueTools          int32         `json:"unique_tools"`
+	TotalDurationMs      int64         `json:"total_duration_ms"`
+	MessageCount         int32         `json:"message_count"`
+	FailureClass         pgtype.Text   `json:"failure_class"`
+	FailureDetail        pgtype.Text   `json:"failure_detail"`
+	ToolUsage            []byte        `json:"tool_usage"`
+	HasRetryPattern      pgtype.Bool   `json:"has_retry_pattern"`
+	HasErrorRecovery     pgtype.Bool   `json:"has_error_recovery"`
+	LongestToolMs        pgtype.Int8   `json:"longest_tool_ms"`
+	Summary              pgtype.Text   `json:"summary"`
+	ImprovementHint      pgtype.Text   `json:"improvement_hint"`
+	OutputLanguage       pgtype.Text   `json:"output_language"`
+	OutputLength         pgtype.Int4   `json:"output_length"`
+	ToolEfficiency       pgtype.Float8 `json:"tool_efficiency"`
+	FirstAttemptSuccess  pgtype.Bool   `json:"first_attempt_success"`
+	CommunicationQuality pgtype.Float8 `json:"communication_quality"`
 }
 
 // Task Analysis CRUD
@@ -57,6 +64,11 @@ func (q *Queries) CreateTaskAnalysis(ctx context.Context, arg CreateTaskAnalysis
 		arg.LongestToolMs,
 		arg.Summary,
 		arg.ImprovementHint,
+		arg.OutputLanguage,
+		arg.OutputLength,
+		arg.ToolEfficiency,
+		arg.FirstAttemptSuccess,
+		arg.CommunicationQuality,
 	)
 	var i TaskAnalysis
 	err := row.Scan(
@@ -76,6 +88,11 @@ func (q *Queries) CreateTaskAnalysis(ctx context.Context, arg CreateTaskAnalysis
 		&i.Summary,
 		&i.ImprovementHint,
 		&i.CreatedAt,
+		&i.OutputLanguage,
+		&i.OutputLength,
+		&i.ToolEfficiency,
+		&i.FirstAttemptSuccess,
+		&i.CommunicationQuality,
 	)
 	return i, err
 }
@@ -115,7 +132,7 @@ func (q *Queries) GetFailureClassCounts(ctx context.Context, createdAt pgtype.Ti
 }
 
 const getTaskAnalysis = `-- name: GetTaskAnalysis :one
-SELECT id, task_id, tool_count, error_count, unique_tools, total_duration_ms, message_count, failure_class, failure_detail, tool_usage, has_retry_pattern, has_error_recovery, longest_tool_ms, summary, improvement_hint, created_at FROM task_analysis WHERE task_id = $1
+SELECT id, task_id, tool_count, error_count, unique_tools, total_duration_ms, message_count, failure_class, failure_detail, tool_usage, has_retry_pattern, has_error_recovery, longest_tool_ms, summary, improvement_hint, created_at, output_language, output_length, tool_efficiency, first_attempt_success, communication_quality FROM task_analysis WHERE task_id = $1
 `
 
 func (q *Queries) GetTaskAnalysis(ctx context.Context, taskID pgtype.UUID) (TaskAnalysis, error) {
@@ -138,6 +155,11 @@ func (q *Queries) GetTaskAnalysis(ctx context.Context, taskID pgtype.UUID) (Task
 		&i.Summary,
 		&i.ImprovementHint,
 		&i.CreatedAt,
+		&i.OutputLanguage,
+		&i.OutputLength,
+		&i.ToolEfficiency,
+		&i.FirstAttemptSuccess,
+		&i.CommunicationQuality,
 	)
 	return i, err
 }
@@ -181,7 +203,7 @@ func (q *Queries) GetToolUsageStats(ctx context.Context, createdAt pgtype.Timest
 }
 
 const listFailedAnalyses = `-- name: ListFailedAnalyses :many
-SELECT ta.id, ta.task_id, ta.tool_count, ta.error_count, ta.unique_tools, ta.total_duration_ms, ta.message_count, ta.failure_class, ta.failure_detail, ta.tool_usage, ta.has_retry_pattern, ta.has_error_recovery, ta.longest_tool_ms, ta.summary, ta.improvement_hint, ta.created_at, atq.agent_id
+SELECT ta.id, ta.task_id, ta.tool_count, ta.error_count, ta.unique_tools, ta.total_duration_ms, ta.message_count, ta.failure_class, ta.failure_detail, ta.tool_usage, ta.has_retry_pattern, ta.has_error_recovery, ta.longest_tool_ms, ta.summary, ta.improvement_hint, ta.created_at, ta.output_language, ta.output_length, ta.tool_efficiency, ta.first_attempt_success, ta.communication_quality, atq.agent_id
 FROM task_analysis ta
 JOIN agent_task_queue atq ON ta.task_id = atq.id
 WHERE ta.failure_class IS NOT NULL
@@ -190,23 +212,28 @@ LIMIT $1
 `
 
 type ListFailedAnalysesRow struct {
-	ID               pgtype.UUID        `json:"id"`
-	TaskID           pgtype.UUID        `json:"task_id"`
-	ToolCount        int32              `json:"tool_count"`
-	ErrorCount       int32              `json:"error_count"`
-	UniqueTools      int32              `json:"unique_tools"`
-	TotalDurationMs  int64              `json:"total_duration_ms"`
-	MessageCount     int32              `json:"message_count"`
-	FailureClass     pgtype.Text        `json:"failure_class"`
-	FailureDetail    pgtype.Text        `json:"failure_detail"`
-	ToolUsage        []byte             `json:"tool_usage"`
-	HasRetryPattern  pgtype.Bool        `json:"has_retry_pattern"`
-	HasErrorRecovery pgtype.Bool        `json:"has_error_recovery"`
-	LongestToolMs    pgtype.Int8        `json:"longest_tool_ms"`
-	Summary          pgtype.Text        `json:"summary"`
-	ImprovementHint  pgtype.Text        `json:"improvement_hint"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	AgentID          pgtype.UUID        `json:"agent_id"`
+	ID                   pgtype.UUID        `json:"id"`
+	TaskID               pgtype.UUID        `json:"task_id"`
+	ToolCount            int32              `json:"tool_count"`
+	ErrorCount           int32              `json:"error_count"`
+	UniqueTools          int32              `json:"unique_tools"`
+	TotalDurationMs      int64              `json:"total_duration_ms"`
+	MessageCount         int32              `json:"message_count"`
+	FailureClass         pgtype.Text        `json:"failure_class"`
+	FailureDetail        pgtype.Text        `json:"failure_detail"`
+	ToolUsage            []byte             `json:"tool_usage"`
+	HasRetryPattern      pgtype.Bool        `json:"has_retry_pattern"`
+	HasErrorRecovery     pgtype.Bool        `json:"has_error_recovery"`
+	LongestToolMs        pgtype.Int8        `json:"longest_tool_ms"`
+	Summary              pgtype.Text        `json:"summary"`
+	ImprovementHint      pgtype.Text        `json:"improvement_hint"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	OutputLanguage       pgtype.Text        `json:"output_language"`
+	OutputLength         pgtype.Int4        `json:"output_length"`
+	ToolEfficiency       pgtype.Float8      `json:"tool_efficiency"`
+	FirstAttemptSuccess  pgtype.Bool        `json:"first_attempt_success"`
+	CommunicationQuality pgtype.Float8      `json:"communication_quality"`
+	AgentID              pgtype.UUID        `json:"agent_id"`
 }
 
 func (q *Queries) ListFailedAnalyses(ctx context.Context, limit int32) ([]ListFailedAnalysesRow, error) {
@@ -235,6 +262,11 @@ func (q *Queries) ListFailedAnalyses(ctx context.Context, limit int32) ([]ListFa
 			&i.Summary,
 			&i.ImprovementHint,
 			&i.CreatedAt,
+			&i.OutputLanguage,
+			&i.OutputLength,
+			&i.ToolEfficiency,
+			&i.FirstAttemptSuccess,
+			&i.CommunicationQuality,
 			&i.AgentID,
 		); err != nil {
 			return nil, err
@@ -248,7 +280,7 @@ func (q *Queries) ListFailedAnalyses(ctx context.Context, limit int32) ([]ListFa
 }
 
 const listTaskAnalysesByAgent = `-- name: ListTaskAnalysesByAgent :many
-SELECT ta.id, ta.task_id, ta.tool_count, ta.error_count, ta.unique_tools, ta.total_duration_ms, ta.message_count, ta.failure_class, ta.failure_detail, ta.tool_usage, ta.has_retry_pattern, ta.has_error_recovery, ta.longest_tool_ms, ta.summary, ta.improvement_hint, ta.created_at, atq.agent_id, atq.issue_id, atq.status as task_status
+SELECT ta.id, ta.task_id, ta.tool_count, ta.error_count, ta.unique_tools, ta.total_duration_ms, ta.message_count, ta.failure_class, ta.failure_detail, ta.tool_usage, ta.has_retry_pattern, ta.has_error_recovery, ta.longest_tool_ms, ta.summary, ta.improvement_hint, ta.created_at, ta.output_language, ta.output_length, ta.tool_efficiency, ta.first_attempt_success, ta.communication_quality, atq.agent_id, atq.issue_id, atq.status as task_status
 FROM task_analysis ta
 JOIN agent_task_queue atq ON ta.task_id = atq.id
 WHERE atq.agent_id = $1
@@ -262,25 +294,30 @@ type ListTaskAnalysesByAgentParams struct {
 }
 
 type ListTaskAnalysesByAgentRow struct {
-	ID               pgtype.UUID        `json:"id"`
-	TaskID           pgtype.UUID        `json:"task_id"`
-	ToolCount        int32              `json:"tool_count"`
-	ErrorCount       int32              `json:"error_count"`
-	UniqueTools      int32              `json:"unique_tools"`
-	TotalDurationMs  int64              `json:"total_duration_ms"`
-	MessageCount     int32              `json:"message_count"`
-	FailureClass     pgtype.Text        `json:"failure_class"`
-	FailureDetail    pgtype.Text        `json:"failure_detail"`
-	ToolUsage        []byte             `json:"tool_usage"`
-	HasRetryPattern  pgtype.Bool        `json:"has_retry_pattern"`
-	HasErrorRecovery pgtype.Bool        `json:"has_error_recovery"`
-	LongestToolMs    pgtype.Int8        `json:"longest_tool_ms"`
-	Summary          pgtype.Text        `json:"summary"`
-	ImprovementHint  pgtype.Text        `json:"improvement_hint"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	AgentID          pgtype.UUID        `json:"agent_id"`
-	IssueID          pgtype.UUID        `json:"issue_id"`
-	TaskStatus       string             `json:"task_status"`
+	ID                   pgtype.UUID        `json:"id"`
+	TaskID               pgtype.UUID        `json:"task_id"`
+	ToolCount            int32              `json:"tool_count"`
+	ErrorCount           int32              `json:"error_count"`
+	UniqueTools          int32              `json:"unique_tools"`
+	TotalDurationMs      int64              `json:"total_duration_ms"`
+	MessageCount         int32              `json:"message_count"`
+	FailureClass         pgtype.Text        `json:"failure_class"`
+	FailureDetail        pgtype.Text        `json:"failure_detail"`
+	ToolUsage            []byte             `json:"tool_usage"`
+	HasRetryPattern      pgtype.Bool        `json:"has_retry_pattern"`
+	HasErrorRecovery     pgtype.Bool        `json:"has_error_recovery"`
+	LongestToolMs        pgtype.Int8        `json:"longest_tool_ms"`
+	Summary              pgtype.Text        `json:"summary"`
+	ImprovementHint      pgtype.Text        `json:"improvement_hint"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	OutputLanguage       pgtype.Text        `json:"output_language"`
+	OutputLength         pgtype.Int4        `json:"output_length"`
+	ToolEfficiency       pgtype.Float8      `json:"tool_efficiency"`
+	FirstAttemptSuccess  pgtype.Bool        `json:"first_attempt_success"`
+	CommunicationQuality pgtype.Float8      `json:"communication_quality"`
+	AgentID              pgtype.UUID        `json:"agent_id"`
+	IssueID              pgtype.UUID        `json:"issue_id"`
+	TaskStatus           string             `json:"task_status"`
 }
 
 func (q *Queries) ListTaskAnalysesByAgent(ctx context.Context, arg ListTaskAnalysesByAgentParams) ([]ListTaskAnalysesByAgentRow, error) {
@@ -309,6 +346,11 @@ func (q *Queries) ListTaskAnalysesByAgent(ctx context.Context, arg ListTaskAnaly
 			&i.Summary,
 			&i.ImprovementHint,
 			&i.CreatedAt,
+			&i.OutputLanguage,
+			&i.OutputLength,
+			&i.ToolEfficiency,
+			&i.FirstAttemptSuccess,
+			&i.CommunicationQuality,
 			&i.AgentID,
 			&i.IssueID,
 			&i.TaskStatus,

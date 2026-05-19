@@ -6,8 +6,10 @@ INSERT INTO task_analysis (
     total_duration_ms, message_count,
     failure_class, failure_detail,
     tool_usage, has_retry_pattern, has_error_recovery,
-    longest_tool_ms, summary, improvement_hint
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    longest_tool_ms, summary, improvement_hint,
+    output_language, output_length, tool_efficiency,
+    first_attempt_success, communication_quality
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 RETURNING *;
 
 -- name: GetTaskAnalysis :one
