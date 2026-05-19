@@ -125,6 +125,9 @@ func (a *Analyzer) AnalyzeTask(ctx context.Context, taskID pgtype.UUID) (*Analys
 		errMsg := task.Error.String
 		result.FailureClass = classifyFailure(errMsg, result)
 		result.FailureDetail = errMsg
+	} else if task.Status == "cancelled" {
+		result.FailureClass = "cancelled"
+		result.FailureDetail = "Task was cancelled (timeout or user intervention)"
 	}
 
 	return result, nil

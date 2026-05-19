@@ -268,6 +268,26 @@ func (s *TaskService) CancelTask(ctx context.Context, taskID pgtype.UUID) (*db.A
 	// Broadcast cancellation as a task:failed event so frontends clear the live card
 	s.broadcastTaskEvent(ctx, protocol.EventTaskCancelled, task)
 
+	// Post-task analysis for cancelled tasks (async, non-blocking)
+	// Cancelled tasks count as failures in the scoring system.
+	if s.Analyzer != nil {
+		go func() {
+			bgCtx := context.Background()
+			if _, err := s.Analyzer.AnalyzeAndSave(bgCtx, task.ID); err != nil {
+				slog.Warn("post-task analysis failed (cancelled)", "task_id", util.UUIDToString(task.ID), "error", err)
+			}
+			if s.Scorer != nil && task.AgentID.Valid {
+				wsID := s.resolveTaskWorkspaceID(bgCtx, task)
+				if wsID != "" {
+					wsUUID := util.ParseUUID(wsID)
+					if err := s.Scorer.ScoreTask(bgCtx, task.ID, task.AgentID, wsUUID); err != nil {
+						slog.Warn("agent scoring failed (cancelled)", "task_id", util.UUIDToString(task.ID), "error", err)
+					}
+				}
+			}
+		}()
+	}
+
 	return &task, nil
 }
 
