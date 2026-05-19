@@ -180,3 +180,54 @@ export interface RuntimeUpdate {
   created_at: string;
   updated_at: string;
 }
+
+// Agent Scoring & Analysis types
+
+export interface AgentScore {
+  agent_id: string;
+  agent_name: string;
+  overall_score: number;
+  task_type_scores: Record<string, number>;
+  total_tasks: number;
+  successful_tasks: number;
+  failed_tasks: number;
+  success_rate: number;
+  avg_tool_count: number;
+  avg_error_count: number;
+  avg_error_rate: number;
+  score_trend: "improving" | "stable" | "declining";
+  updated_at: string;
+}
+
+export interface AgentScoreHistoryEntry {
+  task_id: string;
+  task_type: string;
+  score_before: number;
+  score_after: number;
+  score_delta: number;
+  success: boolean;
+  tool_count: number;
+  error_count: number;
+  created_at: string;
+}
+
+export interface TaskAnalysis {
+  task_id: string;
+  tool_count: number;
+  error_count: number;
+  unique_tools: number;
+  total_duration_ms: number;
+  message_count: number;
+  failure_class: string;
+  failure_detail: string;
+  tool_usage: Record<string, { count: number; errors: number }>;
+  has_retry_pattern: boolean;
+  has_error_recovery: boolean;
+  summary: string;
+  improvement_hint: string;
+  created_at: string;
+}
+
+export interface TaskAnalysisWithAgent extends TaskAnalysis {
+  agent_id: string;
+}

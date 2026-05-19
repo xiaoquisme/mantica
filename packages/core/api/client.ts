@@ -571,6 +571,27 @@ export class ApiClient {
     });
   }
 
+  // Agent Scoring & Analysis
+  async getAgentScore(agentId: string): Promise<AgentScore> {
+    return this.fetch(`/api/agents/${agentId}/score`);
+  }
+
+  async getAgentScoreHistory(agentId: string, limit = 20): Promise<AgentScoreHistoryEntry[]> {
+    return this.fetch(`/api/agents/${agentId}/score/history?limit=${limit}`);
+  }
+
+  async listAgentScores(): Promise<AgentScore[]> {
+    return this.fetch("/api/agents/scores");
+  }
+
+  async getTaskAnalysis(taskId: string): Promise<TaskAnalysis> {
+    return this.fetch(`/api/tasks/${taskId}/analysis`);
+  }
+
+  async listFailedAnalyses(limit = 20): Promise<TaskAnalysisWithAgent[]> {
+    return this.fetch(`/api/analysis/failed?limit=${limit}`);
+  }
+
   // Personal Access Tokens
   async listPersonalAccessTokens(): Promise<PersonalAccessToken[]> {
     return this.fetch("/api/tokens");

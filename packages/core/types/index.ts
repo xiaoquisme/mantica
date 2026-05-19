@@ -21,6 +21,10 @@ export type {
   RuntimeUpdate,
   RuntimeUpdateStatus,
   IssueUsageSummary,
+  AgentScore,
+  AgentScoreHistoryEntry,
+  TaskAnalysis,
+  TaskAnalysisWithAgent,
 } from "./agent";
 export type { Workspace, WorkspaceRepo, Member, MemberRole, User, MemberWithUser } from "./workspace";
 export type { InboxItem, InboxSeverity, InboxItemType } from "./inbox";

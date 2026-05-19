@@ -11,6 +11,7 @@ import {
   AlertCircle,
   MoreHorizontal,
   Settings,
+  Activity,
 } from "lucide-react";
 import type { Agent, RuntimeDevice } from "@multica/core/types";
 import {
@@ -34,17 +35,19 @@ import { InstructionsTab } from "./tabs/instructions-tab";
 import { SkillsTab } from "./tabs/skills-tab";
 import { TasksTab } from "./tabs/tasks-tab";
 import { SettingsTab } from "./tabs/settings-tab";
+import { PerformanceTab } from "./tabs/performance-tab";
 
 function getRuntimeDevice(agent: Agent, runtimes: RuntimeDevice[]): RuntimeDevice | undefined {
   return runtimes.find((runtime) => runtime.id === agent.runtime_id);
 }
 
-type DetailTab = "instructions" | "skills" | "tasks" | "settings";
+type DetailTab = "instructions" | "skills" | "tasks" | "performance" | "settings";
 
 const detailTabs: { id: DetailTab; label: string; icon: typeof FileText }[] = [
   { id: "instructions", label: "Instructions", icon: FileText },
   { id: "skills", label: "Skills", icon: BookOpenText },
   { id: "tasks", label: "Tasks", icon: ListTodo },
+  { id: "performance", label: "Performance", icon: Activity },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -158,6 +161,7 @@ export function AgentDetail({
           <SkillsTab agent={agent} />
         )}
         {activeTab === "tasks" && <TasksTab agent={agent} />}
+        {activeTab === "performance" && <PerformanceTab agentId={agent.id} />}
         {activeTab === "settings" && (
           <SettingsTab
             agent={agent}
