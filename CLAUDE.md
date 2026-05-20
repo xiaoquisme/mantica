@@ -16,7 +16,6 @@ Mantica is an AI-native task management platform — like Linear, but with AI ag
 
 - `server/` — Go backend (Chi router, sqlc for DB, gorilla/websocket for real-time)
 - `apps/web/` — Next.js frontend (App Router)
-- `apps/desktop/` — Electron desktop app (electron-vite)
 - `packages/core/` — Headless business logic (zero react-dom, all-platform reuse)
 - `packages/ui/` — Atomic UI components (zero business logic)
 - `packages/views/` — Shared business pages/components (zero next/* imports, zero react-router imports)
@@ -66,7 +65,6 @@ make db-down          # Stop the shared PostgreSQL container
 # Frontend (all commands go through Turborepo)
 pnpm install
 pnpm dev:web          # Next.js dev server (port 3000)
-pnpm dev:desktop      # Electron dev (electron-vite, HMR)
 pnpm build            # Build all frontend apps
 pnpm typecheck        # TypeScript check (all packages + apps via turbo)
 pnpm lint             # ESLint
@@ -92,10 +90,6 @@ cd server && go test ./internal/handler/ -run TestName
 
 # Run a single E2E test (requires backend + frontend running)
 pnpm exec playwright test e2e/tests/specific-test.spec.ts
-
-# Desktop build & package
-pnpm --filter @mantica/desktop build      # Compile TS → JS (reads .env.production)
-pnpm --filter @mantica/desktop package    # Package into .app/.dmg/.exe (current platform only)
 
 # shadcn — config lives in packages/ui/components.json (Base UI variant, base-nova style)
 pnpm ui:add badge                # Adds component to packages/ui/components/ui/
@@ -137,7 +131,6 @@ These are hard constraints. Violating them breaks the cross-platform architectur
 - `packages/ui/` — zero `@mantica/core` imports (pure UI, no business logic).
 - `packages/views/` — zero `next/*` imports, zero `react-router-dom` imports, zero stores. Use `NavigationAdapter` for all routing.
 - `apps/web/platform/` — the only place for Next.js APIs (`next/navigation`).
-- `apps/desktop/src/renderer/src/platform/` — the only place for react-router-dom navigation wiring.
 
 ### The No-Duplication Rule
 
@@ -156,10 +149,10 @@ When the two apps need different behavior for the same concept (e.g., different 
 When adding a new page or feature:
 
 1. **New page component** → add to `packages/views/<domain>/`. Never import from `next/*` or `react-router-dom`.
-2. **Wire it in both apps** → add a route in `apps/web/app/` (Next.js page file) AND in the desktop router.
+2. **Wire it in the web app** → add a route in `apps/web/app/` (Next.js page file).
 3. **Navigation** → use `useNavigation().push()` or `<AppLink>`. Never use framework-specific link/router APIs in shared code.
 4. **Shared guards/providers** → use `DashboardGuard` from `packages/views/layout/`. Don't create separate guard logic per app.
-5. **Platform-specific UI** → if a feature is web-only or desktop-only, keep it in the respective app. Use props slots (`extra`, `topSlot`) on shared layout components to inject platform-specific UI.
+5. **Platform-specific UI** → if a feature is web-only, keep it in the respective app. Use props slots (`extra`, `topSlot`) on shared layout components to inject platform-specific UI.
 6. **New hooks that need workspace context** → accept `wsId` as parameter instead of reading from `useWorkspaceId()` Context, so they work both inside and outside `WorkspaceIdProvider`.
 
 ### CSS Architecture
@@ -176,7 +169,7 @@ Both apps share the same CSS foundation from `packages/ui/styles/`.
 - Use shadcn design tokens for styling. Avoid hardcoded color values.
 - Do not introduce extra state (useState, context, reducers) unless explicitly required by the design.
 - Pay close attention to **overflow** (truncate long text, scrollable containers), **alignment**, and **spacing** consistency.
-- **If a component is identical between web and desktop, it belongs in a shared package.** Do not copy-paste between apps.
+- **If a component is identical across apps, it belongs in a shared package.** Do not copy-paste.
 
 ## Testing Rules
 
@@ -188,7 +181,7 @@ Tests follow the code, not the app. This is the most important testing principle
 |---|---|---|
 | Shared business logic (stores, queries, hooks) | `packages/core/*.test.ts` | No DOM needed, pure logic |
 | Shared UI components (pages, forms, modals) | `packages/views/*.test.tsx` | jsdom, no framework mocks |
-| Platform-specific wiring (cookies, redirects, searchParams) | `apps/web/*.test.tsx` or `apps/desktop/` | Needs framework-specific mocks |
+| Platform-specific wiring (cookies, redirects, searchParams) | `apps/web/*.test.tsx` | Needs framework-specific mocks |
 | End-to-end user flows | `e2e/*.spec.ts` | Real browser, real backend |
 
 **Never test shared component behavior in an app's test file.** If a test requires mocking `next/navigation` or `react-router-dom` to test a component from `@mantica/views`, the test is in the wrong place — move it to `packages/views/` and mock `@mantica/core` instead.

@@ -32,7 +32,7 @@ Mantica manages the full agent lifecycle: from task assignment to execution moni
 - **Unified Runtimes** — one dashboard for all your compute. Local daemons and cloud runtimes, auto-detection of available CLIs, real-time monitoring.
 - **Multi-Workspace** — organize work across teams with workspace-level isolation. Each workspace has its own agents, issues, and settings.
 - **Scheduled Tasks** — run recurring agent tasks on a schedule directly from the platform.
-- **Web + Desktop** — access Mantica via the web app or the native Electron desktop app.
+- **Web** — access Mantica via the web app.
 
 ## Architecture
 
