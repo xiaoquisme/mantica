@@ -12,14 +12,14 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	db "github.com/multica-ai/multica/server/pkg/db/generated"
-	"github.com/multica-ai/multica/server/internal/auth"
-	"github.com/multica-ai/multica/server/internal/events"
-	"github.com/multica-ai/multica/server/internal/middleware"
-	"github.com/multica-ai/multica/server/internal/realtime"
-	"github.com/multica-ai/multica/server/internal/service"
-	"github.com/multica-ai/multica/server/internal/storage"
-	"github.com/multica-ai/multica/server/internal/util"
+	db "github.com/xiaoquisme/mantica/server/pkg/db/generated"
+	"github.com/xiaoquisme/mantica/server/internal/auth"
+	"github.com/xiaoquisme/mantica/server/internal/events"
+	"github.com/xiaoquisme/mantica/server/internal/middleware"
+	"github.com/xiaoquisme/mantica/server/internal/realtime"
+	"github.com/xiaoquisme/mantica/server/internal/service"
+	"github.com/xiaoquisme/mantica/server/internal/storage"
+	"github.com/xiaoquisme/mantica/server/internal/util"
 )
 
 type txStarter interface {
@@ -53,8 +53,8 @@ func New(queries *db.Queries, txStarter txStarter, hub *realtime.Hub, bus *event
 		executor = candidate
 	}
 
-	// Load agent_config.yaml from MULTICA_AGENT_CONFIG env var (default: agent_config.yaml).
-	agentConfigPath := os.Getenv("MULTICA_AGENT_CONFIG")
+	// Load agent_config.yaml from MANTICA_AGENT_CONFIG env var (default: agent_config.yaml).
+	agentConfigPath := os.Getenv("MANTICA_AGENT_CONFIG")
 	if agentConfigPath == "" {
 		agentConfigPath = "agent_config.yaml"
 	}

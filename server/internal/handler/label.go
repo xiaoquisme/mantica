@@ -7,8 +7,8 @@ import (
 	"regexp"
 
 	"github.com/go-chi/chi/v5"
-	db "github.com/multica-ai/multica/server/pkg/db/generated"
-	"github.com/multica-ai/multica/server/pkg/protocol"
+	db "github.com/xiaoquisme/mantica/server/pkg/db/generated"
+	"github.com/xiaoquisme/mantica/server/pkg/protocol"
 )
 
 var hexColorRe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)

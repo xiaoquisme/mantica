@@ -36,7 +36,7 @@ func TestBuildPromptContainsIssueID(t *testing.T) {
 	// Prompt should contain the issue ID and CLI hint.
 	for _, want := range []string{
 		issueID,
-		"multica issue get",
+		"mantica issue get",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q", want)
@@ -59,7 +59,7 @@ func TestBuildPromptNoStatusTransition(t *testing.T) {
 	prompt := BuildPrompt(Task{
 		IssueID: "test-issue-123",
 	})
-	if strings.Contains(prompt, "multica issue status") {
+	if strings.Contains(prompt, "mantica issue status") {
 		t.Fatalf("prompt should NOT contain status command, got:\n%s", prompt)
 	}
 	if strings.Contains(prompt, "**FIRST**") {
@@ -101,15 +101,15 @@ func TestIsWorkspaceNotFoundError(t *testing.T) {
 	}
 }
 
-// TestLoadConfigClaudeNamedEnvVars verifies that MULTICA_CLAUDE_API_KEY and
-// MULTICA_CLAUDE_BASE_URL are forwarded to the claude AgentEntry.Env as
+// TestLoadConfigClaudeNamedEnvVars verifies that MANTICA_CLAUDE_API_KEY and
+// MANTICA_CLAUDE_BASE_URL are forwarded to the claude AgentEntry.Env as
 // ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL respectively.
 func TestLoadConfigClaudeNamedEnvVars(t *testing.T) {
-	t.Setenv("MULTICA_CLAUDE_API_KEY", "  sk-test-key  ")
-	t.Setenv("MULTICA_CLAUDE_BASE_URL", "  https://custom.endpoint.example.com  ")
-	t.Setenv("MULTICA_SERVER_URL", "http://localhost:8080")
+	t.Setenv("MANTICA_CLAUDE_API_KEY", "  sk-test-key  ")
+	t.Setenv("MANTICA_CLAUDE_BASE_URL", "  https://custom.endpoint.example.com  ")
+	t.Setenv("MANTICA_SERVER_URL", "http://localhost:8080")
 	// Ensure claude is found on PATH (the test binary itself will do).
-	t.Setenv("MULTICA_CLAUDE_PATH", findSelfBinary(t))
+	t.Setenv("MANTICA_CLAUDE_PATH", findSelfBinary(t))
 
 	cfg, err := LoadConfig(Overrides{})
 	if err != nil {
@@ -129,16 +129,16 @@ func TestLoadConfigClaudeNamedEnvVars(t *testing.T) {
 }
 
 // TestLoadConfigClaudeGenericEnvPassthrough verifies that any env var prefixed
-// with MULTICA_CLAUDE_ENV_ is forwarded verbatim to the claude AgentEntry.Env.
+// with MANTICA_CLAUDE_ENV_ is forwarded verbatim to the claude AgentEntry.Env.
 // This supports Vertex AI mode and any future auth scheme without code changes.
 func TestLoadConfigClaudeGenericEnvPassthrough(t *testing.T) {
-	t.Setenv("MULTICA_CLAUDE_ENV_ANTHROPIC_AUTH_TOKEN", "sk-vertex-token")
-	t.Setenv("MULTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_BASE_URL", "https://gateway.example.ai/api")
-	t.Setenv("MULTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_PROJECT_ID", "my-project")
-	t.Setenv("MULTICA_CLAUDE_ENV_CLAUDE_CODE_USE_VERTEX", "1")
-	t.Setenv("MULTICA_CLAUDE_ENV_CLAUDE_CODE_SKIP_VERTEX_AUTH", "1")
-	t.Setenv("MULTICA_SERVER_URL", "http://localhost:8080")
-	t.Setenv("MULTICA_CLAUDE_PATH", findSelfBinary(t))
+	t.Setenv("MANTICA_CLAUDE_ENV_ANTHROPIC_AUTH_TOKEN", "sk-vertex-token")
+	t.Setenv("MANTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_BASE_URL", "https://gateway.example.ai/api")
+	t.Setenv("MANTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_PROJECT_ID", "my-project")
+	t.Setenv("MANTICA_CLAUDE_ENV_CLAUDE_CODE_USE_VERTEX", "1")
+	t.Setenv("MANTICA_CLAUDE_ENV_CLAUDE_CODE_SKIP_VERTEX_AUTH", "1")
+	t.Setenv("MANTICA_SERVER_URL", "http://localhost:8080")
+	t.Setenv("MANTICA_CLAUDE_PATH", findSelfBinary(t))
 
 	cfg, err := LoadConfig(Overrides{})
 	if err != nil {
@@ -164,12 +164,12 @@ func TestLoadConfigClaudeGenericEnvPassthrough(t *testing.T) {
 	}
 }
 
-// TestLoadConfigClaudeEnvPrefixEmptyKey ensures a MULTICA_CLAUDE_ENV_ var with
+// TestLoadConfigClaudeEnvPrefixEmptyKey ensures a MANTICA_CLAUDE_ENV_ var with
 // no suffix (i.e. target key is empty) is silently ignored.
 func TestLoadConfigClaudeEnvPrefixEmptyKey(t *testing.T) {
-	t.Setenv("MULTICA_CLAUDE_ENV_", "should-be-ignored")
-	t.Setenv("MULTICA_SERVER_URL", "http://localhost:8080")
-	t.Setenv("MULTICA_CLAUDE_PATH", findSelfBinary(t))
+	t.Setenv("MANTICA_CLAUDE_ENV_", "should-be-ignored")
+	t.Setenv("MANTICA_SERVER_URL", "http://localhost:8080")
+	t.Setenv("MANTICA_CLAUDE_PATH", findSelfBinary(t))
 
 	cfg, err := LoadConfig(Overrides{})
 	if err != nil {

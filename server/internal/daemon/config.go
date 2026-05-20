@@ -28,10 +28,10 @@ type Config struct {
 	DaemonID           string
 	DeviceName         string
 	RuntimeName        string
-	CLIVersion         string                // multica CLI version (e.g. "0.1.13")
+	CLIVersion         string                // mantica CLI version (e.g. "0.1.13")
 	Profile            string                // profile name (empty = default)
 	Agents             map[string]AgentEntry // "claude" -> entry, "codex" -> entry, "opencode" -> entry, "openclaw" -> entry, "hermes" -> entry
-	WorkspacesRoot     string                // base path for execution envs (default: ~/multica_workspaces)
+	WorkspacesRoot     string                // base path for execution envs (default: ~/mantica_workspaces)
 	KeepEnvAfterTask   bool                  // preserve env after task for debugging
 	HealthPort         int                   // local HTTP port for health checks (default: 19514)
 	MaxConcurrentTasks int                   // max tasks running in parallel (default: 20)
@@ -60,7 +60,7 @@ type Overrides struct {
 // and optional CLI flag overrides.
 func LoadConfig(overrides Overrides) (Config, error) {
 	// Server URL: override > env > default
-	rawServerURL := envOrDefault("MULTICA_SERVER_URL", DefaultServerURL)
+	rawServerURL := envOrDefault("MANTICA_SERVER_URL", DefaultServerURL)
 	if overrides.ServerURL != "" {
 		rawServerURL = overrides.ServerURL
 	}
@@ -71,11 +71,11 @@ func LoadConfig(overrides Overrides) (Config, error) {
 
 	// Probe available agent CLIs
 	agents := map[string]AgentEntry{}
-	claudePath := envOrDefault("MULTICA_CLAUDE_PATH", "claude")
+	claudePath := envOrDefault("MANTICA_CLAUDE_PATH", "claude")
 	if _, err := exec.LookPath(claudePath); err == nil {
 		claudeEntry := AgentEntry{
 			Path:  claudePath,
-			Model: strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_MODEL")),
+			Model: strings.TrimSpace(os.Getenv("MANTICA_CLAUDE_MODEL")),
 			AvailableModels: []string{
 				"claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-3-6",
 			},
@@ -83,35 +83,35 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		// Inject env vars for the claude process in two complementary ways:
 		//
 		// 1. Named shorthands (kept for backward compat):
-		//    MULTICA_CLAUDE_API_KEY  → ANTHROPIC_API_KEY
-		//    MULTICA_CLAUDE_BASE_URL → ANTHROPIC_BASE_URL
+		//    MANTICA_CLAUDE_API_KEY  → ANTHROPIC_API_KEY
+		//    MANTICA_CLAUDE_BASE_URL → ANTHROPIC_BASE_URL
 		//
 		// 2. Generic passthrough prefix — any env var of the form
-		//    MULTICA_CLAUDE_ENV_<NAME>=value is forwarded to the claude process
+		//    MANTICA_CLAUDE_ENV_<NAME>=value is forwarded to the claude process
 		//    as <NAME>=value.  This covers Vertex AI mode and any other auth
 		//    scheme without requiring new named shorthands:
-		//      MULTICA_CLAUDE_ENV_ANTHROPIC_AUTH_TOKEN=...
-		//      MULTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_BASE_URL=...
-		//      MULTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_PROJECT_ID=...
-		//      MULTICA_CLAUDE_ENV_CLAUDE_CODE_USE_VERTEX=1
-		//      MULTICA_CLAUDE_ENV_CLAUDE_CODE_SKIP_VERTEX_AUTH=1
+		//      MANTICA_CLAUDE_ENV_ANTHROPIC_AUTH_TOKEN=...
+		//      MANTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_BASE_URL=...
+		//      MANTICA_CLAUDE_ENV_ANTHROPIC_VERTEX_PROJECT_ID=...
+		//      MANTICA_CLAUDE_ENV_CLAUDE_CODE_USE_VERTEX=1
+		//      MANTICA_CLAUDE_ENV_CLAUDE_CODE_SKIP_VERTEX_AUTH=1
 		//    etc.
 		//
 		// All of these take precedence over whatever the daemon process inherited,
 		// so credentials always reach the agent CLI even when it runs as a service.
-		if apiKey := strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_API_KEY")); apiKey != "" {
+		if apiKey := strings.TrimSpace(os.Getenv("MANTICA_CLAUDE_API_KEY")); apiKey != "" {
 			if claudeEntry.Env == nil {
 				claudeEntry.Env = map[string]string{}
 			}
 			claudeEntry.Env["ANTHROPIC_API_KEY"] = apiKey
 		}
-		if baseURL := strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_BASE_URL")); baseURL != "" {
+		if baseURL := strings.TrimSpace(os.Getenv("MANTICA_CLAUDE_BASE_URL")); baseURL != "" {
 			if claudeEntry.Env == nil {
 				claudeEntry.Env = map[string]string{}
 			}
 			claudeEntry.Env["ANTHROPIC_BASE_URL"] = baseURL
 		}
-		const claudeEnvPrefix = "MULTICA_CLAUDE_ENV_"
+		const claudeEnvPrefix = "MANTICA_CLAUDE_ENV_"
 		for _, kv := range os.Environ() {
 			if !strings.HasPrefix(kv, claudeEnvPrefix) {
 				continue
@@ -132,43 +132,43 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		}
 		agents["claude"] = claudeEntry
 	}
-	codexPath := envOrDefault("MULTICA_CODEX_PATH", "codex")
+	codexPath := envOrDefault("MANTICA_CODEX_PATH", "codex")
 	if _, err := exec.LookPath(codexPath); err == nil {
 		agents["codex"] = AgentEntry{
 			Path:  codexPath,
-			Model: strings.TrimSpace(os.Getenv("MULTICA_CODEX_MODEL")),
+			Model: strings.TrimSpace(os.Getenv("MANTICA_CODEX_MODEL")),
 			AvailableModels: []string{
 				"gpt-5.2", "gpt-5.2-mini", "gpt-5.2-codex", "o3", "o3-mini", "o4-mini",
 			},
 		}
 	}
-	opencodePath := envOrDefault("MULTICA_OPENCODE_PATH", "opencode")
+	opencodePath := envOrDefault("MANTICA_OPENCODE_PATH", "opencode")
 	if _, err := exec.LookPath(opencodePath); err == nil {
 		agents["opencode"] = AgentEntry{
 			Path:  opencodePath,
-			Model: strings.TrimSpace(os.Getenv("MULTICA_OPENCODE_MODEL")),
+			Model: strings.TrimSpace(os.Getenv("MANTICA_OPENCODE_MODEL")),
 			AvailableModels: []string{
 				"claude-sonnet-4-6", "claude-opus-4-6", "gpt-5.2", "gpt-5.2-mini", "o3", "o3-mini",
 			},
 		}
 	}
-	openclawPath := envOrDefault("MULTICA_OPENCLAW_PATH", "openclaw")
+	openclawPath := envOrDefault("MANTICA_OPENCLAW_PATH", "openclaw")
 	if _, err := exec.LookPath(openclawPath); err == nil {
 		agents["openclaw"] = AgentEntry{
 			Path:  openclawPath,
-			Model: strings.TrimSpace(os.Getenv("MULTICA_OPENCLAW_MODEL")),
+			Model: strings.TrimSpace(os.Getenv("MANTICA_OPENCLAW_MODEL")),
 			AvailableModels: []string{
 				"claude-sonnet-4-6", "claude-opus-4-6", "gpt-5.2", "gpt-5.2-mini", "o3", "o3-mini",
 			},
 		}
 	}
-	hermesPath := envOrDefault("MULTICA_HERMES_PATH", "hermes")
+	hermesPath := envOrDefault("MANTICA_HERMES_PATH", "hermes")
 	if _, err := exec.LookPath(hermesPath); err == nil {
 		hermesEntry := AgentEntry{
 			Path:  hermesPath,
-			Model: strings.TrimSpace(os.Getenv("MULTICA_HERMES_MODEL")),
+			Model: strings.TrimSpace(os.Getenv("MANTICA_HERMES_MODEL")),
 		}
-		if hermesProfile := strings.TrimSpace(os.Getenv("MULTICA_HERMES_PROFILE")); hermesProfile != "" {
+		if hermesProfile := strings.TrimSpace(os.Getenv("MANTICA_HERMES_PROFILE")); hermesProfile != "" {
 			hermesEntry.ExtraArgs = []string{"--profile", hermesProfile}
 		}
 		agents["hermes"] = hermesEntry
@@ -184,7 +184,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	}
 
 	// Durations: override > env > default
-	pollInterval, err := durationFromEnv("MULTICA_DAEMON_POLL_INTERVAL", DefaultPollInterval)
+	pollInterval, err := durationFromEnv("MANTICA_DAEMON_POLL_INTERVAL", DefaultPollInterval)
 	if err != nil {
 		return Config{}, err
 	}
@@ -192,7 +192,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		pollInterval = overrides.PollInterval
 	}
 
-	heartbeatInterval, err := durationFromEnv("MULTICA_DAEMON_HEARTBEAT_INTERVAL", DefaultHeartbeatInterval)
+	heartbeatInterval, err := durationFromEnv("MANTICA_DAEMON_HEARTBEAT_INTERVAL", DefaultHeartbeatInterval)
 	if err != nil {
 		return Config{}, err
 	}
@@ -200,7 +200,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		heartbeatInterval = overrides.HeartbeatInterval
 	}
 
-	agentTimeout, err := durationFromEnv("MULTICA_AGENT_TIMEOUT", DefaultAgentTimeout)
+	agentTimeout, err := durationFromEnv("MANTICA_AGENT_TIMEOUT", DefaultAgentTimeout)
 	if err != nil {
 		return Config{}, err
 	}
@@ -208,7 +208,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		agentTimeout = overrides.AgentTimeout
 	}
 
-	maxConcurrentTasks, err := intFromEnv("MULTICA_DAEMON_MAX_CONCURRENT_TASKS", DefaultMaxConcurrentTasks)
+	maxConcurrentTasks, err := intFromEnv("MANTICA_DAEMON_MAX_CONCURRENT_TASKS", DefaultMaxConcurrentTasks)
 	if err != nil {
 		return Config{}, err
 	}
@@ -220,7 +220,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	profile := overrides.Profile
 
 	// String overrides
-	daemonID := envOrDefault("MULTICA_DAEMON_ID", host)
+	daemonID := envOrDefault("MANTICA_DAEMON_ID", host)
 	if overrides.DaemonID != "" {
 		daemonID = overrides.DaemonID
 	}
@@ -230,30 +230,30 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		daemonID = daemonID + "-" + profile
 	}
 
-	deviceName := envOrDefault("MULTICA_DAEMON_DEVICE_NAME", host)
+	deviceName := envOrDefault("MANTICA_DAEMON_DEVICE_NAME", host)
 	if overrides.DeviceName != "" {
 		deviceName = overrides.DeviceName
 	}
 
-	runtimeName := envOrDefault("MULTICA_AGENT_RUNTIME_NAME", DefaultRuntimeName)
+	runtimeName := envOrDefault("MANTICA_AGENT_RUNTIME_NAME", DefaultRuntimeName)
 	if overrides.RuntimeName != "" {
 		runtimeName = overrides.RuntimeName
 	}
 
-	// Workspaces root: override > env > default (~/multica_workspaces or ~/multica_workspaces_<profile>)
-	workspacesRoot := strings.TrimSpace(os.Getenv("MULTICA_WORKSPACES_ROOT"))
+	// Workspaces root: override > env > default (~/mantica_workspaces or ~/mantica_workspaces_<profile>)
+	workspacesRoot := strings.TrimSpace(os.Getenv("MANTICA_WORKSPACES_ROOT"))
 	if overrides.WorkspacesRoot != "" {
 		workspacesRoot = overrides.WorkspacesRoot
 	}
 	if workspacesRoot == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return Config{}, fmt.Errorf("resolve home directory: %w (set MULTICA_WORKSPACES_ROOT to override)", err)
+			return Config{}, fmt.Errorf("resolve home directory: %w (set MANTICA_WORKSPACES_ROOT to override)", err)
 		}
 		if profile != "" {
-			workspacesRoot = filepath.Join(home, "multica_workspaces_"+profile)
+			workspacesRoot = filepath.Join(home, "mantica_workspaces_"+profile)
 		} else {
-			workspacesRoot = filepath.Join(home, "multica_workspaces")
+			workspacesRoot = filepath.Join(home, "mantica_workspaces")
 		}
 	}
 	workspacesRoot, err = filepath.Abs(workspacesRoot)
@@ -268,7 +268,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	}
 
 	// Keep env after task: env > default (false)
-	keepEnv := os.Getenv("MULTICA_KEEP_ENV_AFTER_TASK") == "true" || os.Getenv("MULTICA_KEEP_ENV_AFTER_TASK") == "1"
+	keepEnv := os.Getenv("MANTICA_KEEP_ENV_AFTER_TASK") == "true" || os.Getenv("MANTICA_KEEP_ENV_AFTER_TASK") == "1"
 
 	return Config{
 		ServerBaseURL:      serverBaseURL,
@@ -291,7 +291,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 func NormalizeServerBaseURL(raw string) (string, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {
-		return "", fmt.Errorf("invalid MULTICA_SERVER_URL: %w", err)
+		return "", fmt.Errorf("invalid MANTICA_SERVER_URL: %w", err)
 	}
 	switch u.Scheme {
 	case "ws":
@@ -300,7 +300,7 @@ func NormalizeServerBaseURL(raw string) (string, error) {
 		u.Scheme = "https"
 	case "http", "https":
 	default:
-		return "", fmt.Errorf("MULTICA_SERVER_URL must use ws, wss, http, or https")
+		return "", fmt.Errorf("MANTICA_SERVER_URL must use ws, wss, http, or https")
 	}
 	if u.Path == "/ws" {
 		u.Path = ""

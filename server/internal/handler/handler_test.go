@@ -13,10 +13,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/multica-ai/multica/server/internal/events"
-	"github.com/multica-ai/multica/server/internal/realtime"
-	"github.com/multica-ai/multica/server/internal/service"
-	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	"github.com/xiaoquisme/mantica/server/internal/events"
+	"github.com/xiaoquisme/mantica/server/internal/realtime"
+	"github.com/xiaoquisme/mantica/server/internal/service"
+	db "github.com/xiaoquisme/mantica/server/pkg/db/generated"
 )
 
 var testHandler *Handler
@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://multica:multica@localhost:5432/multica?sslmode=disable"
+		dbURL = "postgres://mantica:***@localhost:5432/mantica?sslmode=disable"
 	}
 
 	pool, err := pgxpool.New(ctx, dbURL)

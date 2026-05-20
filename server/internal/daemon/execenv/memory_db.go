@@ -9,7 +9,7 @@ package execenv
 //
 // The memory_vec table and sqlite-vec extension are declared in the schema but
 // the extension is only loaded when a valid .so path is provided via the
-// MULTICA_SQLITE_VEC_PATH environment variable. When absent the table still
+// MANTICA_SQLITE_VEC_PATH environment variable. When absent the table still
 // exists but vector operations degrade gracefully to FTS5-only.
 
 import (

@@ -1,12 +1,12 @@
 version: 2
 
-project_name: multica
+project_name: mantica
 
 builds:
-  - id: multica
-    main: ./cmd/multica
+  - id: mantica
+    main: ./cmd/mantica
     dir: server
-    binary: multica
+    binary: mantica
     ldflags:
       - -s -w
       - -X main.version={{.Version}}
@@ -38,17 +38,17 @@ changelog:
       - "^chore:"
 
 brews:
-  - name: multica
+  - name: mantica
     repository:
-      owner: multica-ai
+      owner: xiaoquisme
       name: homebrew-tap
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
-    homepage: "https://github.com/multica-ai/multica"
-    description: "Multica CLI — local agent runtime and management tool for the Multica platform"
+    homepage: "https://github.com/xiaoquisme/mantica"
+    description: "Mantica CLI — local agent runtime and management tool for the Multica platform"
     license: "Apache-2.0"
     install: |
-      bin.install "multica"
+      bin.install "mantica"
     test: |
-      system "#{bin}/multica", "version"
+      system "#{bin}/mantica", "version"

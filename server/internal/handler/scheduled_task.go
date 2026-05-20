@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/robfig/cron/v3"
 
-	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	db "github.com/xiaoquisme/mantica/server/pkg/db/generated"
 )
 
 // --- Request / Response types ---

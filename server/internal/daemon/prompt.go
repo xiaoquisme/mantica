@@ -23,7 +23,7 @@ func BuildPrompt(task Task) string {
 		b.WriteString("You are an AI agent working in a Multica workspace.\n\n")
 	}
 	fmt.Fprintf(&b, "Your assigned issue ID is: %s\n\n", task.IssueID)
-	fmt.Fprintf(&b, "Run `multica issue get %s --output json` to understand your task and complete it.\n", task.IssueID)
+	fmt.Fprintf(&b, "Run `mantica issue get %s --output json` to understand your task and complete it.\n", task.IssueID)
 	return b.String()
 }
 

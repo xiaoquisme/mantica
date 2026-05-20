@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/multica-ai/multica/server/internal/events"
-	"github.com/multica-ai/multica/server/internal/handler"
-	"github.com/multica-ai/multica/server/internal/util"
-	db "github.com/multica-ai/multica/server/pkg/db/generated"
-	"github.com/multica-ai/multica/server/pkg/protocol"
+	"github.com/xiaoquisme/mantica/server/internal/events"
+	"github.com/xiaoquisme/mantica/server/internal/handler"
+	"github.com/xiaoquisme/mantica/server/internal/util"
+	db "github.com/xiaoquisme/mantica/server/pkg/db/generated"
+	"github.com/xiaoquisme/mantica/server/pkg/protocol"
 )
 
 // subscriberTest helpers — reuse the integration test fixtures from TestMain

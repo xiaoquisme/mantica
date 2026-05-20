@@ -11,11 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/multica-ai/multica/server/internal/cli"
-	"github.com/multica-ai/multica/server/internal/daemon/execenv"
-	"github.com/multica-ai/multica/server/internal/daemon/repocache"
-	"github.com/multica-ai/multica/server/internal/daemon/usage"
-	"github.com/multica-ai/multica/server/pkg/agent"
+	"github.com/xiaoquisme/mantica/server/internal/cli"
+	"github.com/xiaoquisme/mantica/server/internal/daemon/execenv"
+	"github.com/xiaoquisme/mantica/server/internal/daemon/repocache"
+	"github.com/xiaoquisme/mantica/server/internal/daemon/usage"
+	"github.com/xiaoquisme/mantica/server/pkg/agent"
 )
 
 // workspaceState tracks registered runtimes for a single workspace.
@@ -136,9 +136,9 @@ func (d *Daemon) resolveAuth() error {
 		return fmt.Errorf("load CLI config: %w", err)
 	}
 	if cfg.Token == "" {
-		loginHint := "'multica login'"
+		loginHint := "'mantica login'"
 		if d.cfg.Profile != "" {
-			loginHint = fmt.Sprintf("'multica login --profile %s'", d.cfg.Profile)
+			loginHint = fmt.Sprintf("'mantica login --profile %s'", d.cfg.Profile)
 		}
 		d.logger.Warn("not authenticated — run " + loginHint + " to authenticate, then restart the daemon")
 		return fmt.Errorf("not authenticated: run %s first", loginHint)
@@ -156,7 +156,7 @@ func (d *Daemon) loadWatchedWorkspaces(ctx context.Context) error {
 	}
 
 	if len(cfg.WatchedWorkspaces) == 0 {
-		return fmt.Errorf("no watched workspaces configured: run 'multica workspace watch <id>' to add one")
+		return fmt.Errorf("no watched workspaces configured: run 'mantica workspace watch <id>' to add one")
 	}
 
 	var registered int
@@ -599,7 +599,7 @@ func (d *Daemon) handleUpdate(ctx context.Context, runtimeID string, update *Pen
 }
 
 // triggerRestart initiates a graceful daemon restart after a successful CLI update.
-// For brew installs, it keeps the symlink path (e.g. /opt/homebrew/bin/multica)
+// For brew installs, it keeps the symlink path (e.g. /opt/homebrew/bin/mantica)
 // so the restarted daemon picks up the new Cellar version automatically.
 // For non-brew installs, it resolves to the absolute path of the replaced binary.
 // The caller (cmd_daemon.go) checks RestartBinary() and launches the new process.
@@ -896,7 +896,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 
 	// Prepare isolated execution environment.
 	// Repos are passed as metadata only — the agent checks them out on demand
-	// via `multica repo checkout <url>`.
+	// via `mantica repo checkout <url>`.
 	taskCtx := execenv.TaskContextForEnv{
 		IssueID:           task.IssueID,
 		TriggerCommentID:  task.TriggerCommentID,
@@ -938,20 +938,20 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	prompt := BuildPromptWithHints(task, d.client)
 
 	// Pass the daemon's auth credentials and context so the spawned agent CLI
-	// can call the Multica API and the local daemon (e.g. `multica repo checkout`).
+	// can call the Multica API and the local daemon (e.g. `mantica repo checkout`).
 	agentEnv := map[string]string{
-		"MULTICA_TOKEN":        d.client.Token(),
-		"MULTICA_SERVER_URL":   d.cfg.ServerBaseURL,
-		"MULTICA_DAEMON_PORT":  fmt.Sprintf("%d", d.cfg.HealthPort),
-		"MULTICA_WORKSPACE_ID": task.WorkspaceID,
-		"MULTICA_AGENT_NAME":   agentName,
-		"MULTICA_AGENT_ID":     task.AgentID,
-		"MULTICA_TASK_ID":      task.ID,
+		"MANTICA_TOKEN":        d.client.Token(),
+		"MANTICA_SERVER_URL":   d.cfg.ServerBaseURL,
+		"MANTICA_DAEMON_PORT":  fmt.Sprintf("%d", d.cfg.HealthPort),
+		"MANTICA_WORKSPACE_ID": task.WorkspaceID,
+		"MANTICA_AGENT_NAME":   agentName,
+		"MANTICA_AGENT_ID":     task.AgentID,
+		"MANTICA_TASK_ID":      task.ID,
 	}
-	// Ensure the multica CLI is on PATH inside the agent's environment.
+	// Ensure the mantica CLI is on PATH inside the agent's environment.
 	// Some runtimes (e.g. Codex) run in an isolated sandbox that may not
 	// inherit the daemon's PATH. Prepend the directory of the running
-	// multica binary so that `multica` commands in the agent always resolve.
+	// mantica binary so that `mantica` commands in the agent always resolve.
 	if selfBin, err := os.Executable(); err == nil {
 		binDir := filepath.Dir(selfBin)
 		agentEnv["PATH"] = binDir + string(os.PathListSeparator) + os.Getenv("PATH")
@@ -963,7 +963,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	}
 	// Merge provider-specific env vars (e.g. ANTHROPIC_API_KEY for claude).
 	// These take precedence over whatever the daemon process inherited, so that
-	// credentials configured via MULTICA_CLAUDE_* always reach the agent CLI —
+	// credentials configured via MANTICA_CLAUDE_* always reach the agent CLI —
 	// even when the daemon runs as a service without ANTHROPIC_* in its env.
 	for k, v := range entry.Env {
 		agentEnv[k] = v

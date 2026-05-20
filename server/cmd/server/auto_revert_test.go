@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/multica-ai/multica/server/internal/events"
-	"github.com/multica-ai/multica/server/internal/realtime"
-	"github.com/multica-ai/multica/server/internal/service"
-	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	"github.com/xiaoquisme/mantica/server/internal/events"
+	"github.com/xiaoquisme/mantica/server/internal/realtime"
+	"github.com/xiaoquisme/mantica/server/internal/service"
+	db "github.com/xiaoquisme/mantica/server/pkg/db/generated"
 )
 
 // setupRevertFixture creates an issue in the given status with a failed task

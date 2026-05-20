@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/multica-ai/multica/server/internal/pipeline"
+	"github.com/xiaoquisme/mantica/server/internal/pipeline"
 )
 
 // createFanInIssue inserts an issue directly via SQL, bypassing the API. This

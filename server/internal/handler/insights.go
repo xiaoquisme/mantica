@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	db "github.com/xiaoquisme/mantica/server/pkg/db/generated"
 )
 
 // ── Smart Summary Endpoint ──
