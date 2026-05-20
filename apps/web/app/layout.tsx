@@ -22,8 +22,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.mantica.ai"),
   title: {
-    default: "Multica — AI-Native Task Management",
-    template: "%s | Multica",
+    default: "Mantica — AI-Native Task Management",
+    template: "%s | Mantica",
   },
   description:
     "Open-source platform that turns coding agents into real teammates. Assign tasks, track progress, compound skills.",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Multica",
+    siteName: "Mantica",
     locale: "en_US",
   },
   twitter: {
