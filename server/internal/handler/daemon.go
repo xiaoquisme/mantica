@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -643,6 +644,26 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 				Input:   msg.Input,
 				Output:  msg.Output,
 			})
+		}
+	}
+
+	// If this is a backfill (messages with high seq numbers from session extraction),
+	// re-analyze the task now that tool data is available.
+	if h.TaskService != nil && h.TaskService.Analyzer != nil {
+		hasBackfill := false
+		for _, msg := range req.Messages {
+			if msg.Seq >= 1000 {
+				hasBackfill = true
+				break
+			}
+		}
+		if hasBackfill {
+			go func() {
+				bgCtx := context.Background()
+				if _, err := h.TaskService.Analyzer.AnalyzeAndSave(bgCtx, parseUUID(taskID)); err != nil {
+					slog.Warn("re-analysis after backfill failed", "task_id", taskID, "error", err)
+				}
+			}()
 		}
 	}
 
