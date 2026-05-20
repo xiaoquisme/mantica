@@ -975,10 +975,16 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	}
 
 	reused := task.PriorWorkDir != "" && env.WorkDir == task.PriorWorkDir
+	// Determine model: agent.default_model takes precedence over CLI config.
+	model := entry.Model
+	if task.Agent != nil && task.Agent.DefaultModel != "" {
+		model = task.Agent.DefaultModel
+	}
+
 	taskLog.Info("starting agent",
 		"provider", provider,
 		"workdir", env.WorkDir,
-		"model", entry.Model,
+		"model", model,
 		"reused", reused,
 	)
 	if task.PriorSessionID != "" {
@@ -989,7 +995,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 
 	session, err := backend.Execute(ctx, prompt, agent.ExecOptions{
 		Cwd:             env.WorkDir,
-		Model:           entry.Model,
+		Model:           model,
 		Timeout:         d.cfg.AgentTimeout,
 		ResumeSessionID: task.PriorSessionID,
 	})
