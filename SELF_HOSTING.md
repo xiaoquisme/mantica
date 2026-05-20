@@ -1,6 +1,6 @@
 # Self-Hosting Guide
 
-This guide walks you through deploying Multica on your own infrastructure.
+This guide walks you through deploying Mantica on your own infrastructure.
 
 ## Architecture Overview
 
@@ -120,7 +120,7 @@ These are configured on each user's machine, not on the server:
 
 ## Database Setup
 
-Multica requires PostgreSQL 17 with the pgvector extension.
+Mantica requires PostgreSQL 17 with the pgvector extension.
 
 ### Using the Included Docker Compose
 
@@ -275,7 +275,7 @@ Each team member who wants to run AI agents locally needs to:
 
    > **Note:** Use `https://` and `wss://` for production deployments behind a TLS-terminating reverse proxy. For local or development deployments without TLS, use `http://` and `ws://` instead.
 
-The daemon auto-detects installed agent CLIs and registers itself with the server. When an agent is assigned a task in Multica, the daemon picks it up, creates an isolated workspace, runs the agent, and reports results back.
+The daemon auto-detects installed agent CLIs and registers itself with the server. When an agent is assigned a task in Mantica, the daemon picks it up, creates an isolated workspace, runs the agent, and reports results back.
 
 ## Upgrading
 

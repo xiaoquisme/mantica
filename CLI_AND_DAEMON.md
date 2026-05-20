@@ -78,7 +78,7 @@ Removes the stored authentication token.
 
 ## Agent Daemon
 
-The daemon is the local agent runtime. It detects available AI CLIs on your machine, registers them with the Multica server, and executes tasks when agents are assigned work.
+The daemon is the local agent runtime. It detects available AI CLIs on your machine, registers them with the Mantica server, and executes tasks when agents are assigned work.
 
 ### Start
 
@@ -162,7 +162,7 @@ Agent-specific overrides:
 
 ### Self-Hosted Server
 
-When connecting to a self-hosted Multica instance, point the CLI to your server before logging in:
+When connecting to a self-hosted Mantica instance, point the CLI to your server before logging in:
 
 ```bash
 export MANTICA_APP_URL=https://app.example.com

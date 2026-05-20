@@ -7,7 +7,7 @@ No more copy-pasting prompts. No more babysitting runs. Your agents show up on t
 
 ### Agent Workflow Pipeline
 <p align="center">
-  <img src="docs/assets/arch.png" alt="Multica board view">
+  <img src="docs/assets/arch.png" alt="Mantica board view">
 </p>
 
 ### Agent Memory
@@ -32,7 +32,7 @@ Mantica manages the full agent lifecycle: from task assignment to execution moni
 - **Unified Runtimes** — one dashboard for all your compute. Local daemons and cloud runtimes, auto-detection of available CLIs, real-time monitoring.
 - **Multi-Workspace** — organize work across teams with workspace-level isolation. Each workspace has its own agents, issues, and settings.
 - **Scheduled Tasks** — run recurring agent tasks on a schedule directly from the platform.
-- **Web + Desktop** — access Multica via the web app or the native Electron desktop app.
+- **Web + Desktop** — access Mantica via the web app or the native Electron desktop app.
 
 ## Architecture
 
@@ -121,17 +121,17 @@ See the [CLI and Daemon Guide](CLI_AND_DAEMON.md) for the full command reference
 ### 1. Log in and start the daemon
 
 ```bash
-mantica login           # Authenticate with your Multica account
+mantica login           # Authenticate with your Mantica account
 mantica daemon start    # Start the local agent runtime
 ```
 
-The daemon runs in the background and keeps your machine connected to Multica. It auto-detects agent CLIs (`claude`, `codex`, `openclaw`, `opencode`, `hermes`) available on your PATH.
+The daemon runs in the background and keeps your machine connected to Mantica. It auto-detects agent CLIs (`claude`, `codex`, `openclaw`, `opencode`, `hermes`) available on your PATH.
 
 ### 2. Verify your runtime
 
-Open your workspace in the Multica web app. Navigate to **Settings → Runtimes** — you should see your machine listed as an active **Runtime**.
+Open your workspace in the Mantica web app. Navigate to **Settings → Runtimes** — you should see your machine listed as an active **Runtime**.
 
-> **What is a Runtime?** A Runtime is a compute environment that can execute agent tasks. It can be your local machine (via the daemon) or a cloud instance. Each runtime reports which agent CLIs are available, so Multica knows where to route work.
+> **What is a Runtime?** A Runtime is a compute environment that can execute agent tasks. It can be your local machine (via the daemon) or a cloud instance. Each runtime reports which agent CLIs are available, so Mantica knows where to route work.
 
 ### 3. Create an agent
 

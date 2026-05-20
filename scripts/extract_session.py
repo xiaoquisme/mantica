@@ -3,7 +3,7 @@
 Session JSONL → task_message 提取器
 
 从 Hermes session JSONL 文件中提取 tool_use/tool_result 对，
-转换为 Multica task_message 格式。
+转换为 Mantica task_message 格式。
 
 用法:
   python3 extract_session.py <session_file> [--task-id <uuid>]
@@ -154,7 +154,7 @@ def parse_session_messages(filepath: str) -> list[dict]:
 
 def to_task_messages(messages: list[dict], task_id: str) -> list[dict]:
     """
-    转换为 Multica task_message 格式 (适配 CreateTaskMessage SQL)
+    转换为 Mantica task_message 格式 (适配 CreateTaskMessage SQL)
     
     CREATE TABLE task_message (
         id UUID, task_id UUID, seq INT, type TEXT,
