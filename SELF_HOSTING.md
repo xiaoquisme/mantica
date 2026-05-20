@@ -4,7 +4,7 @@ This guide walks you through deploying Multica on your own infrastructure.
 
 ## Architecture Overview
 
-Multica has three components:
+Mantica has three components:
 
 | Component | Description | Technology |
 |-----------|-------------|------------|
@@ -12,7 +12,7 @@ Multica has three components:
 | **Frontend** | Web application | Next.js 16 |
 | **Database** | Primary data store | PostgreSQL 17 with pgvector |
 
-Additionally, each user who wants to run AI agents locally installs the **`multica` CLI** and runs the **agent daemon** on their own machine.
+Additionally, each user who wants to run AI agents locally installs the **`mantica` CLI** and runs the **agent daemon** on their own machine.
 
 ## Prerequisites
 
@@ -24,8 +24,8 @@ Additionally, each user who wants to run AI agents locally installs the **`multi
 ## Quick Start (Docker Compose)
 
 ```bash
-git clone https://github.com/multica-ai/multica.git
-cd multica
+git clone https://github.com/mantica-ai/mantica.git
+cd mantica
 cp .env.example .env
 ```
 
@@ -64,18 +64,18 @@ All configuration is done via environment variables. Copy `.env.example` as a st
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://multica:multica@localhost:5432/multica?sslmode=disable` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgres://mantica:multica@localhost:5432/mantica?sslmode=disable` |
 | `JWT_SECRET` | **Must change from default.** Secret key for signing JWT tokens. Use a long random string. | `openssl rand -hex 32` |
 | `FRONTEND_ORIGIN` | URL where the frontend is served (used for CORS) | `https://app.example.com` |
 
 ### Email (Required for Authentication)
 
-Multica uses email-based magic link authentication via [Resend](https://resend.com).
+Mantica uses email-based magic link authentication via [Resend](https://resend.com).
 
 | Variable | Description |
 |----------|-------------|
 | `RESEND_API_KEY` | Your Resend API key |
-| `RESEND_FROM_EMAIL` | Sender email address (default: `noreply@multica.ai`) |
+| `RESEND_FROM_EMAIL` | Sender email address (default: `noreply@mantica.ai`) |
 
 ### Google OAuth (Optional)
 
@@ -113,10 +113,10 @@ These are configured on each user's machine, not on the server:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MULTICA_SERVER_URL` | `ws://localhost:8080/ws` | WebSocket URL for daemon → server connection |
-| `MULTICA_APP_URL` | `http://localhost:3000` | Frontend URL for CLI login flow |
-| `MULTICA_DAEMON_POLL_INTERVAL` | `3s` | How often the daemon polls for tasks |
-| `MULTICA_DAEMON_HEARTBEAT_INTERVAL` | `15s` | Heartbeat frequency |
+| `MANTICA_SERVER_URL` | `ws://localhost:8080/ws` | WebSocket URL for daemon → server connection |
+| `MANTICA_APP_URL` | `http://localhost:3000` | Frontend URL for CLI login flow |
+| `MANTICA_DAEMON_POLL_INTERVAL` | `3s` | How often the daemon polls for tasks |
+| `MANTICA_DAEMON_HEARTBEAT_INTERVAL` | `15s` | Heartbeat frequency |
 
 ## Database Setup
 
@@ -128,7 +128,7 @@ Multica requires PostgreSQL 17 with the pgvector extension.
 docker compose up -d postgres
 ```
 
-This starts a `pgvector/pgvector:pg17` container on port 5432 with default credentials (`multica`/`multica`).
+This starts a `pgvector/pgvector:pg17` container on port 5432 with default credentials (`mantica`/`mantica`).
 
 ### Using Your Own PostgreSQL
 
@@ -245,8 +245,8 @@ Each team member who wants to run AI agents locally needs to:
 1. **Install the CLI**
 
    ```bash
-   brew tap multica-ai/tap
-   brew install multica-cli
+   brew tap mantica-ai/tap
+   brew install mantica-cli
    ```
 
 2. **Install an AI agent CLI** — at least one of:
@@ -259,18 +259,18 @@ Each team member who wants to run AI agents locally needs to:
    # Point CLI to your server
    #
    # For production deployments with TLS:
-   export MULTICA_APP_URL=https://app.example.com
-   export MULTICA_SERVER_URL=wss://api.example.com/ws
+   export MANTICA_APP_URL=https://app.example.com
+   export MANTICA_SERVER_URL=wss://api.example.com/ws
    #
    # For local deployments without TLS:
-   # export MULTICA_APP_URL=http://localhost:3000
-   # export MULTICA_SERVER_URL=ws://localhost:8080/ws
+   # export MANTICA_APP_URL=http://localhost:3000
+   # export MANTICA_SERVER_URL=ws://localhost:8080/ws
 
    # Login (opens browser)
-   multica login
+   mantica login
 
    # Start the daemon
-   multica daemon start
+   mantica daemon start
    ```
 
    > **Note:** Use `https://` and `wss://` for production deployments behind a TLS-terminating reverse proxy. For local or development deployments without TLS, use `http://` and `ws://` instead.

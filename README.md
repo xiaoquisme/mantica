@@ -1,7 +1,7 @@
 
-## What is Multica?
+## What is Mantica?
 
-Multica turns coding agents into real teammates. Assign issues to an agent like you'd assign to a colleague — they'll pick up the work, write code, report blockers, and update statuses autonomously.
+Mantica turns coding agents into real teammates. Assign issues to an agent like you'd assign to a colleague — they'll pick up the work, write code, report blockers, and update statuses autonomously.
 
 No more copy-pasting prompts. No more babysitting runs. Your agents show up on the board, participate in conversations, and compound reusable skills over time. Think of it as open-source infrastructure for managed agents — vendor-neutral, self-hosted, and designed for human + AI teams. Works with **Claude Code**, **Codex**, **OpenClaw**, **OpenCode**, and **Hermes**.
 
@@ -20,7 +20,7 @@ No more copy-pasting prompts. No more babysitting runs. Your agents show up on t
 
 ## Features
 
-Multica manages the full agent lifecycle: from task assignment to execution monitoring to skill reuse.
+Mantica manages the full agent lifecycle: from task assignment to execution monitoring to skill reuse.
 
 - **Agents as Teammates** — assign to an agent like you'd assign to a colleague. They have profiles, show up on the board, post comments, create issues, and report blockers proactively.
 - **Autonomous Execution** — set it and forget it. Full task lifecycle management (enqueue, claim, start, complete/fail) with real-time progress streaming via WebSocket.
@@ -85,8 +85,8 @@ Parallel workstreams are supported via fan-out: an agent can create sub-issues a
 ### Self-Host with Docker
 
 ```bash
-git clone https://github.com/multica-ai/multica.git
-cd multica
+git clone https://github.com/mantica-ai/mantica.git
+cd mantica
 cp .env.example .env
 # Edit .env — at minimum, change JWT_SECRET
 
@@ -99,7 +99,7 @@ See the [Self-Hosting Guide](SELF_HOSTING.md) for full instructions.
 
 ## CLI
 
-The `multica` CLI connects your local machine to Multica — authenticate, manage workspaces, and run the agent daemon.
+The `mantica` CLI connects your local machine to Mantica — authenticate, manage workspaces, and run the agent daemon.
 
 **Install manually:**
 
@@ -108,8 +108,8 @@ The `multica` CLI connects your local machine to Multica — authenticate, manag
 make build
 
 # Authenticate and start
-multica login
-multica daemon start
+mantica login
+mantica daemon start
 ```
 
 The daemon auto-detects available agent CLIs (`claude`, `codex`, `openclaw`, `opencode`, `hermes`) on your PATH. When an agent is assigned a task, the daemon creates an isolated environment, runs the agent, and reports results back.
@@ -121,8 +121,8 @@ See the [CLI and Daemon Guide](CLI_AND_DAEMON.md) for the full command reference
 ### 1. Log in and start the daemon
 
 ```bash
-multica login           # Authenticate with your Multica account
-multica daemon start    # Start the local agent runtime
+mantica login           # Authenticate with your Multica account
+mantica daemon start    # Start the local agent runtime
 ```
 
 The daemon runs in the background and keeps your machine connected to Multica. It auto-detects agent CLIs (`claude`, `codex`, `openclaw`, `opencode`, `hermes`) available on your PATH.
@@ -139,13 +139,13 @@ Go to **Settings → Agents** and click **New Agent**. Pick the runtime you just
 
 ### 4. Assign your first task
 
-Create an issue from the board (or via `multica issue create`), then assign it to your new agent. The agent will automatically pick up the task, execute it on your runtime, and report progress — just like a human teammate.
+Create an issue from the board (or via `mantica issue create`), then assign it to your new agent. The agent will automatically pick up the task, execute it on your runtime, and report progress — just like a human teammate.
 
 That's it! Your agent is now part of the team. 🎉
 
 ## Development
 
-For contributors working on the Multica codebase, see the [Contributing Guide](CONTRIBUTING.md).
+For contributors working on the Mantica codebase, see the [Contributing Guide](CONTRIBUTING.md).
 
 **Prerequisites:** [Node.js](https://nodejs.org/) v20+, [pnpm](https://pnpm.io/) v10.28+, [Go](https://go.dev/) v1.26+, [Docker](https://www.docker.com/)
 

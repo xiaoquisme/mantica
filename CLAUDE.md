@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Context
 
-Multica is an AI-native task management platform — like Linear, but with AI agents as first-class citizens.
+Mantica is an AI-native task management platform — like Linear, but with AI agents as first-class citizens.
 
 - Agents can be assigned issues, create issues, comment, and change status
 - Supports local (daemon) and cloud agent runtimes
@@ -76,7 +76,7 @@ pnpm test             # TS tests (Vitest, all packages + apps via turbo)
 make dev              # Run Go server (port 8080)
 make daemon           # Run local daemon
 make build            # Build server + CLI binaries to server/bin/
-make cli ARGS="..."   # Run multica CLI (e.g. make cli ARGS="config")
+make cli ARGS="..."   # Run mantica CLI (e.g. make cli ARGS="config")
 make test             # Go tests
 make sqlc             # Regenerate sqlc code after editing SQL in server/pkg/db/queries/
 make migrate-up       # Run database migrations

@@ -38,18 +38,18 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg17
         env:
-          POSTGRES_DB: multica
-          POSTGRES_USER: multica
-          POSTGRES_PASSWORD: multica
+          POSTGRES_DB: mantica
+          POSTGRES_USER: mantica
+          POSTGRES_PASSWORD: mantica
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U multica -d multica"
+          --health-cmd "pg_isready -U mantica -d mantica"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://multica:multica@localhost:5432/multica?sslmode=disable
+      DATABASE_URL: postgres://mantica:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/mantica?sslmode=disable
     steps:
       - name: Checkout
         uses: actions/checkout@v6

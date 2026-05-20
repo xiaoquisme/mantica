@@ -1,29 +1,29 @@
 # CLI and Agent Daemon Guide
 
-The `multica` CLI connects your local machine to Multica. It handles authentication, workspace management, issue tracking, and runs the agent daemon that executes AI tasks locally.
+The `mantica` CLI connects your local machine to Mantica. It handles authentication, workspace management, issue tracking, and runs the agent daemon that executes AI tasks locally.
 
 ## Installation
 
 ### Homebrew (macOS/Linux)
 
 ```bash
-brew tap multica-ai/tap
-brew install multica
+brew tap mantica-ai/tap
+brew install mantica
 ```
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/multica-ai/multica.git
-cd multica
+git clone https://github.com/mantica-ai/mantica.git
+cd mantica
 make build
-cp server/bin/multica /usr/local/bin/multica
+cp server/bin/mantica /usr/local/bin/mantica
 ```
 
 ### Update
 
 ```bash
-multica update
+mantica update
 ```
 
 This auto-detects your installation method (Homebrew or manual) and upgrades accordingly.
@@ -32,22 +32,22 @@ This auto-detects your installation method (Homebrew or manual) and upgrades acc
 
 ```bash
 # 1. Authenticate (opens browser for login)
-multica login
+mantica login
 
 # 2. Start the agent daemon
-multica daemon start
+mantica daemon start
 
 # 3. Done — agents in your watched workspaces can now execute tasks on your machine
 ```
 
-`multica login` automatically discovers all workspaces you belong to and adds them to the daemon watch list.
+`mantica login` automatically discovers all workspaces you belong to and adds them to the daemon watch list.
 
 ## Authentication
 
 ### Browser Login
 
 ```bash
-multica login
+mantica login
 ```
 
 Opens your browser for OAuth authentication, creates a 90-day personal access token, and auto-configures your workspaces.
@@ -55,7 +55,7 @@ Opens your browser for OAuth authentication, creates a 90-day personal access to
 ### Token Login
 
 ```bash
-multica login --token
+mantica login --token
 ```
 
 Authenticate by pasting a personal access token directly. Useful for headless environments.
@@ -63,7 +63,7 @@ Authenticate by pasting a personal access token directly. Useful for headless en
 ### Check Status
 
 ```bash
-multica auth status
+mantica auth status
 ```
 
 Shows your current server, user, and token validity.
@@ -71,7 +71,7 @@ Shows your current server, user, and token validity.
 ### Logout
 
 ```bash
-multica auth logout
+mantica auth logout
 ```
 
 Removes the stored authentication token.
@@ -83,28 +83,28 @@ The daemon is the local agent runtime. It detects available AI CLIs on your mach
 ### Start
 
 ```bash
-multica daemon start
+mantica daemon start
 ```
 
-By default, the daemon runs in the background and logs to `~/.multica/daemon.log`.
+By default, the daemon runs in the background and logs to `~/.mantica/daemon.log`.
 
 To run in the foreground (useful for debugging):
 
 ```bash
-multica daemon start --foreground
+mantica daemon start --foreground
 ```
 
 ### Stop
 
 ```bash
-multica daemon stop
+mantica daemon stop
 ```
 
 ### Status
 
 ```bash
-multica daemon status
-multica daemon status --output json
+mantica daemon status
+mantica daemon status --output json
 ```
 
 Shows PID, uptime, detected agents, and watched workspaces.
@@ -112,9 +112,9 @@ Shows PID, uptime, detected agents, and watched workspaces.
 ### Logs
 
 ```bash
-multica daemon logs              # Last 50 lines
-multica daemon logs -f           # Follow (tail -f)
-multica daemon logs -n 100       # Last 100 lines
+mantica daemon logs              # Last 50 lines
+mantica daemon logs -f           # Follow (tail -f)
+mantica daemon logs -n 100       # Last 100 lines
 ```
 
 ### Supported Agents
@@ -142,41 +142,41 @@ Daemon behavior is configured via flags or environment variables:
 
 | Setting | Flag | Env Variable | Default |
 |---------|------|--------------|---------|
-| Poll interval | `--poll-interval` | `MULTICA_DAEMON_POLL_INTERVAL` | `3s` |
-| Heartbeat interval | `--heartbeat-interval` | `MULTICA_DAEMON_HEARTBEAT_INTERVAL` | `15s` |
-| Agent timeout | `--agent-timeout` | `MULTICA_AGENT_TIMEOUT` | `2h` |
-| Max concurrent tasks | `--max-concurrent-tasks` | `MULTICA_DAEMON_MAX_CONCURRENT_TASKS` | `20` |
-| Daemon ID | `--daemon-id` | `MULTICA_DAEMON_ID` | hostname |
-| Device name | `--device-name` | `MULTICA_DAEMON_DEVICE_NAME` | hostname |
-| Runtime name | `--runtime-name` | `MULTICA_AGENT_RUNTIME_NAME` | `Local Agent` |
-| Workspaces root | — | `MULTICA_WORKSPACES_ROOT` | `~/multica_workspaces` |
+| Poll interval | `--poll-interval` | `MANTICA_DAEMON_POLL_INTERVAL` | `3s` |
+| Heartbeat interval | `--heartbeat-interval` | `MANTICA_DAEMON_HEARTBEAT_INTERVAL` | `15s` |
+| Agent timeout | `--agent-timeout` | `MANTICA_AGENT_TIMEOUT` | `2h` |
+| Max concurrent tasks | `--max-concurrent-tasks` | `MANTICA_DAEMON_MAX_CONCURRENT_TASKS` | `20` |
+| Daemon ID | `--daemon-id` | `MANTICA_DAEMON_ID` | hostname |
+| Device name | `--device-name` | `MANTICA_DAEMON_DEVICE_NAME` | hostname |
+| Runtime name | `--runtime-name` | `MANTICA_AGENT_RUNTIME_NAME` | `Local Agent` |
+| Workspaces root | — | `MANTICA_WORKSPACES_ROOT` | `~/mantica_workspaces` |
 
 Agent-specific overrides:
 
 | Variable | Description |
 |----------|-------------|
-| `MULTICA_CLAUDE_PATH` | Custom path to the `claude` binary |
-| `MULTICA_CLAUDE_MODEL` | Override the Claude model used |
-| `MULTICA_CODEX_PATH` | Custom path to the `codex` binary |
-| `MULTICA_CODEX_MODEL` | Override the Codex model used |
+| `MANTICA_CLAUDE_PATH` | Custom path to the `claude` binary |
+| `MANTICA_CLAUDE_MODEL` | Override the Claude model used |
+| `MANTICA_CODEX_PATH` | Custom path to the `codex` binary |
+| `MANTICA_CODEX_MODEL` | Override the Codex model used |
 
 ### Self-Hosted Server
 
 When connecting to a self-hosted Multica instance, point the CLI to your server before logging in:
 
 ```bash
-export MULTICA_APP_URL=https://app.example.com
-export MULTICA_SERVER_URL=wss://api.example.com/ws
+export MANTICA_APP_URL=https://app.example.com
+export MANTICA_SERVER_URL=wss://api.example.com/ws
 
-multica login
-multica daemon start
+mantica login
+mantica daemon start
 ```
 
 Or set them persistently:
 
 ```bash
-multica config set app_url https://app.example.com
-multica config set server_url wss://api.example.com/ws
+mantica config set app_url https://app.example.com
+mantica config set server_url wss://api.example.com/ws
 ```
 
 ### Profiles
@@ -185,21 +185,21 @@ Profiles let you run multiple daemons on the same machine — for example, one f
 
 ```bash
 # Start a daemon for the staging server
-multica --profile staging login
-multica --profile staging daemon start
+mantica --profile staging login
+mantica --profile staging daemon start
 
 # Default profile runs separately
-multica daemon start
+mantica daemon start
 ```
 
-Each profile gets its own config directory (`~/.multica/profiles/<name>/`), daemon state, health port, and workspace root.
+Each profile gets its own config directory (`~/.mantica/profiles/<name>/`), daemon state, health port, and workspace root.
 
 ## Workspaces
 
 ### List Workspaces
 
 ```bash
-multica workspace list
+mantica workspace list
 ```
 
 Watched workspaces are marked with `*`. The daemon only processes tasks for watched workspaces.
@@ -207,21 +207,21 @@ Watched workspaces are marked with `*`. The daemon only processes tasks for watc
 ### Watch / Unwatch
 
 ```bash
-multica workspace watch <workspace-id>
-multica workspace unwatch <workspace-id>
+mantica workspace watch <workspace-id>
+mantica workspace unwatch <workspace-id>
 ```
 
 ### Get Details
 
 ```bash
-multica workspace get <workspace-id>
-multica workspace get <workspace-id> --output json
+mantica workspace get <workspace-id>
+mantica workspace get <workspace-id> --output json
 ```
 
 ### List Members
 
 ```bash
-multica workspace members <workspace-id>
+mantica workspace members <workspace-id>
 ```
 
 ## Issues
@@ -229,10 +229,10 @@ multica workspace members <workspace-id>
 ### List Issues
 
 ```bash
-multica issue list
-multica issue list --status in_progress
-multica issue list --priority urgent --assignee "Agent Name"
-multica issue list --limit 20 --output json
+mantica issue list
+mantica issue list --status in_progress
+mantica issue list --priority urgent --assignee "Agent Name"
+mantica issue list --limit 20 --output json
 ```
 
 Available filters: `--status`, `--priority`, `--assignee`, `--limit`.
@@ -240,14 +240,14 @@ Available filters: `--status`, `--priority`, `--assignee`, `--limit`.
 ### Get Issue
 
 ```bash
-multica issue get <id>
-multica issue get <id> --output json
+mantica issue get <id>
+mantica issue get <id> --output json
 ```
 
 ### Create Issue
 
 ```bash
-multica issue create --title "Fix login bug" --description "..." --priority high --assignee "Lambda"
+mantica issue create --title "Fix login bug" --description "..." --priority high --assignee "Lambda"
 ```
 
 Flags: `--title` (required), `--description`, `--status`, `--priority`, `--assignee`, `--parent`, `--due-date`.
@@ -255,20 +255,20 @@ Flags: `--title` (required), `--description`, `--status`, `--priority`, `--assig
 ### Update Issue
 
 ```bash
-multica issue update <id> --title "New title" --priority urgent
+mantica issue update <id> --title "New title" --priority urgent
 ```
 
 ### Assign Issue
 
 ```bash
-multica issue assign <id> --to "Lambda"
-multica issue assign <id> --unassign
+mantica issue assign <id> --to "Lambda"
+mantica issue assign <id> --unassign
 ```
 
 ### Change Status
 
 ```bash
-multica issue status <id> in_progress
+mantica issue status <id> in_progress
 ```
 
 Valid statuses: `backlog`, `todo`, `in_progress`, `in_review`, `done`, `blocked`, `cancelled`.
@@ -277,31 +277,31 @@ Valid statuses: `backlog`, `todo`, `in_progress`, `in_review`, `done`, `blocked`
 
 ```bash
 # List comments
-multica issue comment list <issue-id>
+mantica issue comment list <issue-id>
 
 # Add a comment
-multica issue comment add <issue-id> --content "Looks good, merging now"
+mantica issue comment add <issue-id> --content "Looks good, merging now"
 
 # Reply to a specific comment
-multica issue comment add <issue-id> --parent <comment-id> --content "Thanks!"
+mantica issue comment add <issue-id> --parent <comment-id> --content "Thanks!"
 
 # Delete a comment
-multica issue comment delete <comment-id>
+mantica issue comment delete <comment-id>
 ```
 
 ### Execution History
 
 ```bash
 # List all execution runs for an issue
-multica issue runs <issue-id>
-multica issue runs <issue-id> --output json
+mantica issue runs <issue-id>
+mantica issue runs <issue-id> --output json
 
 # View messages for a specific execution run
-multica issue run-messages <task-id>
-multica issue run-messages <task-id> --output json
+mantica issue run-messages <task-id>
+mantica issue run-messages <task-id> --output json
 
 # Incremental fetch (only messages after a given sequence number)
-multica issue run-messages <task-id> --since 42 --output json
+mantica issue run-messages <task-id> --since 42 --output json
 ```
 
 The `runs` command shows all past and current executions for an issue, including running tasks. The `run-messages` command shows the detailed message log (tool calls, thinking, text, errors) for a single run. Use `--since` for efficient polling of in-progress runs.
@@ -311,7 +311,7 @@ The `runs` command shows all past and current executions for an issue, including
 ### View Config
 
 ```bash
-multica config show
+mantica config show
 ```
 
 Shows config file path, server URL, app URL, and default workspace.
@@ -319,17 +319,17 @@ Shows config file path, server URL, app URL, and default workspace.
 ### Set Values
 
 ```bash
-multica config set server_url wss://api.example.com/ws
-multica config set app_url https://app.example.com
-multica config set workspace_id <workspace-id>
+mantica config set server_url wss://api.example.com/ws
+mantica config set app_url https://app.example.com
+mantica config set workspace_id <workspace-id>
 ```
 
 ## Other Commands
 
 ```bash
-multica version              # Show CLI version and commit hash
-multica update               # Update to latest version
-multica agent list           # List agents in the current workspace
+mantica version              # Show CLI version and commit hash
+mantica update               # Update to latest version
+mantica agent list           # List agents in the current workspace
 ```
 
 ## Output Formats
@@ -340,6 +340,6 @@ Most commands support `--output` with two formats:
 - `json` — structured JSON (useful for scripting and automation)
 
 ```bash
-multica issue list --output json
-multica daemon status --output json
+mantica issue list --output json
+mantica daemon status --output json
 ```

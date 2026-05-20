@@ -162,7 +162,7 @@ skills:
       For each issue found, create a bug card. The `--parent` flag is **MANDATORY**:
 
       ```
-      multica issue create \
+      mantica issue create \
         --title "[Code Review] <concise description>" \
         --description "<what is wrong, where in code, how to fix>" \
         --parent <reviewed-issue-id>
@@ -174,7 +174,7 @@ skills:
       - **AC Reference**: Which acceptance criterion is affected (if applicable)
 
       After verifying parent, immediately set the bug card to `ready_dev`:
-      `multica issue status <new-issue-id> ready_dev`
+      `mantica issue status <new-issue-id> ready_dev`
 
       ## What NOT to Flag
 
@@ -212,7 +212,7 @@ skills:
 
       Run:
       ```
-      multica memory search "project conventions" --limit 1
+      mantica memory search "project conventions" --limit 1
       ```
       Also check whether `<repo-root>/memory/project_conventions.md` exists on disk.
 
@@ -267,7 +267,7 @@ skills:
 
       **1. Workspace memory (SQLite):**
       ```
-      multica memory add \
+      mantica memory add \
         --type project \
         --name "Project conventions" \
         --description "Branch strategy, commit format, and workflow conventions for this repo" \
@@ -396,7 +396,7 @@ skills:
       If a convention update instruction is detected:
 
       1. **Read the current conventions** from `memory/project_conventions.md` (repo-level) or via
-         `multica memory search "project_conventions" --limit 1`. If neither exists, treat it as an
+         `mantica memory search "project_conventions" --limit 1`. If neither exists, treat it as an
          empty document — create it from scratch with only the mentioned fields.
 
       2. **Identify which fields to update** — only the fields explicitly mentioned in the instruction.
@@ -416,12 +416,12 @@ skills:
 
       5. **Persist** the updated file:
          - Write to `<repo-root>/memory/project_conventions.md`
-         - Update the SQLite backend: `multica memory add --type project --name "project_conventions" --description "Branch strategy, commit format, and status workflow for this project" --body "<full updated body>"`
+         - Update the SQLite backend: `mantica memory add --type project --name "project_conventions" --description "Branch strategy, commit format, and status workflow for this project" --body "<full updated body>"`
          - Commit the file: `git add memory/project_conventions.md && git commit -m "chore(N/A): update memory — update project_conventions" && git push origin HEAD:main`
 
       6. **Post a confirmation comment** replying to the triggering comment:
          ```
-         multica issue comment add <issue-id> --parent <trigger-comment-id> --content "..."
+         mantica issue comment add <issue-id> --parent <trigger-comment-id> --content "..."
          ```
          The confirmation comment must summarise:
          - Which fields were updated (old value → new value)
@@ -487,7 +487,7 @@ skills:
          to the QA verification comment as visual evidence (pass screenshots from
          `test-results/screenshots/` and Playwright failure screenshots from
          `test-results/<test>/test-failed-*.png`). Use one `--attachment <path>`
-         flag per file on `multica issue comment add` — the CLI uploads and links
+         flag per file on `mantica issue comment add` — the CLI uploads and links
          them in a single call, and image attachments render inline in the comment.
       6. Overall verdict: PASS only if all tests pass and no regressions
 
@@ -607,17 +607,17 @@ agents:
       ## Your Process
 
       ### Step 1: Read the issue
-      Run: `multica issue get <id> --output json`
+      Run: `mantica issue get <id> --output json`
 
       Read ONLY the title and description. Determine card type:
       - **Technical card**: infrastructure, DevOps, refactoring, tech debt, tooling, CI/CD, migrations, performance, security patching — no direct user-facing value
       - **Business card**: features, user stories, UI changes, business logic — delivers user-facing value
 
       ### Step 2: Route to next stage
-      - If **Technical**: run `multica issue status <id> ready_arch_design`
-      - If **Business**: run `multica issue status <id> ready_analyze`
+      - If **Technical**: run `mantica issue status <id> ready_arch_design`
+      - If **Business**: run `mantica issue status <id> ready_analyze`
 
-      Then post a comment: `multica issue comment add <id> --content "Classified as [technical|business]. Routed to [ready_arch_design|ready_analyze]."`
+      Then post a comment: `mantica issue comment add <id> --content "Classified as [technical|business]. Routed to [ready_arch_design|ready_analyze]."`
 
       ## STOP HERE
 
@@ -682,7 +682,7 @@ agents:
       When creating sub-issues from an Epic, you MUST always include `--parent <epic-id>` and `--status todo`:
 
       ```
-      multica issue create --title "..." --description "..." --parent <epic-id> --status todo
+      mantica issue create --title "..." --description "..." --parent <epic-id> --status todo
       ```
 
       - Replace `<epic-id>` with the actual ID of the parent Epic (the issue you are currently analyzing)
@@ -761,7 +761,7 @@ agents:
 
       Run:
       ```
-      multica issue list --output json
+      mantica issue list --output json
       ```
 
       Filter the result for items where `parent_issue_id` equals the current issue's ID AND `status` equals `"todo"`.
@@ -771,26 +771,26 @@ agents:
       2. Determine: programming language, framework, shared data model/schema, cross-story constraints.
       3. Post a "Tech Constraints" comment on the Epic:
          ```
-         multica issue comment add <epic-id> --content "## Tech Constraints\n\n**Language**: ...\n**Framework**: ...\n**Shared schema**: ...\n**Cross-story constraints**: ..."
+         mantica issue comment add <epic-id> --content "## Tech Constraints\n\n**Language**: ...\n**Framework**: ...\n**Shared schema**: ...\n**Cross-story constraints**: ..."
          ```
       4. Promote every `todo` sub-story to `ready_arch_design`:
          ```
-         multica issue status <sub-issue-id> ready_arch_design   # repeat for each
+         mantica issue status <sub-issue-id> ready_arch_design   # repeat for each
          ```
       5. Set the Epic to `blocked`:
          ```
-         multica issue status <current-issue-id> blocked
+         mantica issue status <current-issue-id> blocked
          ```
       6. **Stop — do not proceed to Steps 1–6.**
 
       **If no `todo` children → sub-story mode:**
       - Fetch this issue's `parent_issue_id`:
         ```
-        multica issue get <current-issue-id> --output json
+        mantica issue get <current-issue-id> --output json
         ```
       - If a parent Epic exists, read its comments and find the `## Tech Constraints` entry:
         ```
-        multica issue comment list <parent-epic-id> --output json
+        mantica issue comment list <parent-epic-id> --output json
         ```
         Treat those constraints as **hard requirements**. Do NOT independently choose language or framework.
       - Proceed to Step 1.
@@ -857,7 +857,7 @@ agents:
       1. For each independent work stream, create a sub-issue:
 
          ```
-         multica issue create \
+         mantica issue create \
            --title "[Parallel] <stream-name>: <concise scope>" \
            --description "**Parallel-Group**: <current-story-id>\n\n<scope, files to touch, design slice for this stream, AC reference>" \
            --parent <current-story-id>
@@ -875,7 +875,7 @@ agents:
       3. Once ALL sub-issues are verified, set each to `ready_dev`:
 
          ```
-         multica issue status <sub-issue-id> ready_dev
+         mantica issue status <sub-issue-id> ready_dev
          ```
 
          This triggers the pipeline to auto-assign a DEV agent to each in parallel.
@@ -883,7 +883,7 @@ agents:
       4. Finally, set the current story to `blocked`:
 
          ```
-         multica issue status <current-story-id> blocked
+         mantica issue status <current-story-id> blocked
          ```
 
          The parent stays parked until the fan-in stage advances it.
@@ -1004,17 +1004,17 @@ agents:
 
       **For user-facing stories** with an E2E spec:
       ```
-      multica issue comment add <issue-id> --content "Staging URL: ${MULTICA_STAGING_URL:-http://localhost:3000 (local dev — staging URL not configured)}
+      mantica issue comment add <issue-id> --content "Staging URL: ${MANTICA_STAGING_URL:-http://localhost:3000 (local dev — staging URL not configured)}
 
       E2E spec: e2e/<file>.spec.ts
       Run: pnpm exec playwright test e2e/<file>.spec.ts"
       ```
 
-      If `MULTICA_STAGING_URL` is unset in the execenv, fall back to `http://localhost:3000` and explicitly tag the comment `(local dev — staging URL not configured)` so QA is not misled.
+      If `MANTICA_STAGING_URL` is unset in the execenv, fall back to `http://localhost:3000` and explicitly tag the comment `(local dev — staging URL not configured)` so QA is not misled.
 
       **For exempted backend-only stories**, post instead:
       ```
-      multica issue comment add <issue-id> --content "E2E exempt: <reason — e.g. backend-only sqlc query change with no UI surface>"
+      mantica issue comment add <issue-id> --content "E2E exempt: <reason — e.g. backend-only sqlc query change with no UI surface>"
       ```
 
       ## Convention Confirmation Protocol
@@ -1025,7 +1025,7 @@ agents:
 
       Run:
       ```
-      multica memory search "project_conventions"
+      mantica memory search "project_conventions"
       ```
 
       Parse the result. The full set of convention fields is:
@@ -1042,12 +1042,12 @@ agents:
 
       Build a questionnaire that lists ONLY the unresolved fields. Fetch the workspace owner's user ID first:
       ```
-      multica workspace members --output json
+      mantica workspace members --output json
       ```
 
       Then post:
       ```
-      multica issue comment add <issue-id> --content "## 项目约定确认
+      mantica issue comment add <issue-id> --content "## 项目约定确认
 
       [@<owner-name>](mention://member/<owner-user-id>)，以下约定无法从代码库自动推断，请确认：
 
@@ -1085,7 +1085,7 @@ agents:
       ### Step 3: Set issue to blocked
 
       ```
-      multica issue status <issue-id> blocked
+      mantica issue status <issue-id> blocked
       ```
 
       Stop here. Do NOT proceed with implementation until the user replies.
@@ -1094,7 +1094,7 @@ agents:
 
       1. Read the latest comments to find the user's reply:
          ```
-         multica issue comment list <issue-id> --output json
+         mantica issue comment list <issue-id> --output json
          ```
       2. Parse `key: value` lines from the reply (case-insensitive, ignore leading/trailing whitespace).
          - Map option letters to canonical values:
@@ -1108,11 +1108,11 @@ agents:
            - Free-text answer for option C/other: use verbatim
       3. Merge new answers with any previously known fields (do not overwrite already-confirmed values):
          ```
-         multica memory search "project_conventions"   # read existing
+         mantica memory search "project_conventions"   # read existing
          ```
          Then write the merged result:
          ```
-         multica memory add \
+         mantica memory add \
            --type project \
            --name "project conventions" \
            --description "Confirmed project conventions for this repo" \
@@ -1123,11 +1123,11 @@ agents:
          ```
       4. If parsing fails (unrecognized format), reply with an explanation and keep the issue blocked:
          ```
-         multica issue comment add <issue-id> --content "无法解析回复格式，请使用 `key: value` 格式重新回复（例如 `branch_strategy: A`）。issue 保持 blocked 状态。"
+         mantica issue comment add <issue-id> --content "无法解析回复格式，请使用 `key: value` 格式重新回复（例如 `branch_strategy: A`）。issue 保持 blocked 状态。"
          ```
       5. On success, confirm in a comment and continue with implementation:
          ```
-         multica issue comment add <issue-id> --content "约定已保存，继续开发。"
+         mantica issue comment add <issue-id> --content "约定已保存，继续开发。"
          ```
 
       ## Guidelines
@@ -1212,11 +1212,11 @@ agents:
       6. Score each dimension (1-5) with justification
       7. Verdict: APPROVE (>= 25/35) or REJECT (< 25/35)
       8. If REJECT, create bug cards for each issue using:
-         `multica issue create --title "..." --description "..." --parent <reviewed-issue-id>`
+         `mantica issue create --title "..." --description "..." --parent <reviewed-issue-id>`
          - The `--parent` flag is **MANDATORY** — always pass the ID of the issue under review
          - After creation, verify the response JSON contains `"parent_issue_id"` equal to the reviewed issue's ID; if not, stop and flag the failure
       8a. After creating each bug card and verifying parent_issue_id, immediately run:
-          multica issue status <new-issue-id> ready_dev
+          mantica issue status <new-issue-id> ready_dev
 
       ## Git Workflow Rules
 
@@ -1287,7 +1287,7 @@ agents:
          it to the comment in a single call:
 
          ```
-         multica issue comment add <issue-id> \
+         mantica issue comment add <issue-id> \
            --content "## QA Verification ..." \
            --attachment test-results/screenshots/auth__login-page-renders-correctly.png \
            --attachment test-results/Issues-create-issue/test-failed-1.png
@@ -1343,12 +1343,12 @@ agents:
 
       ## Your Process
 
-      1. Run `multica issue list --status blocked --output json` to get all blocked issues
+      1. Run `mantica issue list --status blocked --output json` to get all blocked issues
       2. For each blocked issue:
-         a. Run `multica issue get <id> --output json` to get full details
+         a. Run `mantica issue get <id> --output json` to get full details
          b. Read its comments (especially the most recent agent comment) to understand WHY it was blocked
          c. Extract any dependency issue IDs mentioned in the blocking comment (look for patterns like TES-NNN or issue UUIDs)
-         d. For each dependency, check its current status via `multica issue get <dep-id> --output json`
+         d. For each dependency, check its current status via `mantica issue get <dep-id> --output json`
          e. Evaluate whether the blocking conditions have been resolved
       3. If ALL dependencies for a blocked issue are resolved (status is `done`, or no longer `blocked`):
          - Post a comment explaining which dependencies are now resolved
@@ -1356,7 +1356,7 @@ agents:
            - If the blocking comment mentions implementation sub-stories that are now all `done`, use `ready_review`
            - If the issue was blocked on design/analysis work, use `ready_dev`
            - If unclear, use `backlog`
-         - Change the issue status via `multica issue status <id> <new-status>`
+         - Change the issue status via `mantica issue status <id> <new-status>`
       4. If some dependencies are still blocked, skip the issue and move on
       5. At the end, post a brief summary of what you found and any actions taken
 

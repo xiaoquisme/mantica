@@ -1,4 +1,4 @@
-name: multica
+name: mantica
 
 services:
   # --- Infrastructure ---
@@ -6,13 +6,13 @@ services:
     image: pgvector/pgvector:pg17
     restart: unless-stopped
     environment:
-      POSTGRES_DB: multica
-      POSTGRES_USER: ${POSTGRES_USER:-multica}
+      POSTGRES_DB: mantica
+      POSTGRES_USER: ${POSTGRES_USER:-mantica}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-multica}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mantica}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,7 +43,7 @@ services:
         condition: service_healthy
     environment:
       PORT: "8080"
-      DATABASE_URL: "postgres://${POSTGRES_USER:-multica}:${POSTGRES_PASSWORD}@postgres:5432/multica?sslmode=disable"
+      DATABASE_URL: "postgres://${POSTGRES_USER:-mantica}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/mantica?sslmode=disable"
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://localhost:8443}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://localhost:8443}

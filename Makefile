@@ -1,4 +1,4 @@
-.PHONY: dev daemon cli  build test migrate-up migrate-down sqlc seed clean setup quickstart start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down agent-apply mantica
+.PHONY: dev daemon cli mantica build test migrate-up migrate-down sqlc seed clean setup quickstart start stop check worktree-env setup-main start-main stop-main check-main setup-worktree start-worktree stop-worktree check-worktree db-up db-down agent-apply
 
 MAIN_ENV_FILE ?= .env
 WORKTREE_ENV_FILE ?= .env.worktree
@@ -8,9 +8,9 @@ ifneq ($(wildcard $(ENV_FILE)),)
 include $(ENV_FILE)
 endif
 
-POSTGRES_DB ?= multica
-POSTGRES_USER ?= multica
-POSTGRES_PASSWORD ?= multica
+POSTGRES_DB ?= mantica
+POSTGRES_USER ?= mantica
+POSTGRES_PASSWORD ?= mantica
 POSTGRES_PORT ?= 5432
 PORT ?= 8080
 FRONTEND_PORT ?= 3000

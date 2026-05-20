@@ -46,7 +46,7 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
     homepage: "https://github.com/xiaoquisme/mantica"
-    description: "Mantica CLI — local agent runtime and management tool for the Multica platform"
+    description: "Mantica CLI — local agent runtime and management tool for the Mantica platform"
     license: "Apache-2.0"
     install: |
       bin.install "mantica"

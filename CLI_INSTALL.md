@@ -1,4 +1,4 @@
-# Multica CLI — Installation Guide for AI Agents
+# Mantica CLI — Installation Guide for AI Agents
 
 > **Audience:** This document is designed for AI agents (Claude Code, Codex, etc.) to read and execute step-by-step. Each step includes the exact shell commands to run, expected outcomes, and error handling.
 
@@ -7,25 +7,25 @@
 Give this instruction to your AI agent:
 
 ```
-Fetch https://github.com/multica-ai/multica/blob/main/CLI_INSTALL.md and follow the instructions to install Multica CLI, log in, and start the daemon on this machine.
+Fetch https://github.com/mantica-ai/mantica/blob/main/CLI_INSTALL.md and follow the instructions to install Mantica CLI, log in, and start the daemon on this machine.
 ```
 
 ---
 
-## Step 1: Check if Multica CLI is already installed
+## Step 1: Check if Mantica CLI is already installed
 
 Run:
 
 ```bash
-multica version
+mantica version
 ```
 
-- **If it prints a version string** (e.g. `multica v0.x.x`): skip to **Step 3**.
+- **If it prints a version string** (e.g. `mantica v0.x.x`): skip to **Step 3**.
 - **If command not found**: continue to **Step 2**.
 
 ---
 
-## Step 2: Install the Multica CLI
+## Step 2: Install the Mantica CLI
 
 ### Option A: Homebrew (preferred)
 
@@ -38,13 +38,13 @@ which brew
 If `brew` is found, install via Homebrew:
 
 ```bash
-brew tap multica-ai/tap && brew install multica
+brew tap mantica-ai/tap && brew install mantica
 ```
 
 Then verify:
 
 ```bash
-multica version
+mantica version
 ```
 
 If the version prints successfully, skip to **Step 3**.
@@ -65,25 +65,25 @@ if [ "$ARCH" = "x86_64" ]; then
 fi
 
 # Get the latest release tag from GitHub
-LATEST=$(curl -sI https://github.com/multica-ai/multica/releases/latest | grep -i '^location:' | sed 's/.*tag\///' | tr -d '\r\n')
+LATEST=$(curl -sI https://github.com/mantica-ai/mantica/releases/latest | grep -i '^location:' | sed 's/.*tag\///' | tr -d '\r\n')
 
 # Download and extract
-curl -sL "https://github.com/multica-ai/multica/releases/download/${LATEST}/multica_${OS}_${ARCH}.tar.gz" -o /tmp/multica.tar.gz
-tar -xzf /tmp/multica.tar.gz -C /tmp multica
-sudo mv /tmp/multica /usr/local/bin/multica
-rm /tmp/multica.tar.gz
+curl -sL "https://github.com/mantica-ai/mantica/releases/download/${LATEST}/mantica_${OS}_${ARCH}.tar.gz" -o /tmp/mantica.tar.gz
+tar -xzf /tmp/mantica.tar.gz -C /tmp mantica
+sudo mv /tmp/mantica /usr/local/bin/mantica
+rm /tmp/mantica.tar.gz
 ```
 
 Verify:
 
 ```bash
-multica version
+mantica version
 ```
 
 **If this fails:**
 - Check that `/usr/local/bin` is in `$PATH`.
-- On Linux, you may need `chmod +x /usr/local/bin/multica`.
-- If `sudo` is not available, install to a user-writable directory: `mv /tmp/multica ~/.local/bin/multica` and ensure `~/.local/bin` is in `$PATH`.
+- On Linux, you may need `chmod +x /usr/local/bin/mantica`.
+- If `sudo` is not available, install to a user-writable directory: `mv /tmp/mantica ~/.local/bin/mantica` and ensure `~/.local/bin` is in `$PATH`.
 
 ---
 
@@ -92,7 +92,7 @@ multica version
 Run:
 
 ```bash
-multica login
+mantica login
 ```
 
 **Important:** This command opens a browser window for OAuth authentication. Tell the user:
@@ -104,14 +104,14 @@ Wait for the command to complete. It will automatically discover and watch all w
 Verify:
 
 ```bash
-multica auth status
+mantica auth status
 ```
 
 Expected output should show the authenticated user and server URL.
 
 **If login fails:**
-- If no browser is available (headless environment), the user can generate a Personal Access Token at `https://app.multica.ai/settings` and run: `multica login --token`
-- If the server URL needs to be customized: `multica config set server_url <url>` before logging in.
+- If no browser is available (headless environment), the user can generate a Personal Access Token at `https://app.mantica.ai/settings` and run: `mantica login --token`
+- If the server URL needs to be customized: `mantica config set server_url <url>` before logging in.
 
 ---
 
@@ -120,26 +120,26 @@ Expected output should show the authenticated user and server URL.
 First, check if the daemon is already running:
 
 ```bash
-multica daemon status
+mantica daemon status
 ```
 
 - **If status is "running"**: skip to **Step 5**.
 - **If status is "stopped"**: start it:
 
 ```bash
-multica daemon start
+mantica daemon start
 ```
 
 Wait 3 seconds, then verify:
 
 ```bash
-multica daemon status
+mantica daemon status
 ```
 
 Expected output should show `running` status with detected agents (e.g. `claude`, `codex`).
 
 **If daemon fails to start:**
-- Check logs: `multica daemon logs`
+- Check logs: `mantica daemon logs`
 - If a port conflict occurs, the daemon may already be running under a different profile.
 - If no agents are detected, ensure at least one AI CLI (`claude` or `codex`) is installed and on the `$PATH`.
 
@@ -150,7 +150,7 @@ Expected output should show `running` status with detected agents (e.g. `claude`
 Run:
 
 ```bash
-multica daemon status
+mantica daemon status
 ```
 
 Confirm:
@@ -160,7 +160,7 @@ Confirm:
 
 If the agents list is empty, tell the user:
 
-> "The Multica daemon is running but no AI agent CLIs were detected. Please install at least one: [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (`claude`) or [Codex](https://github.com/openai/codex) (`codex`), then restart the daemon with `multica daemon stop && multica daemon start`."
+> "The Multica daemon is running but no AI agent CLIs were detected. Please install at least one: [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (`claude`) or [Codex](https://github.com/openai/codex) (`codex`), then restart the daemon with `mantica daemon stop && mantica daemon start`."
 
 ---
 
@@ -168,4 +168,4 @@ If the agents list is empty, tell the user:
 
 When all steps are complete, inform the user:
 
-> "Multica CLI is installed and the daemon is running. Agents in your workspaces can now execute tasks on this machine. You can manage workspaces with `multica workspace list` and view daemon logs with `multica daemon logs -f`."
+> "Mantica CLI is installed and the daemon is running. Agents in your workspaces can now execute tasks on this machine. You can manage workspaces with `mantica workspace list` and view daemon logs with `mantica daemon logs -f`."
