@@ -79,17 +79,19 @@ function BoardCardContextMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground"
-          >
-            <MoreHorizontal className="size-3.5" />
-          </Button>
-        }
-      />
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground"
+            >
+              <MoreHorizontal className="size-3.5" />
+            </Button>
+          }
+        />
+      </div>
       <DropdownMenuContent align="end" className="w-44">
         {/* Status */}
         <DropdownMenuSub>
