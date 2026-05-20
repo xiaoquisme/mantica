@@ -654,13 +654,13 @@ func bareHeadBranch(barePath string) string {
 
 // configureWorktreeGitIdentity sets per-worktree git user.name and user.email
 // so that commits made inside the worktree never inherit the agent's global
-// identity (agent@multica.ai). Errors are non-fatal; the worktree falls back
+// identity (agent@mantica.ai). Errors are non-fatal; the worktree falls back
 // to the global config on failure.
 func configureWorktreeGitIdentity(worktreePath, agentName string) {
 	slug := sanitizeName(agentName)
 	_ = exec.Command("git", "-C", worktreePath, "config", "user.name", agentName).Run()
 	_ = exec.Command("git", "-C", worktreePath, "config", "user.email",
-		fmt.Sprintf("%s[bot]@users.noreply.multica.app", slug)).Run()
+		fmt.Sprintf("%s[bot]@users.noreply.mantica.app", slug)).Run()
 }
 
 // excludeFromGit adds a pattern to the worktree's .git/info/exclude file.

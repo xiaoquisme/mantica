@@ -180,12 +180,12 @@ func resolveServerURL(cmd *cobra.Command) string {
 	profile := resolveProfile(cmd)
 	cfg, err := cli.LoadCLIConfigForProfile(profile)
 	if err != nil {
-		return "https://api.multica.ai"
+		return "https://api.mantica.ai"
 	}
 	if cfg.ServerURL != "" {
 		return normalizeAPIBaseURL(cfg.ServerURL)
 	}
-	return "https://api.multica.ai"
+	return "https://api.mantica.ai"
 }
 
 func normalizeAPIBaseURL(raw string) string {

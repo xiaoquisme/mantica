@@ -73,11 +73,11 @@ func resolveAppURL(cmd *cobra.Command) string {
 		return strings.TrimRight(cfg.AppURL, "/")
 	}
 	// If a custom server URL is configured, derive the app URL from it so that
-	// self-hosted instances redirect to the correct frontend instead of multica.ai.
+	// self-hosted instances redirect to the correct frontend instead of mantica.ai.
 	if err == nil && cfg.ServerURL != "" {
 		return strings.TrimRight(cfg.ServerURL, "/")
 	}
-	return "https://multica.ai"
+	return "https://mantica.ai"
 }
 
 func openBrowser(url string) error {
