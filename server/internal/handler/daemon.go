@@ -660,8 +660,28 @@ func (h *Handler) ReportTaskMessages(w http.ResponseWriter, r *http.Request) {
 		if hasBackfill {
 			go func() {
 				bgCtx := context.Background()
-				if _, err := h.TaskService.Analyzer.AnalyzeAndSave(bgCtx, parseUUID(taskID)); err != nil {
+				taskUUID := parseUUID(taskID)
+				if _, err := h.TaskService.Analyzer.AnalyzeAndSave(bgCtx, taskUUID); err != nil {
 					slog.Warn("re-analysis after backfill failed", "task_id", taskID, "error", err)
+					return
+				}
+				// Re-run Evolver now that analysis has tool data
+				if h.TaskService.Evolver != nil {
+					task, err := h.TaskService.Queries.GetAgentTask(bgCtx, taskUUID)
+					if err == nil && task.AgentID.Valid {
+						// Resolve workspace
+						wsID := h.TaskService.ResolveTaskWorkspaceID(bgCtx, task)
+						if wsID != "" {
+							wsUUID := parseUUID(wsID)
+							if result, err := h.TaskService.Evolver.AnalyzeAndEvolve(bgCtx, taskUUID, task.AgentID, wsUUID); err != nil {
+								slog.Warn("evolution after backfill failed", "task_id", taskID, "error", err)
+							} else if result.SkillExtracted {
+								slog.Info("skill auto-extracted (after backfill)", "task_id", taskID, "skill", result.SkillName)
+							} else if result.ImprovementHint != "" {
+								slog.Warn("improvement hint (after backfill)", "task_id", taskID, "hint", result.ImprovementHint)
+							}
+						}
+					}
 				}
 			}()
 		}

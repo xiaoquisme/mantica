@@ -89,7 +89,7 @@ func (s *TaskService) EnqueueTaskForIssue(ctx context.Context, issue db.Issue, t
 	slog.Info("task enqueued", "task_id", util.UUIDToString(task.ID), "issue_id", util.UUIDToString(issue.ID), "agent_id", util.UUIDToString(issue.AssigneeID))
 
 	// Publish task:queued event for activity tracking
-	workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+	workspaceID := s.ResolveTaskWorkspaceID(ctx, task)
 	if workspaceID != "" {
 		s.Bus.Publish(events.Event{
 			Type:        protocol.EventTaskQueued,
@@ -188,7 +188,7 @@ func (s *TaskService) EnqueueTaskForMention(ctx context.Context, issue db.Issue,
 	slog.Info("mention task enqueued", "task_id", util.UUIDToString(task.ID), "issue_id", util.UUIDToString(issue.ID), "agent_id", util.UUIDToString(agentID))
 
 	// Publish task:queued event for activity tracking
-	workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+	workspaceID := s.ResolveTaskWorkspaceID(ctx, task)
 	if workspaceID != "" {
 		s.Bus.Publish(events.Event{
 			Type:        protocol.EventTaskQueued,
@@ -293,7 +293,7 @@ func (s *TaskService) CancelTask(ctx context.Context, taskID pgtype.UUID) (*db.A
 				slog.Warn("post-task analysis failed (cancelled)", "task_id", util.UUIDToString(task.ID), "error", err)
 			}
 			if s.Scorer != nil && task.AgentID.Valid {
-				wsID := s.resolveTaskWorkspaceID(bgCtx, task)
+				wsID := s.ResolveTaskWorkspaceID(bgCtx, task)
 				if wsID != "" {
 					wsUUID := util.ParseUUID(wsID)
 					if err := s.Scorer.ScoreTask(bgCtx, task.ID, task.AgentID, wsUUID); err != nil {
@@ -462,7 +462,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 			}
 			// Update agent score after analysis
 			if s.Scorer != nil && task.AgentID.Valid {
-				wsID := s.resolveTaskWorkspaceID(bgCtx, task)
+				wsID := s.ResolveTaskWorkspaceID(bgCtx, task)
 				if wsID != "" {
 					wsUUID := util.ParseUUID(wsID)
 					if err := s.Scorer.ScoreTask(bgCtx, task.ID, task.AgentID, wsUUID); err != nil {
@@ -534,7 +534,7 @@ func (s *TaskService) FailTask(ctx context.Context, taskID pgtype.UUID, errMsg s
 			}
 			// Update agent score for failed tasks too
 			if s.Scorer != nil && task.AgentID.Valid {
-				wsID := s.resolveTaskWorkspaceID(bgCtx, task)
+				wsID := s.ResolveTaskWorkspaceID(bgCtx, task)
 				if wsID != "" {
 					wsUUID := util.ParseUUID(wsID)
 					if err := s.Scorer.ScoreTask(bgCtx, task.ID, task.AgentID, wsUUID); err != nil {
@@ -802,7 +802,7 @@ func (s *TaskService) RequeueOrphanedTasks(ctx context.Context, runtimeID pgtype
 		s.Queries.DeleteTaskMessages(ctx, task.ID)
 
 		// Publish task:queued event
-		workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+		workspaceID := s.ResolveTaskWorkspaceID(ctx, task)
 		if workspaceID != "" {
 			s.Bus.Publish(events.Event{
 				Type:        protocol.EventTaskQueued,
@@ -911,7 +911,7 @@ func (s *TaskService) broadcastTaskDispatch(ctx context.Context, task db.AgentTa
 	payload["task_id"] = util.UUIDToString(task.ID)
 	payload["runtime_id"] = util.UUIDToString(task.RuntimeID)
 
-	workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+	workspaceID := s.ResolveTaskWorkspaceID(ctx, task)
 	if workspaceID == "" {
 		return
 	}
@@ -925,7 +925,7 @@ func (s *TaskService) broadcastTaskDispatch(ctx context.Context, task db.AgentTa
 }
 
 func (s *TaskService) broadcastTaskEvent(ctx context.Context, eventType string, task db.AgentTaskQueue) {
-	workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+	workspaceID := s.ResolveTaskWorkspaceID(ctx, task)
 	if workspaceID == "" {
 		return
 	}
@@ -949,7 +949,7 @@ func (s *TaskService) broadcastTaskEvent(ctx context.Context, eventType string, 
 
 // resolveTaskWorkspaceID determines the workspace ID for a task.
 // For issue tasks, it comes from the issue. For chat tasks, from the chat session.
-func (s *TaskService) resolveTaskWorkspaceID(ctx context.Context, task db.AgentTaskQueue) string {
+func (s *TaskService) ResolveTaskWorkspaceID(ctx context.Context, task db.AgentTaskQueue) string {
 	if task.IssueID.Valid {
 		if issue, err := s.Queries.GetIssue(ctx, task.IssueID); err == nil {
 			return util.UUIDToString(issue.WorkspaceID)
@@ -969,7 +969,7 @@ func (s *TaskService) resolveTaskWorkspaceID(ctx context.Context, task db.AgentT
 }
 
 func (s *TaskService) broadcastChatDone(ctx context.Context, task db.AgentTaskQueue) {
-	workspaceID := s.resolveTaskWorkspaceID(ctx, task)
+	workspaceID := s.ResolveTaskWorkspaceID(ctx, task)
 	if workspaceID == "" {
 		return
 	}
