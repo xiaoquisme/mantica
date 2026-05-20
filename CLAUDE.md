@@ -84,7 +84,7 @@ make migrate-down     # Rollback migrations
 
 # Run a single TS test (works for any package with a test script)
 pnpm --filter @mantica/views exec vitest run auth/login-page.test.tsx
-pnpm --filter @mantica/core exec vitest run runtimes/version.test.ts
+pnpm --filter @mantica/core exec vitest run issues/mutations.test.ts
 pnpm --filter @mantica/web exec vitest run app/\(auth\)/login/page.test.tsx
 
 # Run a single Go test
