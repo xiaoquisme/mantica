@@ -11,3 +11,19 @@ export function useDeleteRuntime(wsId: string) {
     },
   });
 }
+
+export function useUpdateRuntime(wsId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      runtimeId,
+      data,
+    }: {
+      runtimeId: string;
+      data: { default_model: string | null };
+    }) => api.updateRuntime(runtimeId, data),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: runtimeKeys.all(wsId) });
+    },
+  });
+}
