@@ -244,16 +244,15 @@ test.describe("Board Card Context Menu — TES-66", () => {
     // Move mouse away from the card so hover state is not active
     await page.mouse.move(0, 0);
 
-    // The MoreHorizontal button is opacity-0 on non-hover — it is still in
-    // the DOM but should not be visually presented.  Playwright's toBeVisible
-    // checks visibility including opacity, so an opacity-0 element is hidden.
-    const trigger = card.locator("button", {
-      has: page.locator("svg.lucide-ellipsis"),
-    });
-    // The trigger may or may not exist; if it does it must not be visible
-    const count = await trigger.count();
+    // The MoreHorizontal button is wrapped in a div with opacity-0 on non-hover.
+    // Playwright's toBeVisible() does NOT check computed CSS opacity (it only
+    // checks visibility:hidden / display:none / empty bounding box), so we use
+    // toHaveCSS("opacity", "0") on the wrapper div to assert the trigger is
+    // visually hidden when the card is not hovered.
+    const triggerWrapper = card.locator("div.opacity-0");
+    const count = await triggerWrapper.count();
     if (count > 0) {
-      await expect(trigger.first()).not.toBeVisible();
+      await expect(triggerWrapper.first()).toHaveCSS("opacity", "0");
     }
   });
 });
