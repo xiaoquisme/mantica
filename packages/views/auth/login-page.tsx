@@ -228,7 +228,7 @@ export function LoginPage({
             {logo && <div className="mx-auto mb-4">{logo}</div>}
             <CardTitle className="text-2xl">Authorize CLI</CardTitle>
             <CardDescription>
-              Allow the CLI to access Multica as{" "}
+              Allow the CLI to access Mantica as{" "}
               <span className="font-medium text-foreground">
                 {existingUser.email}
               </span>
