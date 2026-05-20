@@ -3,13 +3,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTabHistory } from "@/hooks/use-tab-history";
 import { useActiveTitleSync } from "@/hooks/use-tab-sync";
 import { useTabStore, resolveRouteIcon } from "@/stores/tab-store";
-import { SidebarProvider } from "@multica/ui/components/ui/sidebar";
-import { ModalRegistry } from "@multica/views/modals/registry";
-import { AppSidebar, DashboardGuard } from "@multica/views/layout";
-import { SearchCommand, SearchTrigger } from "@multica/views/search";
-import { ChatFab, ChatWindow } from "@multica/views/chat";
+import { SidebarProvider } from "@mantica/ui/components/ui/sidebar";
+import { ModalRegistry } from "@mantica/views/modals/registry";
+import { AppSidebar, DashboardGuard } from "@mantica/views/layout";
+import { SearchCommand, SearchTrigger } from "@mantica/views/search";
+import { ChatFab, ChatWindow } from "@mantica/views/chat";
 import { DesktopNavigationProvider } from "@/platform/navigation";
-import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
+import { ManticaIcon } from "@mantica/ui/components/common/mantica-icon";
 import { TabBar } from "./tab-bar";
 import { TabContent } from "./tab-content";
 
@@ -54,8 +54,8 @@ function useInternalLinkHandler() {
       const tabId = store.openTab(path, path, icon);
       store.setActiveTab(tabId);
     };
-    window.addEventListener("multica:navigate", handler);
-    return () => window.removeEventListener("multica:navigate", handler);
+    window.addEventListener("mantica:navigate", handler);
+    return () => window.removeEventListener("mantica:navigate", handler);
   }, []);
 }
 
@@ -69,7 +69,7 @@ export function DesktopShell() {
         loginPath="/login"
         loadingFallback={
           <div className="flex h-screen items-center justify-center">
-            <MulticaIcon className="size-6 animate-pulse" />
+            <ManticaIcon className="size-6 animate-pulse" />
           </div>
         }
       >

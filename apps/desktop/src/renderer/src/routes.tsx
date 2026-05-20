@@ -8,14 +8,14 @@ import {
 import type { RouteObject } from "react-router-dom";
 import { IssueDetailPage } from "./pages/issue-detail-page";
 import { ProjectDetailPage } from "./pages/project-detail-page";
-import { IssuesPage } from "@multica/views/issues/components";
-import { ProjectsPage } from "@multica/views/projects/components";
-import { MyIssuesPage } from "@multica/views/my-issues";
-import { RuntimesPage } from "@multica/views/runtimes";
-import { SkillsPage } from "@multica/views/skills";
-import { AgentsPage } from "@multica/views/agents";
-import { InboxPage } from "@multica/views/inbox";
-import { SettingsPage } from "@multica/views/settings";
+import { IssuesPage } from "@mantica/views/issues/components";
+import { ProjectsPage } from "@mantica/views/projects/components";
+import { MyIssuesPage } from "@mantica/views/my-issues";
+import { RuntimesPage } from "@mantica/views/runtimes";
+import { SkillsPage } from "@mantica/views/skills";
+import { AgentsPage } from "@mantica/views/agents";
+import { InboxPage } from "@mantica/views/inbox";
+import { SettingsPage } from "@mantica/views/settings";
 
 /**
  * Sets document.title from the deepest matched route's handle.title.

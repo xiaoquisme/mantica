@@ -152,7 +152,7 @@ export const useTabStore = create<TabStore>()(
   },
     }),
     {
-      name: "multica_tabs",
+      name: "mantica_tabs",
       version: 1,
       partialize: (state) => ({
         tabs: state.tabs.map(

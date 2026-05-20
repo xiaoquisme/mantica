@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceId } from "@multica/core/hooks";
+import { useWorkspaceId } from "@mantica/core/hooks";
 import {
   inboxListOptions,
   deduplicateInboxItems,
-} from "@multica/core/inbox/queries";
+} from "@mantica/core/inbox/queries";
 import {
   useMarkInboxRead,
   useArchiveInbox,
@@ -15,7 +15,7 @@ import {
   useArchiveAllInbox,
   useArchiveAllReadInbox,
   useArchiveCompletedInbox,
-} from "@multica/core/inbox/mutations";
+} from "@mantica/core/inbox/mutations";
 import { IssueDetail } from "../../issues/components";
 import { useNavigation } from "../../navigation";
 import { toast } from "sonner";
@@ -27,21 +27,21 @@ import {
   BookCheck,
   ListChecks,
 } from "lucide-react";
-import type { InboxItem } from "@multica/core/types";
-import { Button } from "@multica/ui/components/ui/button";
+import type { InboxItem } from "@mantica/core/types";
+import { Button } from "@mantica/ui/components/ui/button";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from "@multica/ui/components/ui/resizable";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
+} from "@mantica/ui/components/ui/resizable";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@multica/ui/components/ui/dropdown-menu";
+} from "@mantica/ui/components/ui/dropdown-menu";
 import { InboxListItem, timeAgo } from "./inbox-list-item";
 import { typeLabels } from "./inbox-detail-label";
 
@@ -67,7 +67,7 @@ export function InboxPage() {
   const items = useMemo(() => deduplicateInboxItems(rawItems), [rawItems]);
 
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
-    id: "multica_inbox_layout",
+    id: "mantica_inbox_layout",
   });
 
   const selected = items.find((i) => (i.issue_id ?? i.id) === selectedKey) ?? null;
@@ -238,7 +238,7 @@ export function InboxPage() {
             key={selected.id}
             issueId={selected.issue_id}
             defaultSidebarOpen={false}
-            layoutId="multica_inbox_issue_detail_layout"
+            layoutId="mantica_inbox_issue_detail_layout"
             highlightCommentId={selected.details?.comment_id ?? undefined}
             onDelete={() => {
               handleArchive(selected.id);

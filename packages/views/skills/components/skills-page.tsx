@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Download,
 } from "lucide-react";
-import type { Skill, CreateSkillRequest, UpdateSkillRequest } from "@multica/core/types";
+import type { Skill, CreateSkillRequest, UpdateSkillRequest } from "@mantica/core/types";
 import {
   Dialog,
   DialogContent,
@@ -18,25 +18,25 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@multica/ui/components/ui/dialog";
+} from "@mantica/ui/components/ui/dialog";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from "@multica/ui/components/ui/resizable";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
-import { Badge } from "@multica/ui/components/ui/badge";
-import { Button } from "@multica/ui/components/ui/button";
-import { Input } from "@multica/ui/components/ui/input";
-import { Label } from "@multica/ui/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@multica/ui/components/ui/tabs";
+} from "@mantica/ui/components/ui/resizable";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@mantica/ui/components/ui/tooltip";
+import { Badge } from "@mantica/ui/components/ui/badge";
+import { Button } from "@mantica/ui/components/ui/button";
+import { Input } from "@mantica/ui/components/ui/input";
+import { Label } from "@mantica/ui/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@mantica/ui/components/ui/tabs";
 import { toast } from "sonner";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
-import { api } from "@multica/core/api";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
+import { api } from "@mantica/core/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { skillListOptions, workspaceKeys } from "@multica/core/workspace/queries";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { skillListOptions, workspaceKeys } from "@mantica/core/workspace/queries";
 
 import { FileTree } from "./file-tree";
 import { FileViewer } from "./file-viewer";
@@ -620,7 +620,7 @@ export default function SkillsPage() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [showCreate, setShowCreate] = useState(false);
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
-    id: "multica_skills_layout",
+    id: "mantica_skills_layout",
   });
 
   useEffect(() => {

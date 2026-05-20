@@ -3,8 +3,8 @@ import type { DataRouter } from "react-router-dom";
 import {
   NavigationProvider,
   type NavigationAdapter,
-} from "@multica/views/navigation";
-import { useAuthStore } from "@multica/core/auth";
+} from "@mantica/views/navigation";
+import { useAuthStore } from "@mantica/core/auth";
 import { useTabStore, resolveRouteIcon } from "@/stores/tab-store";
 
 /**
@@ -64,7 +64,7 @@ export function DesktopNavigationProvider({
         const tabId = store.openTab(path, title ?? path, icon);
         store.setActiveTab(tabId);
       },
-      getShareableUrl: (path: string) => `https://www.multica.ai${path}`,
+      getShareableUrl: (path: string) => `https://www.mantica.ai${path}`,
     }),
     [pathname],
   );
@@ -76,7 +76,7 @@ export function DesktopNavigationProvider({
  * Per-tab navigation provider rendered inside each tab's Activity wrapper.
  * Subscribes to the tab's own router for up-to-date pathname.
  *
- * This is what @multica/views page components read via useNavigation().
+ * This is what @mantica/views page components read via useNavigation().
  */
 export function TabNavigationProvider({
   router,
@@ -107,7 +107,7 @@ export function TabNavigationProvider({
         const newTabId = store.openTab(path, title ?? path, icon);
         store.setActiveTab(newTabId);
       },
-      getShareableUrl: (path: string) => `https://www.multica.ai${path}`,
+      getShareableUrl: (path: string) => `https://www.mantica.ai${path}`,
     }),
     [router, location],
   );

@@ -41,6 +41,6 @@ export const useIssueDraftStore = create<IssueDraftStore>()(
         return !!(draft.title || draft.description);
       },
     }),
-    { name: "multica_issue_draft" },
+    { name: "mantica_issue_draft" },
   ),
 );

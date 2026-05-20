@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAuthStore } from "@multica/core/auth";
+import { useAuthStore } from "@mantica/core/auth";
 import { setLoggedInCookie } from "@/features/auth/auth-cookie";
-import { LoginPage, validateCliCallback } from "@multica/views/auth";
+import { LoginPage, validateCliCallback } from "@mantica/views/auth";
 
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
@@ -27,7 +27,7 @@ function LoginPageContent() {
 
   const lastWorkspaceId =
     typeof window !== "undefined"
-      ? localStorage.getItem("multica_workspace_id")
+      ? localStorage.getItem("mantica_workspace_id")
       : null;
 
   return (

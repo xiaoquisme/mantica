@@ -33,8 +33,8 @@ import {
   useState,
 } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import { cn } from "@multica/ui/lib/utils";
-import type { UploadResult } from "@multica/core/hooks/use-file-upload";
+import { cn } from "@mantica/ui/lib/utils";
+import type { UploadResult } from "@mantica/core/hooks/use-file-upload";
 import { useQueryClient } from "@tanstack/react-query";
 import { createEditorExtensions } from "./extensions";
 import { uploadAndInsertFile } from "./extensions/file-upload";
@@ -137,7 +137,7 @@ const ContentEditor = forwardRef<ContentEditorRef, ContentEditorProps>(
                 // Internal path — dispatch custom event so the app can handle it
                 // (direct window.open breaks in Electron hash router)
                 window.dispatchEvent(
-                  new CustomEvent("multica:navigate", { detail: { path: href } }),
+                  new CustomEvent("mantica:navigate", { detail: { path: href } }),
                 );
               } else {
                 window.open(href, "_blank", "noopener,noreferrer");

@@ -1,4 +1,4 @@
-import type { Label } from "@multica/core/types";
+import type { Label } from "@mantica/core/types";
 
 export function LabelBadge({ label, size = "sm" }: { label: Label; size?: "sm" | "xs" }) {
   const sizeClass = size === "xs" ? "text-[10px] px-1 py-0" : "text-xs px-1.5 py-0.5";

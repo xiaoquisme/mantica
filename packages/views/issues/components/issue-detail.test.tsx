@@ -3,16 +3,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Issue, TimelineEntry } from "@multica/core/types";
-import { WorkspaceIdProvider } from "@multica/core/hooks";
+import type { Issue, TimelineEntry } from "@mantica/core/types";
+import { WorkspaceIdProvider } from "@mantica/core/hooks";
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-// Mock @multica/core/auth
+// Mock @mantica/core/auth
 const mockAuthUser = { id: "user-1", email: "test@test.com", name: "Test User" };
-vi.mock("@multica/core/auth", () => ({
+vi.mock("@mantica/core/auth", () => ({
   useAuthStore: Object.assign(
     (selector?: any) => {
       const state = { user: mockAuthUser, isAuthenticated: true };
@@ -24,8 +24,8 @@ vi.mock("@multica/core/auth", () => ({
   createAuthStore: vi.fn(),
 }));
 
-// Mock @multica/core/workspace
-vi.mock("@multica/core/workspace", () => ({
+// Mock @mantica/core/workspace
+vi.mock("@mantica/core/workspace", () => ({
   useWorkspaceStore: Object.assign(
     (selector?: any) => {
       const state = {
@@ -46,8 +46,8 @@ vi.mock("@multica/core/workspace", () => ({
   registerWorkspaceStore: vi.fn(),
 }));
 
-// Mock @multica/core/workspace/hooks
-vi.mock("@multica/core/workspace/hooks", () => ({
+// Mock @mantica/core/workspace/hooks
+vi.mock("@mantica/core/workspace/hooks", () => ({
   useActorName: () => ({
     getMemberName: (id: string) => (id === "user-1" ? "Test User" : "Unknown"),
     getAgentName: (id: string) => (id === "agent-1" ? "Claude Agent" : "Unknown Agent"),
@@ -62,7 +62,7 @@ vi.mock("@multica/core/workspace/hooks", () => ({
 }));
 
 // Mock workspace queries
-vi.mock("@multica/core/workspace/queries", () => ({
+vi.mock("@mantica/core/workspace/queries", () => ({
   memberListOptions: () => ({
     queryKey: ["workspaces", "ws-1", "members"],
     queryFn: () => Promise.resolve([{ user_id: "user-1", name: "Test User", email: "test@test.com", role: "admin" }]),
@@ -185,14 +185,14 @@ const mockApiObj = vi.hoisted(() => ({
   updateIssueLabels: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@multica/core/api", () => ({
+vi.mock("@mantica/core/api", () => ({
   api: mockApiObj,
   getApi: () => mockApiObj,
   setApiInstance: vi.fn(),
 }));
 
 // Mock issue config
-vi.mock("@multica/core/issues/config", () => ({
+vi.mock("@mantica/core/issues/config", () => ({
   ALL_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
   BOARD_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked"],
   STATUS_ORDER: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
@@ -224,7 +224,7 @@ vi.mock("@multica/core/issues/config", () => ({
 }));
 
 // Mock modals
-vi.mock("@multica/core/modals", () => ({
+vi.mock("@mantica/core/modals", () => ({
   useModalStore: Object.assign(
     () => ({ open: vi.fn() }),
     { getState: () => ({ open: vi.fn() }) },
@@ -232,17 +232,17 @@ vi.mock("@multica/core/modals", () => ({
 }));
 
 // Mock core/utils
-vi.mock("@multica/core/utils", () => ({
+vi.mock("@mantica/core/utils", () => ({
   timeAgo: () => "1d ago",
 }));
 
 // Mock core/hooks/use-file-upload
-vi.mock("@multica/core/hooks/use-file-upload", () => ({
+vi.mock("@mantica/core/hooks/use-file-upload", () => ({
   useFileUpload: () => ({ uploadWithToast: vi.fn().mockResolvedValue("https://example.com/file.png") }),
 }));
 
 // Mock realtime
-vi.mock("@multica/core/realtime", () => ({
+vi.mock("@mantica/core/realtime", () => ({
   useWSEvent: vi.fn(),
   useWSReconnect: vi.fn(),
   useWS: () => ({ subscribe: vi.fn(() => () => {}), onReconnect: vi.fn(() => () => {}) }),
@@ -255,7 +255,7 @@ vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
 }));
 
-// Mock react-resizable-panels (used by @multica/ui/components/ui/resizable)
+// Mock react-resizable-panels (used by @mantica/ui/components/ui/resizable)
 const mockDefaultLayout = vi.hoisted(() => ({
   value: undefined as Record<string, number> | undefined,
 }));

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "../../lib/utils";
 
-interface MulticaIconProps extends React.ComponentProps<"span"> {
+interface ManticaIconProps extends React.ComponentProps<"span"> {
   /**
    * If true, play a one-time entrance spin animation.
    */
@@ -27,18 +27,18 @@ const borderedSizes = {
 };
 
 /**
- * Pure CSS 8-pointed asterisk icon matching the Multica logo.
+ * Pure CSS 8-pointed asterisk icon matching the Mantica logo.
  * Uses currentColor so it adapts to light/dark themes automatically.
  * Clip-path polygon traced from the original SVG path coordinates.
  */
-export function MulticaIcon({
+export function ManticaIcon({
   className,
   animate = false,
   noSpin = false,
   bordered = false,
   size = "sm",
   ...props
-}: MulticaIconProps) {
+}: ManticaIconProps) {
   const [entranceDone, setEntranceDone] = useState(!animate);
 
   useEffect(() => {

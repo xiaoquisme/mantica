@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { Paperclip } from "lucide-react";
-import { cn } from "@multica/ui/lib/utils";
+import { cn } from "@mantica/ui/lib/utils";
 
 interface FileUploadButtonProps {
   /** Called with the selected File — caller handles upload. */

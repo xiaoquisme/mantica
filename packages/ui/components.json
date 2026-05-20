@@ -12,10 +12,10 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@multica/ui/components",
-    "ui": "@multica/ui/components/ui",
-    "hooks": "@multica/ui/hooks",
-    "lib": "@multica/ui/lib",
-    "utils": "@multica/ui/lib/utils"
+    "components": "@mantica/ui/components",
+    "ui": "@mantica/ui/components/ui",
+    "hooks": "@mantica/ui/hooks",
+    "lib": "@mantica/ui/lib",
+    "utils": "@mantica/ui/lib/utils"
   }
 }

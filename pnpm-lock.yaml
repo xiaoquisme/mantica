@@ -100,13 +100,13 @@ importers:
       '@electron-toolkit/utils':
         specifier: ^4.0.0
         version: 4.0.0(electron@39.8.7)
-      '@multica/core':
+      '@mantica/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@multica/ui':
+      '@mantica/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@multica/views':
+      '@mantica/views':
         specifier: workspace:*
         version: link:../../packages/views
       react-router-dom:
@@ -125,7 +125,7 @@ importers:
       '@electron-toolkit/tsconfig':
         specifier: ^2.0.0
         version: 2.0.0(@types/node@25.5.0)
-      '@multica/tsconfig':
+      '@mantica/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
       '@tailwindcss/vite':
@@ -185,13 +185,13 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@multica/core':
+      '@mantica/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@multica/ui':
+      '@mantica/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@multica/views':
+      '@mantica/views':
         specifier: workspace:*
         version: link:../../packages/views
       '@tanstack/react-query':
@@ -379,7 +379,7 @@ importers:
         specifier: 'catalog:'
         version: 5.0.12(@types/react@19.2.14)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
-      '@multica/tsconfig':
+      '@mantica/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@testing-library/react':
@@ -508,7 +508,7 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
     devDependencies:
-      '@multica/tsconfig':
+      '@mantica/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@types/linkify-it':
@@ -541,10 +541,10 @@ importers:
       '@floating-ui/dom':
         specifier: ^1.7.6
         version: 1.7.6
-      '@multica/core':
+      '@mantica/core':
         specifier: workspace:*
         version: link:../core
-      '@multica/ui':
+      '@mantica/ui':
         specifier: workspace:*
         version: link:../ui
       '@tanstack/react-query':
@@ -650,7 +650,7 @@ importers:
         specifier: 'catalog:'
         version: 5.0.12(@types/react@19.2.14)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
-      '@multica/tsconfig':
+      '@mantica/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       '@testing-library/jest-dom':

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Tag, Plus, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { labelListOptions } from "@multica/core/issues/queries";
-import { useCreateLabel } from "@multica/core/issues/mutations";
-import type { Label } from "@multica/core/types";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { labelListOptions } from "@mantica/core/issues/queries";
+import { useCreateLabel } from "@mantica/core/issues/mutations";
+import type { Label } from "@mantica/core/types";
 import { PropertyPicker, PickerItem, PickerEmpty } from "./property-picker";
 import { LabelBadge } from "../label-badge";
 

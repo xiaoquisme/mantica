@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { Save, Plus, Trash2, GitBranch, Lock, FlaskConical, Loader2, CheckCircle2 } from "lucide-react";
-import { Input } from "@multica/ui/components/ui/input";
-import { Button } from "@multica/ui/components/ui/button";
-import { Card, CardContent } from "@multica/ui/components/ui/card";
+import { Input } from "@mantica/ui/components/ui/input";
+import { Button } from "@mantica/ui/components/ui/button";
+import { Card, CardContent } from "@mantica/ui/components/ui/card";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { memberListOptions } from "@multica/core/workspace/queries";
-import { api } from "@multica/core/api";
-import type { WorkspaceRepo } from "@multica/core/types";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { memberListOptions } from "@mantica/core/workspace/queries";
+import { api } from "@mantica/core/api";
+import type { WorkspaceRepo } from "@mantica/core/types";
 
 function ProviderBadge({ url }: { url: string }) {
   if (url.includes("github.com")) {

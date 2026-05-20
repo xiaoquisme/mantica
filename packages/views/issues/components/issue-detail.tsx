@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,8 +29,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@multica/ui/components/ui/alert-dialog";
-import { Button } from "@multica/ui/components/ui/button";
+} from "@mantica/ui/components/ui/alert-dialog";
+import { Button } from "@mantica/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -40,23 +40,23 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from "@multica/ui/components/ui/dropdown-menu";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@multica/ui/components/ui/resizable";
+} from "@mantica/ui/components/ui/dropdown-menu";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@mantica/ui/components/ui/resizable";
 import { ContentEditor, type ContentEditorRef } from "../../editor";
-import { FileUploadButton } from "@multica/ui/components/common/file-upload-button";
+import { FileUploadButton } from "@mantica/ui/components/common/file-upload-button";
 import { TitleEditor } from "../../editor";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-} from "@multica/ui/components/ui/tooltip";
-import { Popover, PopoverTrigger, PopoverContent } from "@multica/ui/components/ui/popover";
-import { Checkbox } from "@multica/ui/components/ui/checkbox";
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@multica/ui/components/ui/command";
-import { AvatarGroup, AvatarGroupCount } from "@multica/ui/components/ui/avatar";
+} from "@mantica/ui/components/ui/tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from "@mantica/ui/components/ui/popover";
+import { Checkbox } from "@mantica/ui/components/ui/checkbox";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@mantica/ui/components/ui/command";
+import { AvatarGroup, AvatarGroupCount } from "@mantica/ui/components/ui/avatar";
 import { ActorAvatar } from "../../common/actor-avatar";
-import type { UpdateIssueRequest, IssueStatus, IssuePriority, TimelineEntry } from "@multica/core/types";
-import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
+import type { UpdateIssueRequest, IssueStatus, IssuePriority, TimelineEntry } from "@mantica/core/types";
+import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@mantica/core/issues/config";
 import { StatusIcon, PriorityIcon, StatusPicker, PriorityPicker, DueDatePicker, AssigneePicker, canAssignAgent, ParentPicker } from ".";
 import { ProjectPicker } from "../../projects/components/project-picker";
 import { LabelsPicker } from "./pickers/labels-picker";
@@ -64,22 +64,22 @@ import { CommentCard } from "./comment-card";
 import { CommentInput } from "./comment-input";
 import { AgentLiveCard, TaskRunHistory } from "./agent-live-card";
 import { useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { useActorName } from "@multica/core/workspace/hooks";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { issueListOptions, issueDetailOptions, childIssuesOptions, issueUsageOptions } from "@multica/core/issues/queries";
-import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
-import { useUpdateIssue, useDeleteIssue, useUpdateIssueLabels } from "@multica/core/issues/mutations";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { useActorName } from "@mantica/core/workspace/hooks";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { issueListOptions, issueDetailOptions, childIssuesOptions, issueUsageOptions } from "@mantica/core/issues/queries";
+import { memberListOptions, agentListOptions } from "@mantica/core/workspace/queries";
+import { useUpdateIssue, useDeleteIssue, useUpdateIssueLabels } from "@mantica/core/issues/mutations";
 import { useIssueTimeline } from "../hooks/use-issue-timeline";
 import { useIssueReactions } from "../hooks/use-issue-reactions";
 import { useIssueSubscribers } from "../hooks/use-issue-subscribers";
-import { ReactionBar } from "@multica/ui/components/common/reaction-bar";
-import { useFileUpload } from "@multica/core/hooks/use-file-upload";
-import { api } from "@multica/core/api";
-import { useModalStore } from "@multica/core/modals";
-import { timeAgo } from "@multica/core/utils";
-import { cn } from "@multica/ui/lib/utils";
+import { ReactionBar } from "@mantica/ui/components/common/reaction-bar";
+import { useFileUpload } from "@mantica/core/hooks/use-file-upload";
+import { api } from "@mantica/core/api";
+import { useModalStore } from "@mantica/core/modals";
+import { timeAgo } from "@mantica/core/utils";
+import { cn } from "@mantica/ui/lib/utils";
 
 import { ProgressRing } from "./progress-ring";
 
@@ -191,7 +191,7 @@ interface IssueDetailProps {
 // IssueDetail
 // ---------------------------------------------------------------------------
 
-export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layoutId = "multica_issue_detail_layout", highlightCommentId }: IssueDetailProps) {
+export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layoutId = "mantica_issue_detail_layout", highlightCommentId }: IssueDetailProps) {
   const id = issueId;
   const router = useNavigation();
   const user = useAuthStore((s) => s.user);

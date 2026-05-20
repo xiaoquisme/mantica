@@ -1,18 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ListIssuesResponse } from "@multica/core/types";
+import type { ListIssuesResponse } from "@mantica/core/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Issue } from "@multica/core/types";
-import { WorkspaceIdProvider } from "@multica/core/hooks";
+import type { Issue } from "@mantica/core/types";
+import { WorkspaceIdProvider } from "@mantica/core/hooks";
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-// Mock @multica/core/auth
+// Mock @mantica/core/auth
 const mockAuthUser = { id: "user-1", email: "test@test.com", name: "Test User" };
-vi.mock("@multica/core/auth", () => ({
+vi.mock("@mantica/core/auth", () => ({
   useAuthStore: Object.assign(
     (selector?: any) => {
       const state = { user: mockAuthUser, isAuthenticated: true };
@@ -24,8 +24,8 @@ vi.mock("@multica/core/auth", () => ({
   createAuthStore: vi.fn(),
 }));
 
-// Mock @multica/core/workspace
-vi.mock("@multica/core/workspace", () => ({
+// Mock @mantica/core/workspace
+vi.mock("@mantica/core/workspace", () => ({
   useWorkspaceStore: Object.assign(
     (selector?: any) => {
       const state = {
@@ -46,7 +46,7 @@ vi.mock("@multica/core/workspace", () => ({
   registerWorkspaceStore: vi.fn(),
 }));
 
-// Mock @multica/views/navigation (AppLink + useNavigation)
+// Mock @mantica/views/navigation (AppLink + useNavigation)
 vi.mock("../../navigation", () => ({
   AppLink: ({ children, href, ...props }: any) => (
     <a href={href} {...props}>
@@ -66,7 +66,7 @@ vi.mock("../../workspace/workspace-avatar", () => ({
 const mockListIssues = vi.hoisted(() => vi.fn().mockResolvedValue({ issues: [], total: 0 }));
 const mockGetWorkspaceLabels = vi.hoisted(() => vi.fn().mockResolvedValue([]));
 const mockUpdateIssueLabels = vi.hoisted(() => vi.fn().mockResolvedValue([]));
-vi.mock("@multica/core/api", () => ({
+vi.mock("@mantica/core/api", () => ({
   api: {
     listIssues: (...args: any[]) => mockListIssues(...args),
     updateIssue: vi.fn(),
@@ -89,7 +89,7 @@ vi.mock("@multica/core/api", () => ({
 }));
 
 // Mock workspace queries (so list-row's memberListOptions/agentListOptions resolve immediately)
-vi.mock("@multica/core/workspace/queries", () => ({
+vi.mock("@mantica/core/workspace/queries", () => ({
   memberListOptions: () => ({
     queryKey: ["workspaces", "ws-1", "members"],
     queryFn: () => Promise.resolve([]),
@@ -101,7 +101,7 @@ vi.mock("@multica/core/workspace/queries", () => ({
 }));
 
 // Mock projects queries (so list-row's projectListOptions resolves immediately)
-vi.mock("@multica/core/projects/queries", () => ({
+vi.mock("@mantica/core/projects/queries", () => ({
   projectListOptions: () => ({
     queryKey: ["projects", "ws-1", "list"],
     queryFn: () => Promise.resolve({ projects: [] }),
@@ -109,14 +109,14 @@ vi.mock("@multica/core/projects/queries", () => ({
   }),
 }));
 
-// Mock @multica/ui dropdown-menu with minimal HTML stubs for jsdom.
+// Mock @mantica/ui dropdown-menu with minimal HTML stubs for jsdom.
 // DropdownMenuContent renders its children so that ListRow's sub-menus
 // ("Labels", "Status", etc.) are visible in list-view tests.
 // DropdownMenuSubContent renders null so that the deeply-nested items
 // (status labels like "Backlog", priority names, etc.) do NOT appear in the
 // DOM — this prevents conflicts with board column header text in board-view tests.
 // AC2/AC3 tests render LabelPicker directly (bypassing the sub-content mock).
-vi.mock("@multica/ui/components/ui/dropdown-menu", () => ({
+vi.mock("@mantica/ui/components/ui/dropdown-menu", () => ({
   DropdownMenu: ({ children }: any) => <div data-testid="dropdown-menu">{children}</div>,
   DropdownMenuTrigger: ({ render: renderProp, children, ...props }: any) => (
     <div data-testid="dropdown-trigger" {...props}>{renderProp ?? children}</div>
@@ -138,7 +138,7 @@ vi.mock("@multica/ui/components/ui/dropdown-menu", () => ({
 }));
 
 // Mock issue config
-vi.mock("@multica/core/issues/config", () => ({
+vi.mock("@mantica/core/issues/config", () => ({
   ALL_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
   BOARD_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked"],
   STATUS_ORDER: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
@@ -198,7 +198,7 @@ const mockViewState = {
   setColumnOrder: vi.fn(),
 };
 
-vi.mock("@multica/core/issues/stores/view-store", () => ({
+vi.mock("@mantica/core/issues/stores/view-store", () => ({
   initFilterWorkspaceSync: vi.fn(),
   useIssueViewStore: Object.assign(
     (selector?: any) => (selector ? selector(mockViewState) : mockViewState),
@@ -224,13 +224,13 @@ vi.mock("@multica/core/issues/stores/view-store", () => ({
   ],
 }));
 
-vi.mock("@multica/core/issues/stores/view-store-context", () => ({
+vi.mock("@mantica/core/issues/stores/view-store-context", () => ({
   ViewStoreProvider: ({ children }: { children: React.ReactNode }) => children,
   useViewStore: (selector?: any) => (selector ? selector(mockViewState) : mockViewState),
   useViewStoreApi: () => ({ getState: () => mockViewState, setState: vi.fn(), subscribe: vi.fn() }),
 }));
 
-vi.mock("@multica/core/issues/stores/issues-scope-store", () => ({
+vi.mock("@mantica/core/issues/stores/issues-scope-store", () => ({
   useIssuesScopeStore: Object.assign(
     (selector?: any) => {
       const state = { scope: "all", setScope: vi.fn() };
@@ -240,7 +240,7 @@ vi.mock("@multica/core/issues/stores/issues-scope-store", () => ({
   ),
 }));
 
-vi.mock("@multica/core/issues/stores/selection-store", () => ({
+vi.mock("@mantica/core/issues/stores/selection-store", () => ({
   useIssueSelectionStore: Object.assign(
     (selector?: any) => {
       const state = { selectedIds: new Set(), toggle: vi.fn(), clear: vi.fn(), setAll: vi.fn() };
@@ -250,7 +250,7 @@ vi.mock("@multica/core/issues/stores/selection-store", () => ({
   ),
 }));
 
-vi.mock("@multica/core/modals", () => ({
+vi.mock("@mantica/core/modals", () => ({
   useModalStore: Object.assign(
     () => ({ open: vi.fn() }),
     { getState: () => ({ open: vi.fn() }) },
@@ -595,9 +595,9 @@ describe("TES-89 — Quick-add labels via hover action menu", () => {
   it("AC5: list cache is updated optimistically when updateIssueLabels is called", async () => {
     const { QueryClient: QC, QueryClientProvider: QCP } = await import("@tanstack/react-query");
     const { renderHook, act } = await import("@testing-library/react");
-    const { WorkspaceIdProvider: WIP } = await import("@multica/core/hooks");
-    const { useUpdateIssueLabels } = await import("@multica/core/issues/mutations");
-    const { issueKeys } = await import("@multica/core/issues/queries");
+    const { WorkspaceIdProvider: WIP } = await import("@mantica/core/hooks");
+    const { useUpdateIssueLabels } = await import("@mantica/core/issues/mutations");
+    const { issueKeys } = await import("@mantica/core/issues/queries");
 
     const qc = new QC({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },

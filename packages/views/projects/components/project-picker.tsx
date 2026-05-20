@@ -2,16 +2,16 @@
 
 import { Check, FolderKanban, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { projectListOptions } from "@multica/core/projects/queries";
-import { useWorkspaceId } from "@multica/core/hooks";
-import type { UpdateIssueRequest } from "@multica/core/types";
+import { projectListOptions } from "@mantica/core/projects/queries";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import type { UpdateIssueRequest } from "@mantica/core/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@multica/ui/components/ui/dropdown-menu";
+} from "@mantica/ui/components/ui/dropdown-menu";
 
 export function ProjectPicker({
   projectId,

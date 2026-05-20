@@ -1,7 +1,7 @@
 "use client";
 
 import { Cloud, Monitor, TrendingUp, TrendingDown } from "lucide-react";
-import type { Agent, AgentScore } from "@multica/core/types";
+import type { Agent, AgentScore } from "@mantica/core/types";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { statusConfig } from "../config";
 

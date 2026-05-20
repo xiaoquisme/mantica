@@ -14,7 +14,7 @@ import {
   SignalHigh,
   SlidersHorizontal,
 } from "lucide-react";
-import { Button } from "@multica/ui/components/ui/button";
+import { Button } from "@mantica/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -27,27 +27,27 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from "@multica/ui/components/ui/dropdown-menu";
+} from "@mantica/ui/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@multica/ui/components/ui/popover";
-import { Switch } from "@multica/ui/components/ui/switch";
+} from "@mantica/ui/components/ui/popover";
+import { Switch } from "@mantica/ui/components/ui/switch";
 import {
   ALL_STATUSES,
   STATUS_CONFIG,
   PRIORITY_ORDER,
   PRIORITY_CONFIG,
-} from "@multica/core/issues/config";
+} from "@mantica/core/issues/config";
 import { StatusIcon, PriorityIcon } from "../../issues/components";
 import {
   SORT_OPTIONS,
   CARD_PROPERTY_OPTIONS,
-} from "@multica/core/issues/stores/view-store";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
-import type { Issue } from "@multica/core/types";
-import { myIssuesViewStore, type MyIssuesScope } from "@multica/core/issues/stores/my-issues-view-store";
+} from "@mantica/core/issues/stores/view-store";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@mantica/ui/components/ui/tooltip";
+import type { Issue } from "@mantica/core/types";
+import { myIssuesViewStore, type MyIssuesScope } from "@mantica/core/issues/stores/my-issues-view-store";
 
 // ---------------------------------------------------------------------------
 // HoverCheck

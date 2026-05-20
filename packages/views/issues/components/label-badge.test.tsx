@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import type { Label } from "@multica/core/types";
+import type { Label } from "@mantica/core/types";
 import { LabelBadge } from "./label-badge";
 
 // ---------------------------------------------------------------------------

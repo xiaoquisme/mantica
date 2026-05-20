@@ -4,17 +4,17 @@ import { useState } from "react";
 import { useNavigation } from "../navigation";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
-import { Input } from "@multica/ui/components/ui/input";
-import { Label } from "@multica/ui/components/ui/label";
-import { Button } from "@multica/ui/components/ui/button";
+import { Input } from "@mantica/ui/components/ui/input";
+import { Label } from "@mantica/ui/components/ui/label";
+import { Button } from "@mantica/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@multica/ui/components/ui/dialog";
-import { Card, CardContent } from "@multica/ui/components/ui/card";
-import { useWorkspaceStore } from "@multica/core/workspace";
+} from "@mantica/ui/components/ui/dialog";
+import { Card, CardContent } from "@mantica/ui/components/ui/card";
+import { useWorkspaceStore } from "@mantica/core/workspace";
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -104,7 +104,7 @@ export function CreateWorkspaceModal({ onClose }: { onClose: () => void }) {
                 <Label>Workspace URL</Label>
                 <div className="flex items-center gap-0 rounded-md border bg-background focus-within:ring-2 focus-within:ring-ring">
                   <span className="pl-3 text-sm text-muted-foreground select-none">
-                    multica.app/
+                    mantica.app/
                   </span>
                   <Input
                     type="text"

@@ -2,7 +2,7 @@ import { type Page } from "@playwright/test";
 import { TestApiClient } from "./fixtures";
 
 const DEFAULT_E2E_NAME = "E2E User";
-const DEFAULT_E2E_EMAIL = "e2e@multica.ai";
+const DEFAULT_E2E_EMAIL = "e2e@mantica.ai";
 const DEFAULT_E2E_WORKSPACE = "e2e-workspace";
 
 /**
@@ -30,7 +30,7 @@ export async function loginAsDefault(page: Page, api?: TestApiClient) {
   // setting localStorage between two page.goto() calls intermittently leaves
   // the auth store with `user: null` and trips DashboardGuard's redirect.
   await page.addInitScript((t) => {
-    localStorage.setItem("multica_token", t);
+    localStorage.setItem("mantica_token", t);
   }, token);
   await page.goto("/issues");
   await page.waitForURL("**/issues", { timeout: 10000 });

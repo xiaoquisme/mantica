@@ -2,11 +2,11 @@
 
 import { useRef, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
-import { Button } from "@multica/ui/components/ui/button";
+import { Button } from "@mantica/ui/components/ui/button";
 import { ContentEditor, type ContentEditorRef } from "../../editor";
-import { FileUploadButton } from "@multica/ui/components/common/file-upload-button";
-import { useFileUpload } from "@multica/core/hooks/use-file-upload";
-import { api } from "@multica/core/api";
+import { FileUploadButton } from "@mantica/ui/components/common/file-upload-button";
+import { useFileUpload } from "@mantica/core/hooks/use-file-upload";
+import { api } from "@mantica/core/api";
 
 interface CommentInputProps {
   issueId: string;

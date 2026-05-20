@@ -1,5 +1,5 @@
-import { preprocessLinks } from "@multica/ui/markdown";
-import { preprocessMentionShortcodes } from "@multica/ui/markdown";
+import { preprocessLinks } from "@mantica/ui/markdown";
+import { preprocessMentionShortcodes } from "@mantica/ui/markdown";
 import { isFileCardUrl } from "../extensions/file-card";
 
 /**
@@ -28,7 +28,7 @@ export function preprocessMarkdown(markdown: string): string {
  * Convert standalone `[name](cdnUrl)` lines into HTML that Tiptap's fileCard
  * parseHTML can recognise. Only matches non-image CDN URLs on their own line.
  *
- * Input:  `[report.pdf](https://multica-static.copilothub.ai/xxx.pdf)`
+ * Input:  `[report.pdf](https://mantica-static.copilothub.ai/xxx.pdf)`
  * Output: `<div data-type="fileCard" data-href="url" data-filename="report.pdf"></div>`
  */
 const FILE_LINK_LINE = /^\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/;

@@ -2,23 +2,23 @@
 
 import { useCallback, memo } from "react";
 import { AppLink } from "../../navigation";
-import type { Issue, UpdateIssueRequest } from "@multica/core/types";
+import type { Issue, UpdateIssueRequest } from "@mantica/core/types";
 import { ActorAvatar } from "../../common/actor-avatar";
-import { useIssueSelectionStore } from "@multica/core/issues/stores/selection-store";
+import { useIssueSelectionStore } from "@mantica/core/issues/stores/selection-store";
 import { PriorityIcon } from "./priority-icon";
 import { StatusIcon } from "./status-icon";
 import { ProgressRing } from "./progress-ring";
 import { LabelBadge } from "./label-badge";
 import { ProjectBadge } from "./project-badge";
-import { useUpdateIssue } from "@multica/core/issues/mutations";
+import { useUpdateIssue } from "@mantica/core/issues/mutations";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
-import { projectListOptions } from "@multica/core/projects/queries";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { memberListOptions, agentListOptions } from "@mantica/core/workspace/queries";
+import { projectListOptions } from "@mantica/core/projects/queries";
 import { canAssignAgent, LabelPicker, ParentSubMenuContent } from "./pickers";
-import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
+import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@mantica/core/issues/config";
 import {
   MoreHorizontal,
   UserMinus,
@@ -28,7 +28,7 @@ import {
   Check,
   Network,
 } from "lucide-react";
-import { Button } from "@multica/ui/components/ui/button";
+import { Button } from "@mantica/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -38,7 +38,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from "@multica/ui/components/ui/dropdown-menu";
+} from "@mantica/ui/components/ui/dropdown-menu";
 
 export interface ChildProgress {
   done: number;

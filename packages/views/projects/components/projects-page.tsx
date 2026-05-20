@@ -3,40 +3,40 @@
 import { useState, useRef } from "react";
 import { Plus, FolderKanban, ChevronRight, Maximize2, Minimize2, X as XIcon, UserMinus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { projectListOptions } from "@multica/core/projects/queries";
-import { useCreateProject } from "@multica/core/projects/mutations";
-import { PROJECT_STATUS_CONFIG, PROJECT_STATUS_ORDER, PROJECT_PRIORITY_CONFIG, PROJECT_PRIORITY_ORDER } from "@multica/core/projects/config";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
+import { projectListOptions } from "@mantica/core/projects/queries";
+import { useCreateProject } from "@mantica/core/projects/mutations";
+import { PROJECT_STATUS_CONFIG, PROJECT_STATUS_ORDER, PROJECT_PRIORITY_CONFIG, PROJECT_PRIORITY_ORDER } from "@mantica/core/projects/config";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { memberListOptions, agentListOptions } from "@mantica/core/workspace/queries";
 import { AppLink, useNavigation } from "../../navigation";
 import { ActorAvatar } from "../../common/actor-avatar";
-import { useActorName } from "@multica/core/workspace/hooks";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
-import { Button } from "@multica/ui/components/ui/button";
-import { cn } from "@multica/ui/lib/utils";
+import { useActorName } from "@mantica/core/workspace/hooks";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
+import { Button } from "@mantica/ui/components/ui/button";
+import { cn } from "@mantica/ui/lib/utils";
 import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
-} from "@multica/ui/components/ui/dialog";
+} from "@mantica/ui/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@multica/ui/components/ui/dropdown-menu";
+} from "@mantica/ui/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@multica/ui/components/ui/popover";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
+} from "@mantica/ui/components/ui/popover";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@mantica/ui/components/ui/tooltip";
 import { ContentEditor, type ContentEditorRef } from "../../editor";
 import { TitleEditor } from "../../editor";
-import { EmojiPicker } from "@multica/ui/components/common/emoji-picker";
-import type { Project, ProjectStatus, ProjectPriority } from "@multica/core/types";
+import { EmojiPicker } from "@mantica/ui/components/common/emoji-picker";
+import type { Project, ProjectStatus, ProjectPriority } from "@mantica/core/types";
 import { PriorityIcon } from "../../issues/components/priority-icon";
 
 function formatRelativeDate(date: string): string {

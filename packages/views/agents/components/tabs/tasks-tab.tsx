@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { ListTodo, Clock } from "lucide-react";
-import type { Agent, AgentTask } from "@multica/core/types";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
-import { api } from "@multica/core/api";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { issueListOptions } from "@multica/core/issues/queries";
+import type { Agent, AgentTask } from "@mantica/core/types";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
+import { api } from "@mantica/core/api";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { issueListOptions } from "@mantica/core/issues/queries";
 import { useQuery } from "@tanstack/react-query";
 import { AppLink } from "../../../navigation";
 import { taskStatusConfig } from "../../config";

@@ -19,7 +19,7 @@ const mockApiVerifyCode = vi.hoisted(() => vi.fn());
 const mockApiSetToken = vi.hoisted(() => vi.fn());
 const mockApiGetMe = vi.hoisted(() => vi.fn());
 
-vi.mock("@multica/core/auth", () => ({
+vi.mock("@mantica/core/auth", () => ({
   useAuthStore: Object.assign(
     // Zustand hook form — component may call useAuthStore(selector)
     (selector?: (s: unknown) => unknown) => {
@@ -35,7 +35,7 @@ vi.mock("@multica/core/auth", () => ({
   ),
 }));
 
-vi.mock("@multica/core/workspace", () => ({
+vi.mock("@mantica/core/workspace", () => ({
   useWorkspaceStore: Object.assign(
     (selector?: (s: unknown) => unknown) => {
       const state = { hydrateWorkspace: mockHydrateWorkspace };
@@ -49,7 +49,7 @@ vi.mock("@multica/core/workspace", () => ({
   ),
 }));
 
-vi.mock("@multica/core/api", () => ({
+vi.mock("@mantica/core/api", () => ({
   api: {
     listWorkspaces: mockApiListWorkspaces,
     verifyCode: mockApiVerifyCode,
@@ -58,7 +58,7 @@ vi.mock("@multica/core/api", () => ({
   },
 }));
 
-vi.mock("@multica/core/types", () => ({}));
+vi.mock("@mantica/core/types", () => ({}));
 
 // ---------------------------------------------------------------------------
 // Import after mocks
@@ -97,10 +97,10 @@ describe("LoginPage", () => {
   // Email step rendering
   // -------------------------------------------------------------------------
 
-  it("renders email form with 'Sign in to Multica' title", () => {
+  it("renders email form with 'sign in to mantica' title", () => {
     render(<LoginPage onSuccess={onSuccess} />);
     expect(
-      screen.getByText(/sign in to multica/i),
+      screen.getByText(/sign in to mantica/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/enter your email to get a login code/i),
@@ -380,7 +380,7 @@ describe("LoginPage", () => {
   // -------------------------------------------------------------------------
 
   it("shows cli_confirm step when existing session + cliCallback", async () => {
-    localStorage.setItem("multica_token", "existing-jwt");
+    localStorage.setItem("mantica_token", "existing-jwt");
     mockApiGetMe.mockResolvedValueOnce({
       id: "u-1",
       email: "user@example.com",
@@ -409,7 +409,7 @@ describe("LoginPage", () => {
   });
 
   it("CLI authorize button redirects to callback URL", async () => {
-    localStorage.setItem("multica_token", "existing-jwt");
+    localStorage.setItem("mantica_token", "existing-jwt");
     mockApiGetMe.mockResolvedValueOnce({
       id: "u-1",
       email: "user@example.com",
@@ -441,7 +441,7 @@ describe("LoginPage", () => {
   });
 
   it("'Use a different account' returns to email step", async () => {
-    localStorage.setItem("multica_token", "existing-jwt");
+    localStorage.setItem("mantica_token", "existing-jwt");
     mockApiGetMe.mockResolvedValueOnce({
       id: "u-1",
       email: "user@example.com",
@@ -467,7 +467,7 @@ describe("LoginPage", () => {
     );
 
     expect(
-      screen.getByText(/sign in to multica/i),
+      screen.getByText(/sign in to mantica/i),
     ).toBeInTheDocument();
   });
 
@@ -595,7 +595,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: /back/i }));
 
     expect(
-      screen.getByText(/sign in to multica/i),
+      screen.getByText(/sign in to mantica/i),
     ).toBeInTheDocument();
   });
 

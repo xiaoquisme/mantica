@@ -11,14 +11,14 @@ import {
 import { ReactRenderer } from "@tiptap/react";
 import { computePosition, offset, flip, shift } from "@floating-ui/dom";
 import type { QueryClient } from "@tanstack/react-query";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { issueKeys } from "@multica/core/issues/queries";
-import { workspaceKeys } from "@multica/core/workspace/queries";
-import type { Issue, ListIssuesResponse, MemberWithUser, Agent } from "@multica/core/types";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { issueKeys } from "@mantica/core/issues/queries";
+import { workspaceKeys } from "@mantica/core/workspace/queries";
+import type { Issue, ListIssuesResponse, MemberWithUser, Agent } from "@mantica/core/types";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { StatusIcon } from "../../issues/components/status-icon";
-import { Badge } from "@multica/ui/components/ui/badge";
-import type { IssueStatus } from "@multica/core/types";
+import { Badge } from "@mantica/ui/components/ui/badge";
+import type { IssueStatus } from "@mantica/core/types";
 import type { SuggestionOptions, SuggestionProps } from "@tiptap/suggestion";
 
 // ---------------------------------------------------------------------------

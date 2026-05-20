@@ -17,12 +17,12 @@ import {
   Cloud,
   Cpu,
 } from "lucide-react";
-import { cn } from "@multica/ui/lib/utils";
-import { Dialog, DialogContent, DialogTitle } from "@multica/ui/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@multica/ui/components/ui/collapsible";
+import { cn } from "@mantica/ui/lib/utils";
+import { Dialog, DialogContent, DialogTitle } from "@mantica/ui/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@mantica/ui/components/ui/collapsible";
 import { ActorAvatar } from "../../common/actor-avatar";
-import { api } from "@multica/core/api";
-import type { AgentTask, Agent, AgentRuntime } from "@multica/core/types/agent";
+import { api } from "@mantica/core/api";
+import type { AgentTask, Agent, AgentRuntime } from "@mantica/core/types/agent";
 import { redactSecrets } from "../utils/redact";
 
 // ─── Types ──────────────────────────────────────────────────────────────────

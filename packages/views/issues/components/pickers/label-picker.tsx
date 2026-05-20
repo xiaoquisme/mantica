@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { labelListOptions } from "@multica/core/issues/queries";
-import { useUpdateIssueLabels } from "@multica/core/issues/mutations";
-import type { Label } from "@multica/core/types";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { labelListOptions } from "@mantica/core/issues/queries";
+import { useUpdateIssueLabels } from "@mantica/core/issues/mutations";
+import type { Label } from "@mantica/core/types";
 import { Check } from "lucide-react";
 
 export function LabelPicker({

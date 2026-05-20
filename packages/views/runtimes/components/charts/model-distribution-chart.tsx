@@ -4,7 +4,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "@multica/ui/components/ui/chart";
+} from "@mantica/ui/components/ui/chart";
 import type { ModelDistribution } from "../../utils";
 import { formatTokens } from "../../utils";
 

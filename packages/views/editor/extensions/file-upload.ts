@@ -1,6 +1,6 @@
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
-import type { UploadResult } from "@multica/core/hooks/use-file-upload";
+import type { UploadResult } from "@mantica/core/hooks/use-file-upload";
 
 /** Find and remove a fileCard node by uploadId. */
  

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { cn } from "@multica/ui/lib/utils";
+import { cn } from "@mantica/ui/lib/utils";
 import { AppLink, useNavigation } from "../navigation";
 import {
   Inbox,
@@ -20,8 +20,8 @@ import {
   Ellipsis,
 } from "lucide-react";
 import { WorkspaceAvatar } from "../workspace/workspace-avatar";
-import { ActorAvatar } from "@multica/ui/components/common/actor-avatar";
-import { useIssueDraftStore } from "@multica/core/issues/stores/draft-store";
+import { ActorAvatar } from "@mantica/ui/components/common/actor-avatar";
+import { useIssueDraftStore } from "@mantica/core/issues/stores/draft-store";
 import {
   Sidebar,
   SidebarContent,
@@ -34,7 +34,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@multica/ui/components/ui/sidebar";
+} from "@mantica/ui/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,15 +43,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@multica/ui/components/ui/dropdown-menu";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceStore } from "@multica/core/workspace";
+} from "@mantica/ui/components/ui/dropdown-menu";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@mantica/ui/components/ui/tooltip";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceStore } from "@mantica/core/workspace";
 import { useQuery } from "@tanstack/react-query";
-import { inboxKeys, deduplicateInboxItems } from "@multica/core/inbox/queries";
-import { api } from "@multica/core/api";
-import { useModalStore } from "@multica/core/modals";
-import { useMyRuntimesNeedUpdate } from "@multica/core/runtimes/hooks";
+import { inboxKeys, deduplicateInboxItems } from "@mantica/core/inbox/queries";
+import { api } from "@mantica/core/api";
+import { useModalStore } from "@mantica/core/modals";
+import { useMyRuntimesNeedUpdate } from "@mantica/core/runtimes/hooks";
 
 const personalNav = [
   { href: "/inbox", label: "Inbox", icon: Inbox },

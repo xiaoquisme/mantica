@@ -8,19 +8,19 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@multica/ui/components/ui/card";
-import { Input } from "@multica/ui/components/ui/input";
-import { Button } from "@multica/ui/components/ui/button";
-import { Label } from "@multica/ui/components/ui/label";
+} from "@mantica/ui/components/ui/card";
+import { Input } from "@mantica/ui/components/ui/input";
+import { Button } from "@mantica/ui/components/ui/button";
+import { Label } from "@mantica/ui/components/ui/label";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from "@multica/ui/components/ui/input-otp";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { api } from "@multica/core/api";
-import type { User } from "@multica/core/types";
+} from "@mantica/ui/components/ui/input-otp";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { api } from "@mantica/core/api";
+import type { User } from "@mantica/core/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -98,7 +98,7 @@ export function LoginPage({
   // Check for existing session when CLI callback is present
   useEffect(() => {
     if (!cliCallback) return;
-    const token = localStorage.getItem("multica_token");
+    const token = localStorage.getItem("mantica_token");
     if (!token) return;
 
     api.setToken(token);
@@ -110,7 +110,7 @@ export function LoginPage({
       })
       .catch(() => {
         api.setToken(null);
-        localStorage.removeItem("multica_token");
+        localStorage.removeItem("mantica_token");
       });
   }, [cliCallback]);
 
@@ -157,7 +157,7 @@ export function LoginPage({
         if (cliCallback) {
           // CLI path: get token directly for the redirect URL
           const { token } = await api.verifyCode(email, value);
-          localStorage.setItem("multica_token", token);
+          localStorage.setItem("mantica_token", token);
           api.setToken(token);
           onTokenObtained?.();
           redirectToCliCallback(cliCallback.url, token, cliCallback.state);
@@ -196,7 +196,7 @@ export function LoginPage({
 
   const handleCliAuthorize = () => {
     if (!cliCallback) return;
-    const token = localStorage.getItem("multica_token");
+    const token = localStorage.getItem("mantica_token");
     if (!token) return;
     setLoading(true);
     onTokenObtained?.();

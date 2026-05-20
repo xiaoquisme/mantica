@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Issue } from "@multica/core/types";
-import { WorkspaceIdProvider } from "@multica/core/hooks";
+import type { Issue } from "@mantica/core/types";
+import { WorkspaceIdProvider } from "@mantica/core/hooks";
 import { ParentSubMenuContent } from "./parent-picker";
 
 // ---------------------------------------------------------------------------
@@ -93,11 +93,11 @@ const mockIssues: Issue[] = [
   },
 ];
 
-vi.mock("@multica/core/issues/queries", () => ({
+vi.mock("@mantica/core/issues/queries", () => ({
   issueListOptions: () => ({ queryKey: ["issues"], queryFn: () => mockIssues }),
 }));
 
-vi.mock("@multica/core/hooks", () => ({
+vi.mock("@mantica/core/hooks", () => ({
   useWorkspaceId: () => "ws-1",
   WorkspaceIdProvider: ({ children }: { children: React.ReactNode }) => children,
 }));

@@ -2,16 +2,16 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { api } from "@multica/core/api";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { api } from "@mantica/core/api";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@multica/ui/components/ui/card";
+} from "@mantica/ui/components/ui/card";
 import { Loader2 } from "lucide-react";
 
 function CallbackContent() {
@@ -39,7 +39,7 @@ function CallbackContent() {
     loginWithGoogle(code, redirectUri)
       .then(async () => {
         const wsList = await api.listWorkspaces();
-        const lastWsId = localStorage.getItem("multica_workspace_id");
+        const lastWsId = localStorage.getItem("mantica_workspace_id");
         await hydrateWorkspace(wsList, lastWsId);
         router.push("/issues");
       })

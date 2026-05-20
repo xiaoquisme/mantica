@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getDescendantIds, filterParentCandidates } from "./parent-picker";
-import type { Issue } from "@multica/core/types";
+import type { Issue } from "@mantica/core/types";
 
 function makeIssue(id: string, parent_issue_id: string | null = null, overrides: Partial<Issue> = {}): Issue {
   return {

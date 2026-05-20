@@ -2,19 +2,19 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Clock, Trash2, Play, Plus, Power, PowerOff } from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
-import type { ScheduledTask, Agent } from "@multica/core/types";
-import { Input } from "@multica/ui/components/ui/input";
-import { Button } from "@multica/ui/components/ui/button";
-import { Card, CardContent } from "@multica/ui/components/ui/card";
-import { Label } from "@multica/ui/components/ui/label";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@mantica/ui/components/ui/tooltip";
+import type { ScheduledTask, Agent } from "@mantica/core/types";
+import { Input } from "@mantica/ui/components/ui/input";
+import { Button } from "@mantica/ui/components/ui/button";
+import { Card, CardContent } from "@mantica/ui/components/ui/card";
+import { Label } from "@mantica/ui/components/ui/label";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@multica/ui/components/ui/select";
+} from "@mantica/ui/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@multica/ui/components/ui/dialog";
+} from "@mantica/ui/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,12 +32,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@multica/ui/components/ui/alert-dialog";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
-import { Badge } from "@multica/ui/components/ui/badge";
+} from "@mantica/ui/components/ui/alert-dialog";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
+import { Badge } from "@mantica/ui/components/ui/badge";
 import { toast } from "sonner";
-import { api } from "@multica/core/api";
-import { useWorkspaceStore } from "@multica/core/workspace";
+import { api } from "@mantica/core/api";
+import { useWorkspaceStore } from "@mantica/core/workspace";
 
 const SCHEDULE_PRESETS = [
   { label: "Every 15 minutes", value: "*/15 * * * *" },

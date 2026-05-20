@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { BarChart3 } from "lucide-react";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
-import type { RuntimeUsage } from "@multica/core/types";
-import { api } from "@multica/core/api";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
+import type { RuntimeUsage } from "@mantica/core/types";
+import { api } from "@mantica/core/api";
 import { formatTokens, estimateCost, aggregateByDate } from "../utils";
 import { TokenCard } from "./shared";
 import {

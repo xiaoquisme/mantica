@@ -13,7 +13,7 @@ import type {
   AgentVisibility,
   RuntimeDevice,
   CreateAgentRequest,
-} from "@multica/core/types";
+} from "@mantica/core/types";
 import {
   Dialog,
   DialogContent,
@@ -21,15 +21,15 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@multica/ui/components/ui/dialog";
+} from "@mantica/ui/components/ui/dialog";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@multica/ui/components/ui/popover";
-import { Button } from "@multica/ui/components/ui/button";
-import { Input } from "@multica/ui/components/ui/input";
-import { Label } from "@multica/ui/components/ui/label";
+} from "@mantica/ui/components/ui/popover";
+import { Button } from "@mantica/ui/components/ui/button";
+import { Input } from "@mantica/ui/components/ui/input";
+import { Label } from "@mantica/ui/components/ui/label";
 import { toast } from "sonner";
 
 export function CreateAgentDialog({

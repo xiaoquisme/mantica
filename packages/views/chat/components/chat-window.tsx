@@ -3,31 +3,31 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Minus, Maximize2, Minimize2, Send, ChevronDown, Bot, Plus, History } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@multica/ui/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@mantica/ui/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@multica/ui/components/ui/dropdown-menu";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { useAuthStore } from "@multica/core/auth";
-import { agentListOptions, memberListOptions } from "@multica/core/workspace/queries";
-import { canAssignAgent } from "@multica/views/issues/components";
-import { api } from "@multica/core/api";
+} from "@mantica/ui/components/ui/dropdown-menu";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { useAuthStore } from "@mantica/core/auth";
+import { agentListOptions, memberListOptions } from "@mantica/core/workspace/queries";
+import { canAssignAgent } from "@mantica/views/issues/components";
+import { api } from "@mantica/core/api";
 import {
   chatSessionsOptions,
   allChatSessionsOptions,
   chatMessagesOptions,
   chatKeys,
-} from "@multica/core/chat/queries";
-import { useCreateChatSession } from "@multica/core/chat/mutations";
-import { useChatStore } from "@multica/core/chat";
+} from "@mantica/core/chat/queries";
+import { useCreateChatSession } from "@mantica/core/chat/mutations";
+import { useChatStore } from "@mantica/core/chat";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
 import { ChatSessionHistory } from "./chat-session-history";
-import { useWS } from "@multica/core/realtime";
-import type { TaskMessagePayload, ChatDonePayload, Agent, ChatMessage } from "@multica/core/types";
+import { useWS } from "@mantica/core/realtime";
+import type { TaskMessagePayload, ChatDonePayload, Agent, ChatMessage } from "@mantica/core/types";
 
 export function ChatWindow() {
   const wsId = useWorkspaceId();

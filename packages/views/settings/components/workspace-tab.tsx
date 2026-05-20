@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Save, LogOut } from "lucide-react";
-import { Input } from "@multica/ui/components/ui/input";
-import { Textarea } from "@multica/ui/components/ui/textarea";
-import { Label } from "@multica/ui/components/ui/label";
-import { Button } from "@multica/ui/components/ui/button";
-import { Card, CardContent } from "@multica/ui/components/ui/card";
+import { Input } from "@mantica/ui/components/ui/input";
+import { Textarea } from "@mantica/ui/components/ui/textarea";
+import { Label } from "@mantica/ui/components/ui/label";
+import { Button } from "@mantica/ui/components/ui/button";
+import { Card, CardContent } from "@mantica/ui/components/ui/card";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -16,14 +16,14 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from "@multica/ui/components/ui/alert-dialog";
+} from "@mantica/ui/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { memberListOptions } from "@multica/core/workspace/queries";
-import { api } from "@multica/core/api";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { memberListOptions } from "@mantica/core/workspace/queries";
+import { api } from "@mantica/core/api";
 
 export function WorkspaceTab() {
   const user = useAuthStore((s) => s.user);

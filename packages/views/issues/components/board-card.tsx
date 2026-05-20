@@ -6,26 +6,26 @@ import { useSortable, defaultAnimateLayoutChanges } from "@dnd-kit/sortable";
 import type { AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
-import type { Issue, UpdateIssueRequest } from "@multica/core/types";
+import type { Issue, UpdateIssueRequest } from "@mantica/core/types";
 import { CalendarDays, MoreHorizontal, UserMinus, Calendar, FolderKanban, Tag, Check } from "lucide-react";
 import { ActorAvatar } from "../../common/actor-avatar";
-import { useUpdateIssue } from "@multica/core/issues/mutations";
+import { useUpdateIssue } from "@mantica/core/issues/mutations";
 import { PriorityIcon } from "./priority-icon";
 import { StatusIcon } from "./status-icon";
 import { PriorityPicker, AssigneePicker, DueDatePicker, LabelPicker } from "./pickers";
 import { canAssignAgent } from "./pickers";
-import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
-import { useViewStore } from "@multica/core/issues/stores/view-store-context";
+import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@mantica/core/issues/config";
+import { useViewStore } from "@mantica/core/issues/stores/view-store-context";
 import { ProgressRing } from "./progress-ring";
 import type { ChildProgress } from "./list-row";
 import { useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@multica/core/auth";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
-import { issueListOptions } from "@multica/core/issues/queries";
-import { projectListOptions } from "@multica/core/projects/queries";
+import { useAuthStore } from "@mantica/core/auth";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { memberListOptions, agentListOptions } from "@mantica/core/workspace/queries";
+import { issueListOptions } from "@mantica/core/issues/queries";
+import { projectListOptions } from "@mantica/core/projects/queries";
 import { ProjectBadge } from "./project-badge";
-import { Button } from "@multica/ui/components/ui/button";
+import { Button } from "@mantica/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -35,7 +35,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from "@multica/ui/components/ui/dropdown-menu";
+} from "@mantica/ui/components/ui/dropdown-menu";
 
 function formatDate(date: string): string {
   return new Date(date).toLocaleDateString("en-US", {

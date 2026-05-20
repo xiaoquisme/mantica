@@ -1,6 +1,6 @@
 "use client";
 
-import { useModalStore } from "@multica/core/modals";
+import { useModalStore } from "@mantica/core/modals";
 import { CreateWorkspaceModal } from "./create-workspace";
 import { CreateIssueModal } from "./create-issue";
 

@@ -1,4 +1,4 @@
-import type { RuntimeUsage } from "@multica/core/types";
+import type { RuntimeUsage } from "@mantica/core/types";
 
 // ---------------------------------------------------------------------------
 // Formatting helpers

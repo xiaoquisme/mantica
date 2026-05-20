@@ -3,26 +3,26 @@
 import { useState, useRef } from "react";
 import { useNavigation } from "../navigation";
 import { Check, ChevronRight, Maximize2, Minimize2, X as XIcon } from "lucide-react";
-import { cn } from "@multica/ui/lib/utils";
+import { cn } from "@mantica/ui/lib/utils";
 import { toast } from "sonner";
-import type { IssueStatus, IssuePriority, IssueAssigneeType } from "@multica/core/types";
+import type { IssueStatus, IssuePriority, IssueAssigneeType } from "@mantica/core/types";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
-} from "@multica/ui/components/ui/dialog";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
-import { Button } from "@multica/ui/components/ui/button";
+} from "@mantica/ui/components/ui/dialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@mantica/ui/components/ui/tooltip";
+import { Button } from "@mantica/ui/components/ui/button";
 import { ContentEditor, type ContentEditorRef } from "../editor";
 import { TitleEditor } from "../editor";
 import { StatusIcon, StatusPicker, PriorityPicker, AssigneePicker, DueDatePicker } from "../issues/components";
 import { ProjectPicker } from "../projects/components/project-picker";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { useIssueDraftStore } from "@multica/core/issues/stores/draft-store";
-import { useCreateIssue } from "@multica/core/issues/mutations";
-import { useFileUpload } from "@multica/core/hooks/use-file-upload";
-import { api } from "@multica/core/api";
-import { FileUploadButton } from "@multica/ui/components/common/file-upload-button";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { useIssueDraftStore } from "@mantica/core/issues/stores/draft-store";
+import { useCreateIssue } from "@mantica/core/issues/mutations";
+import { useFileUpload } from "@mantica/core/hooks/use-file-upload";
+import { api } from "@mantica/core/api";
+import { FileUploadButton } from "@mantica/ui/components/common/file-upload-button";
 
 // ---------------------------------------------------------------------------
 // Pill trigger — shared rounded-full button style for toolbar

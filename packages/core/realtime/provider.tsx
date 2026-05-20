@@ -54,7 +54,7 @@ export function WSProvider({
   useEffect(() => {
     if (!user || !workspace) return;
 
-    const token = storage.getItem("multica_token");
+    const token = storage.getItem("mantica_token");
     if (!token) return;
 
     const ws = new WSClient(wsUrl, { logger: createLogger("ws") });

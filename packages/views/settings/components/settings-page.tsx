@@ -1,8 +1,8 @@
 "use client";
 
 import { User, Palette, Key, Settings, Users, FolderGit2, Clock } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@multica/ui/components/ui/tabs";
-import { useWorkspaceStore } from "@multica/core/workspace";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@mantica/ui/components/ui/tabs";
+import { useWorkspaceStore } from "@mantica/core/workspace";
 import { AccountTab } from "./account-tab";
 import { AppearanceTab } from "./appearance-tab";
 import { TokensTab } from "./tokens-tab";

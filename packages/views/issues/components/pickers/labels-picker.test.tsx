@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Label } from "@multica/core/types";
+import type { Label } from "@mantica/core/types";
 import { LabelsPicker } from "./labels-picker";
 
 // ---------------------------------------------------------------------------
@@ -22,17 +22,17 @@ function makeLabel(overrides?: Partial<Label>): Label {
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("@multica/core/issues/queries", () => ({
+vi.mock("@mantica/core/issues/queries", () => ({
   labelListOptions: () => ({ queryKey: ["labels", "ws-1"], queryFn: () => MOCK_LABELS }),
 }));
 
-vi.mock("@multica/core/hooks", () => ({
+vi.mock("@mantica/core/hooks", () => ({
   useWorkspaceId: () => "ws-1",
 }));
 
 const mockMutate = vi.hoisted(() => vi.fn());
 
-vi.mock("@multica/core/issues/mutations", () => ({
+vi.mock("@mantica/core/issues/mutations", () => ({
   useCreateLabel: () => ({ mutate: mockMutate, isPending: false }),
 }));
 

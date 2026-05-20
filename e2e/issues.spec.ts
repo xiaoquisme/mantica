@@ -132,7 +132,7 @@ test.describe("Issues", () => {
     // already loaded by loginAsDefault, so we set localStorage in-place.
     await page.evaluate(() => {
       localStorage.setItem(
-        "react-resizable-panels:multica_issue_detail_layout",
+        "react-resizable-panels:mantica_issue_detail_layout",
         JSON.stringify({ content: 1, sidebar: 0 }),
       );
     });

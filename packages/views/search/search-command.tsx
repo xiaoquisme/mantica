@@ -3,17 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, MessageSquare, SearchIcon } from "lucide-react";
 import { Command as CommandPrimitive } from "cmdk";
-import type { SearchIssueResult } from "@multica/core/types";
-import { api } from "@multica/core/api";
+import type { SearchIssueResult } from "@mantica/core/types";
+import { api } from "@mantica/core/api";
 import { StatusIcon } from "../issues/components";
-import { STATUS_CONFIG } from "@multica/core/issues/config";
+import { STATUS_CONFIG } from "@mantica/core/issues/config";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@multica/ui/components/ui/dialog";
+} from "@mantica/ui/components/ui/dialog";
 import { useNavigation } from "../navigation";
 import { useSearchStore } from "./search-store";
 

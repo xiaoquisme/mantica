@@ -2,14 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MessageSquare, Archive, Trash2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@multica/ui/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@mantica/ui/components/ui/avatar";
 import { Bot } from "lucide-react";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { agentListOptions } from "@multica/core/workspace/queries";
-import { allChatSessionsOptions } from "@multica/core/chat/queries";
-import { useArchiveChatSession } from "@multica/core/chat/mutations";
-import { useChatStore } from "@multica/core/chat";
-import type { ChatSession, Agent } from "@multica/core/types";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { agentListOptions } from "@mantica/core/workspace/queries";
+import { allChatSessionsOptions } from "@mantica/core/chat/queries";
+import { useArchiveChatSession } from "@mantica/core/chat/mutations";
+import { useChatStore } from "@mantica/core/chat";
+import type { ChatSession, Agent } from "@mantica/core/types";
 
 export function ChatSessionHistory() {
   const wsId = useWorkspaceId();

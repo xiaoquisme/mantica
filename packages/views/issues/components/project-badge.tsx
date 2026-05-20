@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { projectListOptions } from "@multica/core/projects/queries";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { projectListOptions } from "@mantica/core/projects/queries";
 import { FolderKanban } from "lucide-react";
 
 export function ProjectBadge({ projectId }: { projectId: string | null }) {

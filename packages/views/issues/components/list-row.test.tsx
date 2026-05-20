@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Issue } from "@multica/core/types";
+import type { Issue } from "@mantica/core/types";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -37,32 +37,32 @@ const mockIssue: Issue = {
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("@multica/core/auth", () => ({
+vi.mock("@mantica/core/auth", () => ({
   useAuthStore: (selector?: any) => {
     const state = { user: { id: "user-1" } };
     return selector ? selector(state) : state;
   },
 }));
 
-vi.mock("@multica/core/hooks", () => ({
+vi.mock("@mantica/core/hooks", () => ({
   useWorkspaceId: () => "ws-1",
   WorkspaceIdProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock("@multica/core/workspace/queries", () => ({
+vi.mock("@mantica/core/workspace/queries", () => ({
   memberListOptions: () => ({ queryKey: ["members"], queryFn: () => Promise.resolve([]) }),
   agentListOptions: () => ({ queryKey: ["agents"], queryFn: () => Promise.resolve([]) }),
 }));
 
-vi.mock("@multica/core/projects/queries", () => ({
+vi.mock("@mantica/core/projects/queries", () => ({
   projectListOptions: () => ({ queryKey: ["projects"], queryFn: () => Promise.resolve([]) }),
 }));
 
-vi.mock("@multica/core/issues/mutations", () => ({
+vi.mock("@mantica/core/issues/mutations", () => ({
   useUpdateIssue: () => ({ mutate: vi.fn() }),
 }));
 
-vi.mock("@multica/core/issues/stores/selection-store", () => ({
+vi.mock("@mantica/core/issues/stores/selection-store", () => ({
   useIssueSelectionStore: (selector: any) => {
     const state = { selectedIds: new Set(), toggle: vi.fn() };
     return selector(state);
@@ -85,7 +85,7 @@ vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
 }));
 
-vi.mock("@multica/core/issues/config", () => ({
+vi.mock("@mantica/core/issues/config", () => ({
   ALL_STATUSES: ["backlog", "in_dev", "done"],
   STATUS_CONFIG: {
     backlog: { label: "Backlog" },
@@ -123,7 +123,7 @@ vi.mock("./pickers", () => ({
 // Stateful dropdown mock: DropdownMenuSubContent is hidden until its sibling
 // DropdownMenuSubTrigger is clicked, matching real open/close behavior.
 // Each DropdownMenuSub manages its own open state via React context.
-vi.mock("@multica/ui/components/ui/dropdown-menu", () => {
+vi.mock("@mantica/ui/components/ui/dropdown-menu", () => {
   const React = require("react");
   const SubCtx = React.createContext({ open: false, toggle: () => {} });
   return {

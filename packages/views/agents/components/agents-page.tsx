@@ -6,21 +6,21 @@ import {
   Bot, Plus, Archive, AlertTriangle, CheckCircle, Info,
   Lightbulb,
 } from "lucide-react";
-import type { CreateAgentRequest, UpdateAgentRequest, AgentScore, AgentInsight, SmartSummaryResponse } from "@multica/core/types";
+import type { CreateAgentRequest, UpdateAgentRequest, AgentScore, AgentInsight, SmartSummaryResponse } from "@mantica/core/types";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from "@multica/ui/components/ui/resizable";
-import { Button } from "@multica/ui/components/ui/button";
+} from "@mantica/ui/components/ui/resizable";
+import { Button } from "@mantica/ui/components/ui/button";
 import { toast } from "sonner";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
-import { api } from "@multica/core/api";
-import { useAuthStore } from "@multica/core/auth";
-import { runtimeListOptions } from "@multica/core/runtimes/queries";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
+import { api } from "@mantica/core/api";
+import { useAuthStore } from "@mantica/core/auth";
+import { runtimeListOptions } from "@mantica/core/runtimes/queries";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { agentListOptions, workspaceKeys } from "@multica/core/workspace/queries";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { agentListOptions, workspaceKeys } from "@mantica/core/workspace/queries";
 import { CreateAgentDialog } from "./create-agent-dialog";
 import { AgentListItem } from "./agent-list-item";
 import { AgentDetail } from "./agent-detail";
@@ -108,7 +108,7 @@ export function AgentsPage() {
   const [summary, setSummary] = useState<SmartSummaryResponse | null>(null);
   const { data: runtimes = [], isLoading: runtimesLoading } = useQuery(runtimeListOptions(wsId));
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
-    id: "multica_agents_layout",
+    id: "mantica_agents_layout",
   });
 
   const filteredAgents = useMemo(

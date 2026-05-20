@@ -29,7 +29,7 @@ export function createAuthStore(options: AuthStoreOptions) {
     isLoading: true,
 
     initialize: async () => {
-      const token = storage.getItem("multica_token");
+      const token = storage.getItem("mantica_token");
       if (!token) {
         set({ isLoading: false });
         return;
@@ -43,7 +43,7 @@ export function createAuthStore(options: AuthStoreOptions) {
       } catch {
         api.setToken(null);
         api.setWorkspaceId(null);
-        storage.removeItem("multica_token");
+        storage.removeItem("mantica_token");
         set({ user: null, isLoading: false });
       }
     },
@@ -54,7 +54,7 @@ export function createAuthStore(options: AuthStoreOptions) {
 
     verifyCode: async (email: string, code: string) => {
       const { token, user } = await api.verifyCode(email, code);
-      storage.setItem("multica_token", token);
+      storage.setItem("mantica_token", token);
       api.setToken(token);
       onLogin?.();
       set({ user });
@@ -63,7 +63,7 @@ export function createAuthStore(options: AuthStoreOptions) {
 
     loginWithGoogle: async (code: string, redirectUri: string) => {
       const { token, user } = await api.googleLogin(code, redirectUri);
-      storage.setItem("multica_token", token);
+      storage.setItem("mantica_token", token);
       api.setToken(token);
       onLogin?.();
       set({ user });
@@ -71,7 +71,7 @@ export function createAuthStore(options: AuthStoreOptions) {
     },
 
     logout: () => {
-      storage.removeItem("multica_token");
+      storage.removeItem("mantica_token");
       api.setToken(null);
       api.setWorkspaceId(null);
       onLogout?.();

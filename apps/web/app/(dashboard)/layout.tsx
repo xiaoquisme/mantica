@@ -1,14 +1,14 @@
 "use client";
 
-import { DashboardLayout } from "@multica/views/layout";
-import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
-import { SearchCommand, SearchTrigger } from "@multica/views/search";
-import { ChatFab, ChatWindow } from "@multica/views/chat";
+import { DashboardLayout } from "@mantica/views/layout";
+import { ManticaIcon } from "@mantica/ui/components/common/mantica-icon";
+import { SearchCommand, SearchTrigger } from "@mantica/views/search";
+import { ChatFab, ChatWindow } from "@mantica/views/chat";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <DashboardLayout
-      loadingIndicator={<MulticaIcon className="size-6" />}
+      loadingIndicator={<ManticaIcon className="size-6" />}
       searchSlot={<SearchTrigger />}
       extra={<><SearchCommand /><ChatWindow /><ChatFab /></>}
     >

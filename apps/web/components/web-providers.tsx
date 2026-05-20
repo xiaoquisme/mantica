@@ -1,6 +1,6 @@
 "use client";
 
-import { CoreProvider } from "@multica/core/platform";
+import { CoreProvider } from "@mantica/core/platform";
 import { WebNavigationProvider } from "@/platform/navigation";
 import {
   setLoggedInCookie,

@@ -3,21 +3,21 @@
 import { useMemo, useState, useCallback, useRef } from "react";
 import { Check, ChevronRight, Link2, ListTodo, MoreHorizontal, Trash2, UserMinus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { cn } from "@multica/ui/lib/utils";
+import { cn } from "@mantica/ui/lib/utils";
 import { toast } from "sonner";
-import type { Issue, IssueStatus, ProjectStatus, ProjectPriority } from "@multica/core/types";
-import { projectDetailOptions } from "@multica/core/projects/queries";
-import { useUpdateProject, useDeleteProject } from "@multica/core/projects/mutations";
-import { issueListOptions } from "@multica/core/issues/queries";
-import { useUpdateIssue } from "@multica/core/issues/mutations";
-import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { useWorkspaceStore } from "@multica/core/workspace";
-import { useActorName } from "@multica/core/workspace/hooks";
-import { PROJECT_STATUS_ORDER, PROJECT_STATUS_CONFIG, PROJECT_PRIORITY_ORDER, PROJECT_PRIORITY_CONFIG } from "@multica/core/projects/config";
-import { BOARD_STATUSES } from "@multica/core/issues/config";
-import { createIssueViewStore } from "@multica/core/issues/stores/view-store";
-import { ViewStoreProvider, useViewStore } from "@multica/core/issues/stores/view-store-context";
+import type { Issue, IssueStatus, ProjectStatus, ProjectPriority } from "@mantica/core/types";
+import { projectDetailOptions } from "@mantica/core/projects/queries";
+import { useUpdateProject, useDeleteProject } from "@mantica/core/projects/mutations";
+import { issueListOptions } from "@mantica/core/issues/queries";
+import { useUpdateIssue } from "@mantica/core/issues/mutations";
+import { memberListOptions, agentListOptions } from "@mantica/core/workspace/queries";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { useWorkspaceStore } from "@mantica/core/workspace";
+import { useActorName } from "@mantica/core/workspace/hooks";
+import { PROJECT_STATUS_ORDER, PROJECT_STATUS_CONFIG, PROJECT_PRIORITY_ORDER, PROJECT_PRIORITY_CONFIG } from "@mantica/core/projects/config";
+import { BOARD_STATUSES } from "@mantica/core/issues/config";
+import { createIssueViewStore } from "@mantica/core/issues/stores/view-store";
+import { ViewStoreProvider, useViewStore } from "@mantica/core/issues/stores/view-store-context";
 import { filterIssues } from "../../issues/utils/filter";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { AppLink, useNavigation } from "../../navigation";
@@ -27,21 +27,21 @@ import { IssuesHeader } from "../../issues/components/issues-header";
 import { BoardView } from "../../issues/components/board-view";
 import { ListView } from "../../issues/components/list-view";
 import { BatchActionToolbar } from "../../issues/components/batch-action-toolbar";
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
-import { Button } from "@multica/ui/components/ui/button";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
+import { Button } from "@mantica/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@multica/ui/components/ui/dropdown-menu";
+} from "@mantica/ui/components/ui/dropdown-menu";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@multica/ui/components/ui/popover";
-import { EmojiPicker } from "@multica/ui/components/common/emoji-picker";
+} from "@mantica/ui/components/ui/popover";
+import { EmojiPicker } from "@mantica/ui/components/common/emoji-picker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,7 +51,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@multica/ui/components/ui/alert-dialog";
+} from "@mantica/ui/components/ui/alert-dialog";
 
 // ---------------------------------------------------------------------------
 // Property pill — inline clickable pill for status/lead

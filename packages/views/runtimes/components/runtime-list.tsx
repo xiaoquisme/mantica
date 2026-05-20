@@ -1,15 +1,15 @@
 import { Server, ArrowUpCircle, ChevronDown, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { AgentRuntime, MemberWithUser } from "@multica/core/types";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { memberListOptions } from "@multica/core/workspace/queries";
+import type { AgentRuntime, MemberWithUser } from "@mantica/core/types";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { memberListOptions } from "@mantica/core/workspace/queries";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@multica/ui/components/ui/dropdown-menu";
+} from "@mantica/ui/components/ui/dropdown-menu";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { ProviderLogo } from "./provider-logo";
 
@@ -209,7 +209,7 @@ export function RuntimeList({
           <p className="mt-1 text-xs text-muted-foreground text-center">
             Run{" "}
             <code className="rounded bg-muted px-1 py-0.5">
-              multica daemon start
+              mantica daemon start
             </code>{" "}
             to register a local runtime.
           </p>

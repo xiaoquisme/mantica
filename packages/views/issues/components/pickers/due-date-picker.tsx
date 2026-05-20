@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { CalendarDays } from "lucide-react";
-import type { UpdateIssueRequest } from "@multica/core/types";
-import { Calendar } from "@multica/ui/components/ui/calendar";
+import type { UpdateIssueRequest } from "@mantica/core/types";
+import { Calendar } from "@mantica/ui/components/ui/calendar";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@multica/ui/components/ui/popover";
-import { Button } from "@multica/ui/components/ui/button";
+} from "@mantica/ui/components/ui/popover";
+import { Button } from "@mantica/ui/components/ui/button";
 
 export function DueDatePicker({
   dueDate,

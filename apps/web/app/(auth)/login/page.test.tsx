@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({
 
 // Mock auth store — shared LoginPage uses getState().sendCode/verifyCode,
 // web wrapper uses useAuthStore((s) => s.user/isLoading)
-vi.mock("@multica/core/auth", () => {
+vi.mock("@mantica/core/auth", () => {
   const authState = {
     sendCode: mockSendCode,
     verifyCode: mockVerifyCode,
@@ -39,7 +39,7 @@ vi.mock("@/features/auth/auth-cookie", () => ({
 }));
 
 // Mock workspace store — shared LoginPage uses getState().hydrateWorkspace
-vi.mock("@multica/core/workspace", () => {
+vi.mock("@mantica/core/workspace", () => {
   const wsState = { hydrateWorkspace: mockHydrateWorkspace };
   const useWorkspaceStore = Object.assign(
     (selector: (s: typeof wsState) => unknown) => selector(wsState),
@@ -49,7 +49,7 @@ vi.mock("@multica/core/workspace", () => {
 });
 
 // Mock api
-vi.mock("@multica/core/api", () => ({
+vi.mock("@mantica/core/api", () => ({
   api: {
     listWorkspaces: vi.fn().mockResolvedValue([]),
     verifyCode: vi.fn(),
@@ -89,11 +89,11 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     render(<LoginPage />);
 
-    await user.type(screen.getByLabelText("Email"), "test@multica.ai");
+    await user.type(screen.getByLabelText("Email"), "test@mantica.ai");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => {
-      expect(mockSendCode).toHaveBeenCalledWith("test@multica.ai");
+      expect(mockSendCode).toHaveBeenCalledWith("test@mantica.ai");
     });
   });
 
@@ -102,7 +102,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     render(<LoginPage />);
 
-    await user.type(screen.getByLabelText("Email"), "test@multica.ai");
+    await user.type(screen.getByLabelText("Email"), "test@mantica.ai");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => {
@@ -115,7 +115,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     render(<LoginPage />);
 
-    await user.type(screen.getByLabelText("Email"), "test@multica.ai");
+    await user.type(screen.getByLabelText("Email"), "test@mantica.ai");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => {
@@ -128,7 +128,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     render(<LoginPage />);
 
-    await user.type(screen.getByLabelText("Email"), "test@multica.ai");
+    await user.type(screen.getByLabelText("Email"), "test@mantica.ai");
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => {

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Lightbulb, AlertCircle } from "lucide-react";
-import { api } from "@multica/core/api";
-import type { AgentScore, AgentScoreHistoryEntry, AgentHint } from "@multica/core/types";
+import { api } from "@mantica/core/api";
+import type { AgentScore, AgentScoreHistoryEntry, AgentHint } from "@mantica/core/types";
 
 function TrendIcon({ trend }: { trend: string }) {
   if (trend === "improving") return <TrendingUp className="h-4 w-4 text-green-500" />;

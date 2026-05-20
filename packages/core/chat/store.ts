@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import type { StorageAdapter } from "../types";
 
-const AGENT_STORAGE_KEY = "multica:chat:selectedAgentId";
-const SESSION_STORAGE_KEY = "multica:chat:activeSessionId";
+const AGENT_STORAGE_KEY = "mantica:chat:selectedAgentId";
+const SESSION_STORAGE_KEY = "mantica:chat:activeSessionId";
 
 export interface ChatTimelineItem {
   seq: number;

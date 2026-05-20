@@ -22,18 +22,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Eye, GripVertical, MoreHorizontal } from "lucide-react";
-import type { Issue, IssueStatus } from "@multica/core/types";
-import { Button } from "@multica/ui/components/ui/button";
-import { useLoadMoreDoneIssues } from "@multica/core/issues/mutations";
+import type { Issue, IssueStatus } from "@mantica/core/types";
+import { Button } from "@mantica/ui/components/ui/button";
+import { useLoadMoreDoneIssues } from "@mantica/core/issues/mutations";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@multica/ui/components/ui/dropdown-menu";
-import { ALL_STATUSES, STATUS_CONFIG } from "@multica/core/issues/config";
-import { useViewStoreApi, useViewStore } from "@multica/core/issues/stores/view-store-context";
-import type { SortField, SortDirection } from "@multica/core/issues/stores/view-store";
+} from "@mantica/ui/components/ui/dropdown-menu";
+import { ALL_STATUSES, STATUS_CONFIG } from "@mantica/core/issues/config";
+import { useViewStoreApi, useViewStore } from "@mantica/core/issues/stores/view-store-context";
+import type { SortField, SortDirection } from "@mantica/core/issues/stores/view-store";
 import { sortIssues } from "../utils/sort";
 import { StatusIcon } from "./status-icon";
 import { BoardColumn } from "./board-column";

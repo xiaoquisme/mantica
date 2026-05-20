@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { IssueStatus } from "@multica/core/types";
+import type { IssueStatus } from "@mantica/core/types";
 import { deriveOrderedStatuses } from "./board-view";
 
 describe("deriveOrderedStatuses", () => {

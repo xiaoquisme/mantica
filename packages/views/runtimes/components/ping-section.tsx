@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2, CheckCircle2, XCircle, Zap } from "lucide-react";
-import { Button } from "@multica/ui/components/ui/button";
-import { api } from "@multica/core/api";
-import type { RuntimePingStatus } from "@multica/core/types";
+import { Button } from "@mantica/ui/components/ui/button";
+import { api } from "@mantica/core/api";
+import type { RuntimePingStatus } from "@mantica/core/types";
 
 const pingStatusConfig: Record<
   RuntimePingStatus,

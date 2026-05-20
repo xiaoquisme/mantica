@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Unlink, Check } from "lucide-react";
-import type { UpdateIssueRequest, Issue } from "@multica/core/types";
+import type { UpdateIssueRequest, Issue } from "@mantica/core/types";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceId } from "@multica/core/hooks";
-import { issueListOptions } from "@multica/core/issues/queries";
+import { useWorkspaceId } from "@mantica/core/hooks";
+import { issueListOptions } from "@mantica/core/issues/queries";
 import { StatusIcon } from "../status-icon";
 import {
   PropertyPicker,

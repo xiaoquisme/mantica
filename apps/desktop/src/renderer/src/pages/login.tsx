@@ -1,5 +1,5 @@
-import { LoginPage } from "@multica/views/auth";
-import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
+import { LoginPage } from "@mantica/views/auth";
+import { ManticaIcon } from "@mantica/ui/components/common/mantica-icon";
 
 export function DesktopLoginPage() {
   return (
@@ -10,7 +10,7 @@ export function DesktopLoginPage() {
         style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
       />
       <LoginPage
-        logo={<MulticaIcon bordered size="lg" />}
+        logo={<ManticaIcon bordered size="lg" />}
         onSuccess={() => {
           // Auth store update triggers AppContent re-render → shows DesktopShell
         }}

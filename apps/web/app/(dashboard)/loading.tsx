@@ -1,4 +1,4 @@
-import { Skeleton } from "@multica/ui/components/ui/skeleton";
+import { Skeleton } from "@mantica/ui/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (

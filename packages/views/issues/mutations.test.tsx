@@ -2,21 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import type { Issue, Label, ListIssuesResponse } from "@multica/core/types";
-import { useUpdateIssueLabels } from "@multica/core/issues/mutations";
-import { issueKeys } from "@multica/core/issues/queries";
+import type { Issue, Label, ListIssuesResponse } from "@mantica/core/types";
+import { useUpdateIssueLabels } from "@mantica/core/issues/mutations";
+import { issueKeys } from "@mantica/core/issues/queries";
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("@multica/core/hooks", () => ({
+vi.mock("@mantica/core/hooks", () => ({
   useWorkspaceId: () => "ws-1",
 }));
 
 const mockUpdateIssueLabels = vi.fn();
 
-vi.mock("@multica/core/api", () => ({
+vi.mock("@mantica/core/api", () => ({
   api: {
     updateIssueLabels: (...args: unknown[]) => mockUpdateIssueLabels(...args),
   },

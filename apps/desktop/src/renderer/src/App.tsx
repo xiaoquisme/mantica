@@ -1,7 +1,7 @@
-import { CoreProvider } from "@multica/core/platform";
-import { useAuthStore } from "@multica/core/auth";
-import { ThemeProvider } from "@multica/ui/components/common/theme-provider";
-import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
+import { CoreProvider } from "@mantica/core/platform";
+import { useAuthStore } from "@mantica/core/auth";
+import { ThemeProvider } from "@mantica/ui/components/common/theme-provider";
+import { ManticaIcon } from "@mantica/ui/components/common/mantica-icon";
 import { Toaster } from "sonner";
 import { DesktopLoginPage } from "./pages/login";
 import { DesktopShell } from "./components/desktop-layout";
@@ -13,7 +13,7 @@ function AppContent() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <MulticaIcon className="size-6 animate-pulse" />
+        <ManticaIcon className="size-6 animate-pulse" />
       </div>
     );
   }

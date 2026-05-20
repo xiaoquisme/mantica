@@ -1,5 +1,5 @@
-import type { IssuePriority } from "@multica/core/types";
-import { PRIORITY_CONFIG } from "@multica/core/issues/config";
+import type { IssuePriority } from "@mantica/core/types";
+import { PRIORITY_CONFIG } from "@mantica/core/issues/config";
 
 export function PriorityIcon({
   priority,

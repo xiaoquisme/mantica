@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Minus, Activity, Lightbulb } from "lucide-react";
-import { api } from "@multica/core/api";
-import type { Agent, AgentScore, AgentHint } from "@multica/core/types";
+import { api } from "@mantica/core/api";
+import type { Agent, AgentScore, AgentHint } from "@mantica/core/types";
 
 function MiniStat({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (

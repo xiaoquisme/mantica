@@ -1,7 +1,7 @@
 "use client";
 
-import { useTheme } from "@multica/ui/components/common/theme-provider";
-import { cn } from "@multica/ui/lib/utils";
+import { useTheme } from "@mantica/ui/components/common/theme-provider";
+import { cn } from "@mantica/ui/lib/utils";
 
 const LIGHT_COLORS = {
   titleBar: "#e8e8e8",

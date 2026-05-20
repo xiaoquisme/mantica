@@ -10,7 +10,7 @@ import {
   Plus,
   type LucideIcon,
 } from "lucide-react";
-import { cn } from "@multica/ui/lib/utils";
+import { cn } from "@mantica/ui/lib/utils";
 import { useTabStore, resolveRouteIcon, type Tab } from "@/stores/tab-store";
 
 const TAB_ICONS: Record<string, LucideIcon> = {
