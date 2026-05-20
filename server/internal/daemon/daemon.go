@@ -938,7 +938,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	prompt := BuildPromptWithHints(task, d.client)
 
 	// Pass the daemon's auth credentials and context so the spawned agent CLI
-	// can call the Multica API and the local daemon (e.g. `mantica repo checkout`).
+	// can call the Mantica API and the local daemon (e.g. `mantica repo checkout`).
 	agentEnv := map[string]string{
 		"MANTICA_TOKEN":        d.client.Token(),
 		"MANTICA_SERVER_URL":   d.cfg.ServerBaseURL,

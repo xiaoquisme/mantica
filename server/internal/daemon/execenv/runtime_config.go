@@ -29,12 +29,12 @@ func InjectRuntimeConfig(workDir, provider string, ctx TaskContextForEnv) error 
 }
 
 // buildMetaSkillContent generates the meta skill markdown that teaches the agent
-// about the Multica runtime environment and available CLI tools.
+// about the Mantica runtime environment and available CLI tools.
 func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 	var b strings.Builder
 
-	b.WriteString("# Multica Agent Runtime\n\n")
-	b.WriteString("You are a agent in the Multica platform. Use the `mantica` CLI to interact with the platform.\n\n")
+	b.WriteString("# Mantica Agent Runtime\n\n")
+	b.WriteString("You are a agent in the Mantica platform. Use the `mantica` CLI to interact with the platform.\n\n")
 
 	// Inject agent identity instructions before workflow commands.
 	if ctx.AgentInstructions != "" {
@@ -110,7 +110,7 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 	b.WriteString("   - `status_transitions`: overrides the agent's default status flow\n")
 	b.WriteString("     - Only transition to statuses listed as valid in `allowed` under this key; ignore any transitions described elsewhere in your instructions\n\n")
 	b.WriteString("**If `memory/MEMORY.md` does not exist**, treat memory as empty and proceed normally — this is a valid state for new workspaces.\n\n")
-	b.WriteString("Memory is **read-only** during this read phase. Memory entries are markdown files with frontmatter (`name`, `description`, `type ∈ {user, feedback, project, reference}`); use `./memory/` as the canonical location for Multica workspace memory and ignore any provider-private memory directory.\n\n")
+	b.WriteString("Memory is **read-only** during this read phase. Memory entries are markdown files with frontmatter (`name`, `description`, `type ∈ {user, feedback, project, reference}`); use `./memory/` as the canonical location for Mantica workspace memory and ignore any provider-private memory directory.\n\n")
 
 	b.WriteString("### Workflow\n\n")
 
@@ -193,9 +193,9 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 	b.WriteString("After downloading, you can read the file directly (e.g. view an image, read a document).\n\n")
 
 	b.WriteString("## Important: Always Use the `mantica` CLI\n\n")
-	b.WriteString("All interactions with Multica platform resources — including issues, comments, attachments, images, files, and any other platform data — **must** go through the `mantica` CLI. ")
-	b.WriteString("Do NOT use `curl`, `wget`, or any other HTTP client to access Multica URLs or APIs directly. ")
-	b.WriteString("Multica resource URLs require authenticated access that only the `mantica` CLI can provide.\n\n")
+	b.WriteString("All interactions with Mantica platform resources — including issues, comments, attachments, images, files, and any other platform data — **must** go through the `mantica` CLI. ")
+	b.WriteString("Do NOT use `curl`, `wget`, or any other HTTP client to access Mantica URLs or APIs directly. ")
+	b.WriteString("Mantica resource URLs require authenticated access that only the `mantica` CLI can provide.\n\n")
 	b.WriteString("If you need to perform an operation that is not covered by any existing `mantica` command, ")
 	b.WriteString("do NOT attempt to work around it. Instead, post a comment mentioning the workspace owner to request the missing functionality.\n\n")
 

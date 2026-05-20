@@ -18,9 +18,9 @@ func BuildPrompt(task Task) string {
 	}
 	var b strings.Builder
 	if task.Agent != nil && task.Agent.Name != "" {
-		fmt.Fprintf(&b, "You are %s, an AI agent working in a Multica workspace.\n\n", task.Agent.Name)
+		fmt.Fprintf(&b, "You are %s, an AI agent working in a Mantica workspace.\n\n", task.Agent.Name)
 	} else {
-		b.WriteString("You are an AI agent working in a Multica workspace.\n\n")
+		b.WriteString("You are an AI agent working in a Mantica workspace.\n\n")
 	}
 	fmt.Fprintf(&b, "Your assigned issue ID is: %s\n\n", task.IssueID)
 	fmt.Fprintf(&b, "Run `mantica issue get %s --output json` to understand your task and complete it.\n", task.IssueID)
@@ -61,7 +61,7 @@ func BuildPromptWithHints(task Task, client *Client) string {
 // buildChatPrompt constructs a prompt for interactive chat tasks.
 func buildChatPrompt(task Task) string {
 	var b strings.Builder
-	b.WriteString("You are running as a chat assistant for a Multica workspace.\n")
+	b.WriteString("You are running as a chat assistant for a Mantica workspace.\n")
 	b.WriteString("A user is chatting with you directly. Respond to their message.\n\n")
 	fmt.Fprintf(&b, "User message:\n%s\n", task.ChatMessage)
 	return b.String()
@@ -71,9 +71,9 @@ func buildChatPrompt(task Task) string {
 func buildScheduledPrompt(task Task) string {
 	var b strings.Builder
 	if task.Agent != nil && task.Agent.Name != "" {
-		fmt.Fprintf(&b, "You are %s, an AI agent running a scheduled task in a Multica workspace.\n\n", task.Agent.Name)
+		fmt.Fprintf(&b, "You are %s, an AI agent running a scheduled task in a Mantica workspace.\n\n", task.Agent.Name)
 	} else {
-		b.WriteString("You are an AI agent running a scheduled task in a Multica workspace.\n\n")
+		b.WriteString("You are an AI agent running a scheduled task in a Mantica workspace.\n\n")
 	}
 	b.WriteString("Run the task described in your instructions.\n")
 	return b.String()

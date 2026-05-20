@@ -22,13 +22,13 @@ import (
 
 var authCmd = &cobra.Command{
 	Use:   "auth",
-	Short: "Authenticate mantica with Multica",
+	Short: "Authenticate mantica with Mantica",
 }
 
 var authLoginCmd = &cobra.Command{
 	Use:    "login",
-	Short:  "Authenticate with Multica",
-	Long:   "Authenticate with Multica without auto-configuring workspaces. Use 'mantica login' for the guided setup flow.",
+	Short:  "Authenticate with Mantica",
+	Long:   "Authenticate with Mantica without auto-configuring workspaces. Use 'mantica login' for the guided setup flow.",
 	Hidden: true,
 	RunE:   runAuthLogin,
 }
@@ -306,7 +306,7 @@ const callbackSuccessHTML = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Multica — Authenticated</title>
+<title>Mantica — Authenticated</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   @media (prefers-color-scheme: dark) {

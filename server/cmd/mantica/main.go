@@ -14,14 +14,14 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "mantica",
-	Short: "Multica CLI — local agent runtime and management tool",
-	Long:  "Work seamlessly with Multica from the command line.",
+	Short: "Mantica CLI — local agent runtime and management tool",
+	Long:  "Work seamlessly with Mantica from the command line.",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
 
 func init() {
-	rootCmd.PersistentFlags().String("server-url", "", "Multica server URL (env: MANTICA_SERVER_URL)")
+	rootCmd.PersistentFlags().String("server-url", "", "Mantica server URL (env: MANTICA_SERVER_URL)")
 	rootCmd.PersistentFlags().String("workspace-id", "", "Workspace ID (env: MANTICA_WORKSPACE_ID)")
 	rootCmd.PersistentFlags().String("profile", "", "Configuration profile name (e.g. dev) — isolates config, daemon state, and workspaces")
 

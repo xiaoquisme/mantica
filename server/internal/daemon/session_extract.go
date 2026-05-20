@@ -16,7 +16,7 @@ import (
 // and returns structured tool_use/tool_result messages suitable for ReportTaskMessages.
 //
 // This bridges the gap between Hermes's quiet mode (which only outputs final
-// text) and Multica's task_message table (which needs per-tool-call data).
+// text) and Mantica's task_message table (which needs per-tool-call data).
 // The session file contains full assistant(tool_calls) + tool(result) pairs.
 //
 // Supported formats:
