@@ -275,6 +275,7 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 			r.Route("/api/runtimes", func(r chi.Router) {
 				r.Get("/", h.ListAgentRuntimes)
 				r.Route("/{runtimeId}", func(r chi.Router) {
+					r.Patch("/", h.PatchAgentRuntime)
 					r.Get("/usage", h.GetRuntimeUsage)
 					r.Get("/activity", h.GetRuntimeTaskActivity)
 					r.Post("/ping", h.InitiatePing)

@@ -14,19 +14,20 @@ import (
 )
 
 type AgentRuntimeResponse struct {
-	ID          string  `json:"id"`
-	WorkspaceID string  `json:"workspace_id"`
-	DaemonID    *string `json:"daemon_id"`
-	Name        string  `json:"name"`
-	RuntimeMode string  `json:"runtime_mode"`
-	Provider    string  `json:"provider"`
-	Status      string  `json:"status"`
-	DeviceInfo  string  `json:"device_info"`
-	Metadata    any     `json:"metadata"`
-	OwnerID     *string `json:"owner_id"`
-	LastSeenAt  *string `json:"last_seen_at"`
-	CreatedAt   string  `json:"created_at"`
-	UpdatedAt   string  `json:"updated_at"`
+	ID           string  `json:"id"`
+	WorkspaceID  string  `json:"workspace_id"`
+	DaemonID     *string `json:"daemon_id"`
+	Name         string  `json:"name"`
+	RuntimeMode  string  `json:"runtime_mode"`
+	Provider     string  `json:"provider"`
+	Status       string  `json:"status"`
+	DeviceInfo   string  `json:"device_info"`
+	Metadata     any     `json:"metadata"`
+	OwnerID      *string `json:"owner_id"`
+	DefaultModel *string `json:"default_model"`
+	LastSeenAt   *string `json:"last_seen_at"`
+	CreatedAt    string  `json:"created_at"`
+	UpdatedAt    string  `json:"updated_at"`
 }
 
 func runtimeToResponse(rt db.AgentRuntime) AgentRuntimeResponse {
@@ -39,19 +40,20 @@ func runtimeToResponse(rt db.AgentRuntime) AgentRuntimeResponse {
 	}
 
 	return AgentRuntimeResponse{
-		ID:          uuidToString(rt.ID),
-		WorkspaceID: uuidToString(rt.WorkspaceID),
-		DaemonID:    textToPtr(rt.DaemonID),
-		Name:        rt.Name,
-		RuntimeMode: rt.RuntimeMode,
-		Provider:    rt.Provider,
-		Status:      rt.Status,
-		DeviceInfo:  rt.DeviceInfo,
-		Metadata:    metadata,
-		OwnerID:     uuidToPtr(rt.OwnerID),
-		LastSeenAt:  timestampToPtr(rt.LastSeenAt),
-		CreatedAt:   timestampToString(rt.CreatedAt),
-		UpdatedAt:   timestampToString(rt.UpdatedAt),
+		ID:           uuidToString(rt.ID),
+		WorkspaceID:  uuidToString(rt.WorkspaceID),
+		DaemonID:     textToPtr(rt.DaemonID),
+		Name:         rt.Name,
+		RuntimeMode:  rt.RuntimeMode,
+		Provider:     rt.Provider,
+		Status:       rt.Status,
+		DeviceInfo:   rt.DeviceInfo,
+		Metadata:     metadata,
+		OwnerID:      uuidToPtr(rt.OwnerID),
+		DefaultModel: textToPtr(rt.DefaultModel),
+		LastSeenAt:   timestampToPtr(rt.LastSeenAt),
+		CreatedAt:    timestampToString(rt.CreatedAt),
+		UpdatedAt:    timestampToString(rt.UpdatedAt),
 	}
 }
 
@@ -373,4 +375,52 @@ func (h *Handler) DeleteAgentRuntime(w http.ResponseWriter, r *http.Request) {
 	})
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// PatchAgentRuntime updates mutable fields on a runtime (currently: default_model).
+func (h *Handler) PatchAgentRuntime(w http.ResponseWriter, r *http.Request) {
+	runtimeID := chi.URLParam(r, "runtimeId")
+
+	rt, err := h.Queries.GetAgentRuntime(r.Context(), parseUUID(runtimeID))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "runtime not found")
+		return
+	}
+
+	wsID := uuidToString(rt.WorkspaceID)
+	member, ok := h.requireWorkspaceMember(w, r, wsID, "runtime not found")
+	if !ok {
+		return
+	}
+
+	userID := uuidToString(member.UserID)
+	isAdmin := roleAllowed(member.Role, "owner", "admin")
+	isOwner := rt.OwnerID.Valid && uuidToString(rt.OwnerID) == userID
+	if !isAdmin && !isOwner {
+		writeError(w, http.StatusForbidden, "you can only update your own runtimes")
+		return
+	}
+
+	var req struct {
+		DefaultModel *string `json:"default_model"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	updated, err := h.Queries.UpdateAgentRuntimeDefaultModel(r.Context(), db.UpdateAgentRuntimeDefaultModelParams{
+		ID:           rt.ID,
+		DefaultModel: ptrToText(req.DefaultModel),
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update runtime")
+		return
+	}
+
+	h.publish(protocol.EventDaemonRegister, wsID, "member", userID, map[string]any{
+		"action": "update",
+	})
+
+	writeJSON(w, http.StatusOK, runtimeToResponse(updated))
 }
