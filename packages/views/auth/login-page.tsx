@@ -337,7 +337,7 @@ export function LoginPage({
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           {logo && <div className="mx-auto mb-4">{logo}</div>}
-          <CardTitle className="text-2xl">Sign in to Multica</CardTitle>
+          <CardTitle className="text-2xl">Sign in to Mantica</CardTitle>
           <CardDescription>
             Enter your email to get a login code
           </CardDescription>
