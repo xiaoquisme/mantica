@@ -10,7 +10,7 @@ test.describe("Authentication", () => {
     // of an h1 selector. Bumping CardTitle to a heading would be a global
     // shadcn-component change that affects every other Card in the app.
     await expect(page.locator('[data-slot="card-title"]')).toContainText(
-      "Multica",
+      "Mantica",
     );
     await expect(page.locator("#login-email")).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toContainText(
