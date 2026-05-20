@@ -26,10 +26,11 @@ type DaemonRegisterRequest struct {
 	DeviceName  string `json:"device_name"`
 	CLIVersion  string `json:"cli_version"` // multica CLI version
 	Runtimes    []struct {
-		Name    string `json:"name"`
-		Type    string `json:"type"`
-		Version string `json:"version"` // agent CLI version (claude/codex)
-		Status  string `json:"status"`
+		Name         string  `json:"name"`
+		Type         string  `json:"type"`
+		Version      string  `json:"version"` // agent CLI version (claude/codex)
+		Status       string  `json:"status"`
+		DefaultModel *string `json:"default_model,omitempty"`
 	} `json:"runtimes"`
 }
 
@@ -99,15 +100,16 @@ func (h *Handler) DaemonRegister(w http.ResponseWriter, r *http.Request) {
 		})
 
 		registered, err := h.Queries.UpsertAgentRuntime(r.Context(), db.UpsertAgentRuntimeParams{
-			WorkspaceID: parseUUID(req.WorkspaceID),
-			DaemonID:    strToText(req.DaemonID),
-			Name:        name,
-			RuntimeMode: "local",
-			Provider:    provider,
-			Status:      status,
-			DeviceInfo:  deviceInfo,
-			Metadata:    metadata,
-			OwnerID:     member.UserID,
+			WorkspaceID:  parseUUID(req.WorkspaceID),
+			DaemonID:     strToText(req.DaemonID),
+			Name:         name,
+			RuntimeMode:  "local",
+			Provider:     provider,
+			Status:       status,
+			DeviceInfo:   deviceInfo,
+			Metadata:     metadata,
+			OwnerID:      member.UserID,
+			DefaultModel: ptrToText(runtime.DefaultModel),
 		})
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to register runtime: "+err.Error())
