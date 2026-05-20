@@ -76,6 +76,9 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		claudeEntry := AgentEntry{
 			Path:  claudePath,
 			Model: strings.TrimSpace(os.Getenv("MULTICA_CLAUDE_MODEL")),
+			AvailableModels: []string{
+				"claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-3-6",
+			},
 		}
 		// Inject env vars for the claude process in two complementary ways:
 		//
@@ -134,6 +137,9 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		agents["codex"] = AgentEntry{
 			Path:  codexPath,
 			Model: strings.TrimSpace(os.Getenv("MULTICA_CODEX_MODEL")),
+			AvailableModels: []string{
+				"gpt-5.2", "gpt-5.2-mini", "gpt-5.2-codex", "o3", "o3-mini", "o4-mini",
+			},
 		}
 	}
 	opencodePath := envOrDefault("MULTICA_OPENCODE_PATH", "opencode")
@@ -141,6 +147,9 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		agents["opencode"] = AgentEntry{
 			Path:  opencodePath,
 			Model: strings.TrimSpace(os.Getenv("MULTICA_OPENCODE_MODEL")),
+			AvailableModels: []string{
+				"claude-sonnet-4-6", "claude-opus-4-6", "gpt-5.2", "gpt-5.2-mini", "o3", "o3-mini",
+			},
 		}
 	}
 	openclawPath := envOrDefault("MULTICA_OPENCLAW_PATH", "openclaw")
@@ -148,6 +157,9 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		agents["openclaw"] = AgentEntry{
 			Path:  openclawPath,
 			Model: strings.TrimSpace(os.Getenv("MULTICA_OPENCLAW_MODEL")),
+			AvailableModels: []string{
+				"claude-sonnet-4-6", "claude-opus-4-6", "gpt-5.2", "gpt-5.2-mini", "o3", "o3-mini",
+			},
 		}
 	}
 	hermesPath := envOrDefault("MULTICA_HERMES_PATH", "hermes")

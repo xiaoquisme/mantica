@@ -64,6 +64,9 @@ export function SettingsTab({
 
   const selectedRuntime = runtimes.find((d) => d.id === selectedRuntimeId) ?? null;
 
+  // Get available models from runtime metadata
+  const runtimeModels = (selectedRuntime?.metadata?.models as string[] ?? []);
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -221,21 +224,38 @@ export function SettingsTab({
             <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${modelOpen ? "rotate-180" : ""}`} />
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[var(--anchor-width)] p-1 max-h-80 overflow-y-auto">
-            {COMMON_MODELS.map((model) => (
-              <button
-                key={model.value}
-                onClick={() => {
-                  setDefaultModel(model.value);
-                  setModelOpen(false);
-                }}
-                className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                  model.value === defaultModel ? "bg-accent" : "hover:bg-accent/50"
-                }`}
-              >
-                <span className="font-medium">{model.label}</span>
-                <span className="text-xs text-muted-foreground">{model.provider}</span>
-              </button>
-            ))}
+            {runtimeModels.length > 0 ? (
+              runtimeModels.map((model) => (
+                <button
+                  key={model}
+                  onClick={() => {
+                    setDefaultModel(model);
+                    setModelOpen(false);
+                  }}
+                  className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                    model === defaultModel ? "bg-accent" : "hover:bg-accent/50"
+                  }`}
+                >
+                  {model}
+                </button>
+              ))
+            ) : (
+              COMMON_MODELS.map((model) => (
+                <button
+                  key={model.value}
+                  onClick={() => {
+                    setDefaultModel(model.value);
+                    setModelOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                    model.value === defaultModel ? "bg-accent" : "hover:bg-accent/50"
+                  }`}
+                >
+                  <span className="font-medium">{model.label}</span>
+                  <span className="text-xs text-muted-foreground">{model.provider}</span>
+                </button>
+              ))
+            )}
             <div className="border-t border-border mt-1 pt-1">
               <button
                 onClick={() => {
@@ -249,7 +269,7 @@ export function SettingsTab({
             </div>
           </PopoverContent>
         </Popover>
-        {!COMMON_MODELS.find((m) => m.value === defaultModel) && defaultModel && (
+        {!runtimeModels.includes(defaultModel) && !COMMON_MODELS.find((m) => m.value === defaultModel) && defaultModel && (
           <Input
             value={defaultModel}
             onChange={(e) => setDefaultModel(e.target.value)}

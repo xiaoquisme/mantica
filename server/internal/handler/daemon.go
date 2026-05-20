@@ -26,10 +26,11 @@ type DaemonRegisterRequest struct {
 	DeviceName  string `json:"device_name"`
 	CLIVersion  string `json:"cli_version"` // multica CLI version
 	Runtimes    []struct {
-		Name    string `json:"name"`
-		Type    string `json:"type"`
-		Version string `json:"version"` // agent CLI version (claude/codex)
-		Status  string `json:"status"`
+		Name    string   `json:"name"`
+		Type    string   `json:"type"`
+		Version string   `json:"version"` // agent CLI version (claude/codex)
+		Status  string   `json:"status"`
+		Models  []string `json:"models,omitempty"` // available models
 	} `json:"runtimes"`
 }
 
@@ -96,6 +97,7 @@ func (h *Handler) DaemonRegister(w http.ResponseWriter, r *http.Request) {
 		metadata, _ := json.Marshal(map[string]any{
 			"version":     runtime.Version,
 			"cli_version": req.CLIVersion,
+			"models":      runtime.Models,
 		})
 
 		registered, err := h.Queries.UpsertAgentRuntime(r.Context(), db.UpsertAgentRuntimeParams{
