@@ -26,6 +26,7 @@ server/tmp/
 server/migrate
 server/daemon
 server/multica
+server/mantica
 
 # Test artifacts
 test-results/
