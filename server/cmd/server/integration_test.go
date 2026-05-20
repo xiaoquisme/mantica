@@ -34,7 +34,7 @@ var (
 // the JWT_SECRET env var (set in .env) and stays in sync with the server.
 
 const (
-	integrationTestEmail         = "integration-test@multica.ai"
+	integrationTestEmail         = "integration-test@mantica.ai"
 	integrationTestName          = "Integration Tester"
 	integrationTestWorkspaceSlug = "integration-tests"
 )
@@ -224,7 +224,7 @@ func TestHealth(t *testing.T) {
 // ---- Auth ----
 
 func TestSendCodeAndVerify(t *testing.T) {
-	const email = "integration-sendcode@multica.ai"
+	const email = "integration-sendcode@mantica.ai"
 	ctx := context.Background()
 
 	t.Cleanup(func() {
@@ -307,7 +307,7 @@ func TestSendCodeAndVerify(t *testing.T) {
 }
 
 func TestVerifyCodeCreatesWorkspaceForNewUser(t *testing.T) {
-	const email = "new-integration-verify@multica.ai"
+	const email = "new-integration-verify@mantica.ai"
 	ctx := context.Background()
 
 	t.Cleanup(func() {

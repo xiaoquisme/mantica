@@ -25,7 +25,7 @@ var testUserID string
 var testWorkspaceID string
 
 const (
-	handlerTestEmail         = "handler-test@multica.ai"
+	handlerTestEmail         = "handler-test@mantica.ai"
 	handlerTestName          = "Handler Test User"
 	handlerTestWorkspaceSlug = "handler-tests"
 )
@@ -364,7 +364,7 @@ func TestWorkspaceCRUD(t *testing.T) {
 
 func TestSendCode(t *testing.T) {
 	w := httptest.NewRecorder()
-	body := map[string]string{"email": "sendcode-test@multica.ai"}
+	body := map[string]string{"email": "sendcode-test@mantica.ai"}
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(body)
 	req := httptest.NewRequest("POST", "/auth/send-code", &buf)
@@ -381,12 +381,12 @@ func TestSendCode(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		testPool.Exec(context.Background(), `DELETE FROM verification_code WHERE email = $1`, "sendcode-test@multica.ai")
+		testPool.Exec(context.Background(), `DELETE FROM verification_code WHERE email = $1`, "sendcode-test@mantica.ai")
 	})
 }
 
 func TestSendCodeRateLimit(t *testing.T) {
-	const email = "ratelimit-test@multica.ai"
+	const email = "ratelimit-test@mantica.ai"
 	t.Cleanup(func() {
 		testPool.Exec(context.Background(), `DELETE FROM verification_code WHERE email = $1`, email)
 	})
@@ -416,7 +416,7 @@ func TestSendCodeRateLimit(t *testing.T) {
 }
 
 func TestVerifyCode(t *testing.T) {
-	const email = "verify-test@multica.ai"
+	const email = "verify-test@mantica.ai"
 	ctx := context.Background()
 
 	t.Cleanup(func() {
@@ -472,7 +472,7 @@ func TestVerifyCode(t *testing.T) {
 }
 
 func TestVerifyCodeWrongCode(t *testing.T) {
-	const email = "wrong-code-test@multica.ai"
+	const email = "wrong-code-test@mantica.ai"
 	ctx := context.Background()
 
 	t.Cleanup(func() {
@@ -500,7 +500,7 @@ func TestVerifyCodeWrongCode(t *testing.T) {
 }
 
 func TestVerifyCodeBruteForceProtection(t *testing.T) {
-	const email = "bruteforce-test@multica.ai"
+	const email = "bruteforce-test@mantica.ai"
 	ctx := context.Background()
 
 	t.Cleanup(func() {
@@ -550,7 +550,7 @@ func TestVerifyCodeBruteForceProtection(t *testing.T) {
 }
 
 func TestVerifyCodeCreatesWorkspace(t *testing.T) {
-	const email = "workspace-verify-test@multica.ai"
+	const email = "workspace-verify-test@mantica.ai"
 	ctx := context.Background()
 
 	t.Cleanup(func() {
