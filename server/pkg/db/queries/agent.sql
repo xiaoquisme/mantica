@@ -225,3 +225,9 @@ UPDATE agent_task_queue
 SET status = 'queued', dispatched_at = NULL, started_at = NULL, error = NULL
 WHERE runtime_id = $1 AND status = 'failed' AND error = 'runtime went offline'
 RETURNING *;
+
+-- name: CancelQueuedTasksByIssue :many
+UPDATE agent_task_queue
+SET status = 'cancelled'
+WHERE issue_id = $1 AND status IN ('queued', 'dispatched')
+RETURNING *;

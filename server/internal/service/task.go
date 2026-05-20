@@ -252,6 +252,22 @@ func (s *TaskService) CancelTasksForIssue(ctx context.Context, issueID pgtype.UU
 	return nil
 }
 
+// CancelQueuedTasksForIssue cancels only queued/dispatched tasks for an issue,
+// leaving running tasks uninterrupted. Used by TriggerPipeline so the current
+// agent can finish its work before the next stage begins.
+func (s *TaskService) CancelQueuedTasksForIssue(ctx context.Context, issueID pgtype.UUID) error {
+	tasks, err := s.Queries.CancelQueuedTasksByIssue(ctx, issueID)
+	if err != nil {
+		return err
+	}
+	for _, task := range tasks {
+		slog.Info("queued task cancelled (pipeline)", "task_id", util.UUIDToString(task.ID), "issue_id", util.UUIDToString(task.IssueID))
+		s.ReconcileAgentStatus(ctx, task.AgentID)
+		s.broadcastTaskEvent(ctx, protocol.EventTaskCancelled, task)
+	}
+	return nil
+}
+
 // CancelTask cancels a single task by ID. It broadcasts a task:cancelled event
 // so frontends can update immediately.
 func (s *TaskService) CancelTask(ctx context.Context, taskID pgtype.UUID) (*db.AgentTaskQueue, error) {
@@ -570,8 +586,10 @@ func (s *TaskService) TriggerPipeline(ctx context.Context, issue db.Issue) *db.I
 		return nil
 	}
 
-	// Cancel any existing tasks for this issue.
-	s.CancelTasksForIssue(ctx, issue.ID)
+	// Cancel queued tasks for this issue, but leave running tasks uninterrupted.
+	// This allows the current agent (e.g. Classifier) to finish its work before
+	// the next pipeline stage begins.
+	s.CancelQueuedTasksForIssue(ctx, issue.ID)
 
 	// Advance status to in_* and assign the agent. Preserve nullable fields
 	// (parent, due_date, project) that are directly set by sqlc.narg —
