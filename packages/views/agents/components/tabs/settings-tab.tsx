@@ -25,22 +25,6 @@ import { api } from "@multica/core/api";
 import { useFileUpload } from "@multica/core/hooks/use-file-upload";
 import { ActorAvatar } from "../../../common/actor-avatar";
 
-const COMMON_MODELS = [
-  { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", provider: "Anthropic" },
-  { value: "claude-opus-4-6", label: "Claude Opus 4.6", provider: "Anthropic" },
-  { value: "claude-haiku-3-6", label: "Claude Haiku 3.6", provider: "Anthropic" },
-  { value: "gpt-5.2", label: "GPT-5.2", provider: "OpenAI" },
-  { value: "gpt-5.2-mini", label: "GPT-5.2 Mini", provider: "OpenAI" },
-  { value: "gpt-5.2-codex", label: "GPT-5.2 Codex", provider: "OpenAI" },
-  { value: "o3", label: "o3", provider: "OpenAI" },
-  { value: "o3-mini", label: "o3 Mini", provider: "OpenAI" },
-  { value: "o4-mini", label: "o4 Mini", provider: "OpenAI" },
-  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro", provider: "Google" },
-  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", provider: "Google" },
-  { value: "deepseek-r1", label: "DeepSeek R1", provider: "DeepSeek" },
-  { value: "deepseek-v3", label: "DeepSeek V3", provider: "DeepSeek" },
-];
-
 export function SettingsTab({
   agent,
   runtimes,
@@ -56,16 +40,12 @@ export function SettingsTab({
   const [maxTasks, setMaxTasks] = useState(agent.max_concurrent_tasks);
   const [selectedRuntimeId, setSelectedRuntimeId] = useState(agent.runtime_id);
   const [defaultModel, setDefaultModel] = useState(agent.default_model ?? "");
-  const [modelOpen, setModelOpen] = useState(false);
   const [runtimeOpen, setRuntimeOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const { upload, uploading } = useFileUpload(api);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedRuntime = runtimes.find((d) => d.id === selectedRuntimeId) ?? null;
-
-  // Get available models from runtime metadata
-  const runtimeModels = (selectedRuntime?.metadata?.models as string[] ?? []);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -214,69 +194,12 @@ export function SettingsTab({
 
       <div>
         <Label className="text-xs text-muted-foreground">Default Model</Label>
-        <Popover open={modelOpen} onOpenChange={setModelOpen}>
-          <PopoverTrigger
-            className="flex w-full items-center justify-between rounded-lg border border-border bg-background px-3 py-2.5 mt-1.5 text-left text-sm transition-colors hover:bg-muted"
-          >
-            <span className={defaultModel ? "text-foreground" : "text-muted-foreground"}>
-              {defaultModel || "Select a model"}
-            </span>
-            <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${modelOpen ? "rotate-180" : ""}`} />
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-[var(--anchor-width)] p-1 max-h-80 overflow-y-auto">
-            {runtimeModels.length > 0 ? (
-              runtimeModels.map((model) => (
-                <button
-                  key={model}
-                  onClick={() => {
-                    setDefaultModel(model);
-                    setModelOpen(false);
-                  }}
-                  className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                    model === defaultModel ? "bg-accent" : "hover:bg-accent/50"
-                  }`}
-                >
-                  {model}
-                </button>
-              ))
-            ) : (
-              COMMON_MODELS.map((model) => (
-                <button
-                  key={model.value}
-                  onClick={() => {
-                    setDefaultModel(model.value);
-                    setModelOpen(false);
-                  }}
-                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                    model.value === defaultModel ? "bg-accent" : "hover:bg-accent/50"
-                  }`}
-                >
-                  <span className="font-medium">{model.label}</span>
-                  <span className="text-xs text-muted-foreground">{model.provider}</span>
-                </button>
-              ))
-            )}
-            <div className="border-t border-border mt-1 pt-1">
-              <button
-                onClick={() => {
-                  setDefaultModel("");
-                  setModelOpen(false);
-                }}
-                className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50"
-              >
-                Custom...
-              </button>
-            </div>
-          </PopoverContent>
-        </Popover>
-        {!runtimeModels.includes(defaultModel) && !COMMON_MODELS.find((m) => m.value === defaultModel) && defaultModel && (
-          <Input
-            value={defaultModel}
-            onChange={(e) => setDefaultModel(e.target.value)}
-            placeholder="Enter custom model name"
-            className="mt-2"
-          />
-        )}
+        <Input
+          value={defaultModel}
+          onChange={(e) => setDefaultModel(e.target.value)}
+          placeholder="e.g. claude-sonnet-4-6"
+          className="mt-1"
+        />
       </div>
 
       <div>
