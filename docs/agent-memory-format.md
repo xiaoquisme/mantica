@@ -417,17 +417,17 @@ is available via `MULTICA_SQLITE_VEC_PATH`.
 
 ### 10.2 CLI Access
 
-Agents interact with the SQLite backend via the `multica memory` command group:
+Agents interact with the SQLite backend via the `mantica memory` command group:
 
 ```
-multica memory list [--type X] [--limit N]
-multica memory search <query> [--limit N]
-multica memory add --type X --name "..." --description "..." [--body "..."] [--expires-after 30d]
-multica memory gc [--older-than 30d]
-multica memory migrate
+mantica memory list [--type X] [--limit N]
+mantica memory search <query> [--limit N]
+mantica memory add --type X --name "..." --description "..." [--body "..."] [--expires-after 30d]
+mantica memory gc [--older-than 30d]
+mantica memory migrate
 ```
 
-`multica memory migrate` performs a one-time import of existing `memory/*.md`
+`mantica memory migrate` performs a one-time import of existing `memory/*.md`
 files into the database. Agents in new workspaces should run `migrate` once to
 import any legacy entries.
 
