@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 import {
   Bot, Plus, Archive, AlertTriangle, CheckCircle, Info,
-  TrendingUp, TrendingDown, Minus, Lightbulb,
+  Lightbulb,
 } from "lucide-react";
 import type { CreateAgentRequest, UpdateAgentRequest, AgentScore, AgentInsight, SmartSummaryResponse } from "@multica/core/types";
 import {

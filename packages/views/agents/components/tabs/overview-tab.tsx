@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TrendingUp, TrendingDown, Minus, CheckCircle, XCircle, Activity, Lightbulb } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Activity, Lightbulb } from "lucide-react";
 import { api } from "@multica/core/api";
 import type { Agent, AgentScore, AgentHint } from "@multica/core/types";
 
