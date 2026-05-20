@@ -22,9 +22,8 @@ INSERT INTO agent_runtime (
     device_info,
     metadata,
     owner_id,
-    default_model,
     last_seen_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
 ON CONFLICT (workspace_id, daemon_id, provider)
 DO UPDATE SET
     name = EXCLUDED.name,
@@ -33,7 +32,6 @@ DO UPDATE SET
     device_info = EXCLUDED.device_info,
     metadata = EXCLUDED.metadata,
     owner_id = COALESCE(EXCLUDED.owner_id, agent_runtime.owner_id),
-    default_model = COALESCE(EXCLUDED.default_model, agent_runtime.default_model),
     last_seen_at = now(),
     updated_at = now()
 RETURNING *;
@@ -81,8 +79,3 @@ SELECT count(*) FROM agent WHERE runtime_id = $1 AND archived_at IS NULL;
 -- name: DeleteArchivedAgentsByRuntime :exec
 DELETE FROM agent WHERE runtime_id = $1 AND archived_at IS NOT NULL;
 
--- name: UpdateAgentRuntimeDefaultModel :one
-UPDATE agent_runtime
-SET default_model = $2, updated_at = now()
-WHERE id = $1
-RETURNING *;

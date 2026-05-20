@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Pencil, Check, X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import type { AgentRuntime } from "@multica/core/types";
 import { useAuthStore } from "@multica/core/auth";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { memberListOptions } from "@multica/core/workspace/queries";
-import { useDeleteRuntime, useUpdateRuntime } from "@multica/core/runtimes/mutations";
+import { useDeleteRuntime } from "@multica/core/runtimes/mutations";
 import { Button } from "@multica/ui/components/ui/button";
-import { Input } from "@multica/ui/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,18 +47,15 @@ export function RuntimeDetail({ runtime }: { runtime: AgentRuntime }) {
   const wsId = useWorkspaceId();
   const { data: members = [] } = useQuery(memberListOptions(wsId));
   const deleteMutation = useDeleteRuntime(wsId);
-  const updateMutation = useUpdateRuntime(wsId);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editingModel, setEditingModel] = useState(false);
-  const [modelDraft, setModelDraft] = useState(runtime.default_model ?? "");
 
   // Resolve owner info
   const ownerMember = runtime.owner_id
     ? members.find((m) => m.user_id === runtime.owner_id) ?? null
     : null;
 
-  // Permission check for delete/edit
+  // Permission check for delete
   const currentMember = user
     ? members.find((m) => m.user_id === user.id)
     : null;
@@ -68,7 +64,6 @@ export function RuntimeDetail({ runtime }: { runtime: AgentRuntime }) {
     : false;
   const isRuntimeOwner = user && runtime.owner_id === user.id;
   const canDelete = isAdmin || isRuntimeOwner;
-  const canEdit = isAdmin || isRuntimeOwner;
 
   const handleDelete = () => {
     deleteMutation.mutate(runtime.id, {
@@ -80,29 +75,6 @@ export function RuntimeDetail({ runtime }: { runtime: AgentRuntime }) {
         toast.error(e instanceof Error ? e.message : "Failed to delete runtime");
       },
     });
-  };
-
-  const handleSaveModel = () => {
-    const value = modelDraft.trim() || null;
-    updateMutation.mutate(
-      { runtimeId: runtime.id, data: { default_model: value } },
-      {
-        onSuccess: () => {
-          toast.success("Default model updated");
-          setEditingModel(false);
-        },
-        onError: (e) => {
-          toast.error(
-            e instanceof Error ? e.message : "Failed to update default model",
-          );
-        },
-      },
-    );
-  };
-
-  const handleCancelModel = () => {
-    setModelDraft(runtime.default_model ?? "");
-    setEditingModel(false);
   };
 
   return (
@@ -161,64 +133,6 @@ export function RuntimeDetail({ runtime }: { runtime: AgentRuntime }) {
           )}
           {runtime.daemon_id && (
             <InfoField label="Daemon ID" value={runtime.daemon_id} mono />
-          )}
-        </div>
-
-        {/* Default Model */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <div className="text-xs text-muted-foreground">Default Model</div>
-            {canEdit && !editingModel && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 text-muted-foreground"
-                onClick={() => {
-                  setModelDraft(runtime.default_model ?? "");
-                  setEditingModel(true);
-                }}
-              >
-                <Pencil className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-          {editingModel ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={modelDraft}
-                onChange={(e) => setModelDraft(e.target.value)}
-                placeholder="e.g. claude-sonnet-4-6"
-                className="h-7 text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveModel();
-                  if (e.key === "Escape") handleCancelModel();
-                }}
-                autoFocus
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0"
-                onClick={handleSaveModel}
-                disabled={updateMutation.isPending}
-              >
-                <Check className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0"
-                onClick={handleCancelModel}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ) : (
-            <div className="mt-0.5 text-sm font-mono text-xs truncate text-foreground">
-              {runtime.default_model ?? (
-                <span className="text-muted-foreground italic">Not set</span>
-              )}
-            </div>
           )}
         </div>
 

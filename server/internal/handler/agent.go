@@ -27,6 +27,7 @@ type AgentResponse struct {
 	Status             string          `json:"status"`
 	MaxConcurrentTasks int32           `json:"max_concurrent_tasks"`
 	OwnerID            *string         `json:"owner_id"`
+	DefaultModel       *string         `json:"default_model"`
 	Skills             []SkillResponse `json:"skills"`
 	CreatedAt          string          `json:"created_at"`
 	UpdatedAt          string          `json:"updated_at"`
@@ -57,6 +58,7 @@ func agentToResponse(a db.Agent) AgentResponse {
 		Status:             a.Status,
 		MaxConcurrentTasks: a.MaxConcurrentTasks,
 		OwnerID:            uuidToPtr(a.OwnerID),
+		DefaultModel:       textToPtr(a.DefaultModel),
 		Skills:             []SkillResponse{},
 		CreatedAt:          timestampToString(a.CreatedAt),
 		UpdatedAt:          timestampToString(a.UpdatedAt),
@@ -205,6 +207,7 @@ type CreateAgentRequest struct {
 	RuntimeConfig      any     `json:"runtime_config"`
 	Visibility         string  `json:"visibility"`
 	MaxConcurrentTasks int32   `json:"max_concurrent_tasks"`
+	DefaultModel       *string `json:"default_model"`
 }
 
 func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
@@ -262,6 +265,7 @@ func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		Visibility:         req.Visibility,
 		MaxConcurrentTasks: req.MaxConcurrentTasks,
 		OwnerID:            parseUUID(ownerID),
+		DefaultModel:       ptrToText(req.DefaultModel),
 	})
 	if err != nil {
 		slog.Warn("create agent failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", workspaceID)...)
@@ -293,6 +297,7 @@ type UpdateAgentRequest struct {
 	Visibility         *string `json:"visibility"`
 	Status             *string `json:"status"`
 	MaxConcurrentTasks *int32  `json:"max_concurrent_tasks"`
+	DefaultModel       *string `json:"default_model"`
 }
 
 // canManageAgent checks whether the current user can update or archive an agent.
@@ -368,6 +373,9 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.MaxConcurrentTasks != nil {
 		params.MaxConcurrentTasks = pgtype.Int4{Int32: *req.MaxConcurrentTasks, Valid: true}
+	}
+	if req.DefaultModel != nil {
+		params.DefaultModel = pgtype.Text{String: *req.DefaultModel, Valid: true}
 	}
 
 	agent, err := h.Queries.UpdateAgent(r.Context(), params)

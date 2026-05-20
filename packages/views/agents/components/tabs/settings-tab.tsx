@@ -39,6 +39,7 @@ export function SettingsTab({
   const [visibility, setVisibility] = useState<AgentVisibility>(agent.visibility);
   const [maxTasks, setMaxTasks] = useState(agent.max_concurrent_tasks);
   const [selectedRuntimeId, setSelectedRuntimeId] = useState(agent.runtime_id);
+  const [defaultModel, setDefaultModel] = useState(agent.default_model ?? "");
   const [runtimeOpen, setRuntimeOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const { upload, uploading } = useFileUpload(api);
@@ -65,7 +66,8 @@ export function SettingsTab({
     description !== (agent.description ?? "") ||
     visibility !== agent.visibility ||
     maxTasks !== agent.max_concurrent_tasks ||
-    selectedRuntimeId !== agent.runtime_id;
+    selectedRuntimeId !== agent.runtime_id ||
+    defaultModel !== (agent.default_model ?? "");
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -80,6 +82,7 @@ export function SettingsTab({
         visibility,
         max_concurrent_tasks: maxTasks,
         runtime_id: selectedRuntimeId,
+        default_model: defaultModel.trim() || null,
       });
       toast.success("Settings saved");
     } catch {
@@ -186,6 +189,16 @@ export function SettingsTab({
           value={maxTasks}
           onChange={(e) => setMaxTasks(Number(e.target.value))}
           className="mt-1 w-24"
+        />
+      </div>
+
+      <div>
+        <Label className="text-xs text-muted-foreground">Default Model</Label>
+        <Input
+          value={defaultModel}
+          onChange={(e) => setDefaultModel(e.target.value)}
+          placeholder="e.g. claude-sonnet-4-6"
+          className="mt-1"
         />
       </div>
 

@@ -15,7 +15,6 @@ export interface RuntimeDevice {
   device_info: string;
   metadata: Record<string, unknown>;
   owner_id: string | null;
-  default_model: string | null;
   last_seen_at: string | null;
   created_at: string;
   updated_at: string;
@@ -53,6 +52,7 @@ export interface Agent {
   status: AgentStatus;
   max_concurrent_tasks: number;
   owner_id: string | null;
+  default_model: string | null;
   skills: Skill[];
   created_at: string;
   updated_at: string;
@@ -81,6 +81,7 @@ export interface UpdateAgentRequest {
   visibility?: AgentVisibility;
   status?: AgentStatus;
   max_concurrent_tasks?: number;
+  default_model?: string | null;
 }
 
 // Skills

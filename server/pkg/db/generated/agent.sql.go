@@ -14,7 +14,7 @@ import (
 const archiveAgent = `-- name: ArchiveAgent :one
 UPDATE agent SET archived_at = now(), archived_by = $2, updated_at = now()
 WHERE id = $1
-RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by
+RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model
 `
 
 type ArchiveAgentParams struct {
@@ -43,6 +43,7 @@ func (q *Queries) ArchiveAgent(ctx context.Context, arg ArchiveAgentParams) (Age
 		&i.Instructions,
 		&i.ArchivedAt,
 		&i.ArchivedBy,
+		&i.DefaultModel,
 	)
 	return i, err
 }
@@ -251,9 +252,9 @@ const createAgent = `-- name: CreateAgent :one
 INSERT INTO agent (
     workspace_id, name, description, avatar_url, runtime_mode,
     runtime_config, runtime_id, visibility, max_concurrent_tasks, owner_id,
-    instructions
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by
+    instructions, default_model
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model
 `
 
 type CreateAgentParams struct {
@@ -268,6 +269,7 @@ type CreateAgentParams struct {
 	MaxConcurrentTasks int32       `json:"max_concurrent_tasks"`
 	OwnerID            pgtype.UUID `json:"owner_id"`
 	Instructions       string      `json:"instructions"`
+	DefaultModel       pgtype.Text `json:"default_model"`
 }
 
 func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent, error) {
@@ -283,6 +285,7 @@ func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent
 		arg.MaxConcurrentTasks,
 		arg.OwnerID,
 		arg.Instructions,
+		arg.DefaultModel,
 	)
 	var i Agent
 	err := row.Scan(
@@ -303,6 +306,7 @@ func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent
 		&i.Instructions,
 		&i.ArchivedAt,
 		&i.ArchivedBy,
+		&i.DefaultModel,
 	)
 	return i, err
 }
@@ -434,7 +438,7 @@ func (q *Queries) FailStaleTasks(ctx context.Context, arg FailStaleTasksParams) 
 }
 
 const getAgent = `-- name: GetAgent :one
-SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by FROM agent
+SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model FROM agent
 WHERE id = $1
 `
 
@@ -459,12 +463,13 @@ func (q *Queries) GetAgent(ctx context.Context, id pgtype.UUID) (Agent, error) {
 		&i.Instructions,
 		&i.ArchivedAt,
 		&i.ArchivedBy,
+		&i.DefaultModel,
 	)
 	return i, err
 }
 
 const getAgentInWorkspace = `-- name: GetAgentInWorkspace :one
-SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by FROM agent
+SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model FROM agent
 WHERE id = $1 AND workspace_id = $2
 `
 
@@ -494,6 +499,7 @@ func (q *Queries) GetAgentInWorkspace(ctx context.Context, arg GetAgentInWorkspa
 		&i.Instructions,
 		&i.ArchivedAt,
 		&i.ArchivedBy,
+		&i.DefaultModel,
 	)
 	return i, err
 }
@@ -714,7 +720,7 @@ func (q *Queries) ListAgentTasks(ctx context.Context, agentID pgtype.UUID) ([]Ag
 }
 
 const listAgents = `-- name: ListAgents :many
-SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by FROM agent
+SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model FROM agent
 WHERE workspace_id = $1 AND archived_at IS NULL
 ORDER BY created_at ASC
 `
@@ -746,6 +752,7 @@ func (q *Queries) ListAgents(ctx context.Context, workspaceID pgtype.UUID) ([]Ag
 			&i.Instructions,
 			&i.ArchivedAt,
 			&i.ArchivedBy,
+			&i.DefaultModel,
 		); err != nil {
 			return nil, err
 		}
@@ -758,7 +765,7 @@ func (q *Queries) ListAgents(ctx context.Context, workspaceID pgtype.UUID) ([]Ag
 }
 
 const listAgentsByRuntime = `-- name: ListAgentsByRuntime :many
-SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by FROM agent WHERE runtime_id = $1 AND archived_at IS NULL
+SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model FROM agent WHERE runtime_id = $1 AND archived_at IS NULL
 `
 
 func (q *Queries) ListAgentsByRuntime(ctx context.Context, runtimeID pgtype.UUID) ([]Agent, error) {
@@ -788,6 +795,7 @@ func (q *Queries) ListAgentsByRuntime(ctx context.Context, runtimeID pgtype.UUID
 			&i.Instructions,
 			&i.ArchivedAt,
 			&i.ArchivedBy,
+			&i.DefaultModel,
 		); err != nil {
 			return nil, err
 		}
@@ -800,7 +808,7 @@ func (q *Queries) ListAgentsByRuntime(ctx context.Context, runtimeID pgtype.UUID
 }
 
 const listAllAgents = `-- name: ListAllAgents :many
-SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by FROM agent
+SELECT id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model FROM agent
 WHERE workspace_id = $1
 ORDER BY created_at ASC
 `
@@ -832,6 +840,7 @@ func (q *Queries) ListAllAgents(ctx context.Context, workspaceID pgtype.UUID) ([
 			&i.Instructions,
 			&i.ArchivedAt,
 			&i.ArchivedBy,
+			&i.DefaultModel,
 		); err != nil {
 			return nil, err
 		}
@@ -942,7 +951,7 @@ WHERE status = 'working'
     SELECT 1 FROM agent_task_queue
     WHERE agent_id = agent.id AND status IN ('dispatched', 'running')
   )
-RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by
+RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model
 `
 
 // Finds agents marked as 'working' but with no dispatched or running tasks,
@@ -974,6 +983,7 @@ func (q *Queries) ReconcileStaleWorkingAgents(ctx context.Context) ([]Agent, err
 			&i.Instructions,
 			&i.ArchivedAt,
 			&i.ArchivedBy,
+			&i.DefaultModel,
 		); err != nil {
 			return nil, err
 		}
@@ -1080,7 +1090,7 @@ func (q *Queries) RequeueSweeperFailedTasksByRuntime(ctx context.Context, runtim
 const restoreAgent = `-- name: RestoreAgent :one
 UPDATE agent SET archived_at = NULL, archived_by = NULL, updated_at = now()
 WHERE id = $1
-RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by
+RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model
 `
 
 func (q *Queries) RestoreAgent(ctx context.Context, id pgtype.UUID) (Agent, error) {
@@ -1104,6 +1114,7 @@ func (q *Queries) RestoreAgent(ctx context.Context, id pgtype.UUID) (Agent, erro
 		&i.Instructions,
 		&i.ArchivedAt,
 		&i.ArchivedBy,
+		&i.DefaultModel,
 	)
 	return i, err
 }
@@ -1168,9 +1179,10 @@ UPDATE agent SET
     status = COALESCE($9, status),
     max_concurrent_tasks = COALESCE($10, max_concurrent_tasks),
     instructions = COALESCE($11, instructions),
+    default_model = COALESCE($12, default_model),
     updated_at = now()
 WHERE id = $1
-RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by
+RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model
 `
 
 type UpdateAgentParams struct {
@@ -1185,6 +1197,7 @@ type UpdateAgentParams struct {
 	Status             pgtype.Text `json:"status"`
 	MaxConcurrentTasks pgtype.Int4 `json:"max_concurrent_tasks"`
 	Instructions       pgtype.Text `json:"instructions"`
+	DefaultModel       pgtype.Text `json:"default_model"`
 }
 
 func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent, error) {
@@ -1200,6 +1213,7 @@ func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent
 		arg.Status,
 		arg.MaxConcurrentTasks,
 		arg.Instructions,
+		arg.DefaultModel,
 	)
 	var i Agent
 	err := row.Scan(
@@ -1220,6 +1234,7 @@ func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent
 		&i.Instructions,
 		&i.ArchivedAt,
 		&i.ArchivedBy,
+		&i.DefaultModel,
 	)
 	return i, err
 }
@@ -1227,7 +1242,7 @@ func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent
 const updateAgentStatus = `-- name: UpdateAgentStatus :one
 UPDATE agent SET status = $2, updated_at = now()
 WHERE id = $1
-RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by
+RETURNING id, workspace_id, name, avatar_url, runtime_mode, runtime_config, visibility, status, max_concurrent_tasks, owner_id, created_at, updated_at, description, runtime_id, instructions, archived_at, archived_by, default_model
 `
 
 type UpdateAgentStatusParams struct {
@@ -1256,6 +1271,7 @@ func (q *Queries) UpdateAgentStatus(ctx context.Context, arg UpdateAgentStatusPa
 		&i.Instructions,
 		&i.ArchivedAt,
 		&i.ArchivedBy,
+		&i.DefaultModel,
 	)
 	return i, err
 }
