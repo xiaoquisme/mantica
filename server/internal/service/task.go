@@ -413,18 +413,10 @@ func (s *TaskService) CompleteTask(ctx context.Context, taskID pgtype.UUID, resu
 
 	slog.Info("task completed", "task_id", util.UUIDToString(task.ID), "issue_id", util.UUIDToString(task.IssueID))
 
-	// Post agent output as a comment, but only for issue tasks with assignment triggers.
-	// Comment-triggered tasks: the agent replies via CLI with --parent, so
-	// posting here would create a duplicate.
-	// Chat tasks: no comment posting needed.
-	if task.IssueID.Valid && !task.TriggerCommentID.Valid {
-		var payload protocol.TaskCompletedPayload
-		if err := json.Unmarshal(result, &payload); err == nil {
-			if payload.Output != "" {
-				s.createAgentComment(ctx, task.IssueID, task.AgentID, redact.Text(payload.Output), "comment", task.TriggerCommentID)
-			}
-		}
-	}
+	// NOTE: For assignment-triggered tasks, the agent posts its own comment
+	// via `mantica issue comment add` during execution (see runtime_config.go).
+	// Comment-triggered tasks reply via CLI with --parent.
+	// Chat tasks save below. So no server-side comment posting is needed here.
 
 	// For chat tasks, save assistant reply, update session, and broadcast chat:done.
 	if task.ChatSessionID.Valid {
