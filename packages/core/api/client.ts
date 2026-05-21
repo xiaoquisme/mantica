@@ -54,6 +54,7 @@ import type {
   TaskAnalysisWithAgent,
   AgentHintsResponse,
   SmartSummaryResponse,
+  GovernanceOverview,
 } from "../types";
 import { type Logger, noopLogger } from "../logger";
 
@@ -604,6 +605,27 @@ export class ApiClient {
 
   async getSmartSummary(): Promise<SmartSummaryResponse> {
     return this.fetch("/api/agents/summary");
+  }
+
+  // Skill Governance
+  async getSkillGovernance(): Promise<GovernanceOverview> {
+    return this.fetch("/api/skills/governance");
+  }
+
+  async pinSkill(id: string): Promise<void> {
+    await this.fetch(`/api/skills/${id}/pin`, { method: "POST" });
+  }
+
+  async unpinSkill(id: string): Promise<void> {
+    await this.fetch(`/api/skills/${id}/unpin`, { method: "POST" });
+  }
+
+  async archiveSkill(id: string): Promise<void> {
+    await this.fetch(`/api/skills/${id}/archive`, { method: "POST" });
+  }
+
+  async autoArchiveSkills(): Promise<{ archived: number }> {
+    return this.fetch("/api/skills/auto-archive", { method: "POST" });
   }
 
   // Personal Access Tokens

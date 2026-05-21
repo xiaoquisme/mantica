@@ -9,6 +9,7 @@ import {
   Save,
   AlertCircle,
   Download,
+  Shield,
 } from "lucide-react";
 import type { Skill, CreateSkillRequest, UpdateSkillRequest } from "@mantica/core/types";
 import {
@@ -40,6 +41,7 @@ import { skillListOptions, workspaceKeys } from "@mantica/core/workspace/queries
 
 import { FileTree } from "./file-tree";
 import { FileViewer } from "./file-viewer";
+import { GovernanceTab } from "./governance-tab";
 
 // ---------------------------------------------------------------------------
 // Create Skill Dialog
@@ -619,6 +621,7 @@ export default function SkillsPage() {
   const { data: skills = [] } = useQuery(skillListOptions(wsId));
   const [selectedId, setSelectedId] = useState<string>("");
   const [showCreate, setShowCreate] = useState(false);
+  const [viewMode, setViewMode] = useState<"skills" | "governance">("skills");
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: "mantica_skills_layout",
   });
@@ -725,7 +728,17 @@ export default function SkillsPage() {
         {/* Left column — skill list */}
         <div className="overflow-y-auto h-full border-r">
           <div className="flex h-12 items-center justify-between border-b px-4">
-            <h1 className="text-sm font-semibold">Skills</h1>
+            <div className="flex items-center gap-1">
+              <h1 className="text-sm font-semibold">Skills</h1>
+              <Button
+                variant={viewMode === "governance" ? "secondary" : "ghost"}
+                size="icon-xs"
+                onClick={() => setViewMode(viewMode === "skills" ? "governance" : "skills")}
+                title="Governance"
+              >
+                <Shield className="h-3.5 w-3.5" />
+              </Button>
+            </div>
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -775,9 +788,11 @@ export default function SkillsPage() {
       <ResizableHandle />
 
       <ResizablePanel id="detail" minSize="50%">
-        {/* Right column — skill detail */}
+        {/* Right column — skill detail or governance */}
         <div className="flex-1 overflow-hidden h-full">
-          {selected ? (
+          {viewMode === "governance" ? (
+            <GovernanceTab />
+          ) : selected ? (
             <SkillDetail
               key={selected.id}
               skill={selected}
