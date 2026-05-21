@@ -1,6 +1,7 @@
 import * as React from 'react'
 import ReactMarkdown, { type Components, defaultUrlTransform } from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 import { cn } from '@mantica/ui/lib/utils'
 import { CodeBlock, InlineCode } from './CodeBlock'
@@ -53,6 +54,16 @@ export interface MarkdownProps {
  * Custom URL transform that allows mention:// protocol (used for @mentions)
  * while keeping the default security for all other URLs.
  */
+// Sanitize schema that allows mention:// protocol for @mention links
+
+const sanitizeSchema = {
+  ...defaultSchema,
+  protocols: {
+    ...defaultSchema.protocols,
+    href: [...(defaultSchema.protocols?.href || []), "mention"]
+  }
+}
+
 function urlTransform(url: string): string {
   if (url.startsWith('mention://')) return url
   return defaultUrlTransform(url)
@@ -327,7 +338,7 @@ export function Markdown({
     <div className={cn('markdown-content break-words', className)}>
       <ReactMarkdown
         remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
-        rehypePlugins={[rehypeRaw]}
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}
         urlTransform={urlTransform}
         components={components}
       >
