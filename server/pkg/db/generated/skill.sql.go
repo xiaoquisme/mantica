@@ -27,10 +27,19 @@ func (q *Queries) AddAgentSkill(ctx context.Context, arg AddAgentSkillParams) er
 	return err
 }
 
+const archiveSkill = `-- name: ArchiveSkill :exec
+UPDATE skill SET archived_at = now(), updated_at = now() WHERE id = $1 AND pinned = FALSE
+`
+
+func (q *Queries) ArchiveSkill(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, archiveSkill, id)
+	return err
+}
+
 const createSkill = `-- name: CreateSkill :one
 INSERT INTO skill (workspace_id, name, description, content, config, created_by)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, workspace_id, name, description, content, config, created_by, created_at, updated_at
+RETURNING id, workspace_id, name, description, content, config, created_by, created_at, updated_at, quality_score, source_task_id, usage_count, success_count, failure_count, last_used_at, pinned, archived_at
 `
 
 type CreateSkillParams struct {
@@ -62,6 +71,14 @@ func (q *Queries) CreateSkill(ctx context.Context, arg CreateSkillParams) (Skill
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.QualityScore,
+		&i.SourceTaskID,
+		&i.UsageCount,
+		&i.SuccessCount,
+		&i.FailureCount,
+		&i.LastUsedAt,
+		&i.Pinned,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
@@ -94,7 +111,7 @@ func (q *Queries) DeleteSkillFilesBySkill(ctx context.Context, skillID pgtype.UU
 }
 
 const getSkill = `-- name: GetSkill :one
-SELECT id, workspace_id, name, description, content, config, created_by, created_at, updated_at FROM skill
+SELECT id, workspace_id, name, description, content, config, created_by, created_at, updated_at, quality_score, source_task_id, usage_count, success_count, failure_count, last_used_at, pinned, archived_at FROM skill
 WHERE id = $1
 `
 
@@ -111,6 +128,14 @@ func (q *Queries) GetSkill(ctx context.Context, id pgtype.UUID) (Skill, error) {
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.QualityScore,
+		&i.SourceTaskID,
+		&i.UsageCount,
+		&i.SuccessCount,
+		&i.FailureCount,
+		&i.LastUsedAt,
+		&i.Pinned,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
@@ -135,7 +160,7 @@ func (q *Queries) GetSkillFile(ctx context.Context, id pgtype.UUID) (SkillFile, 
 }
 
 const getSkillInWorkspace = `-- name: GetSkillInWorkspace :one
-SELECT id, workspace_id, name, description, content, config, created_by, created_at, updated_at FROM skill
+SELECT id, workspace_id, name, description, content, config, created_by, created_at, updated_at, quality_score, source_task_id, usage_count, success_count, failure_count, last_used_at, pinned, archived_at FROM skill
 WHERE id = $1 AND workspace_id = $2
 `
 
@@ -157,13 +182,21 @@ func (q *Queries) GetSkillInWorkspace(ctx context.Context, arg GetSkillInWorkspa
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.QualityScore,
+		&i.SourceTaskID,
+		&i.UsageCount,
+		&i.SuccessCount,
+		&i.FailureCount,
+		&i.LastUsedAt,
+		&i.Pinned,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
 
 const listAgentSkills = `-- name: ListAgentSkills :many
 
-SELECT s.id, s.workspace_id, s.name, s.description, s.content, s.config, s.created_by, s.created_at, s.updated_at FROM skill s
+SELECT s.id, s.workspace_id, s.name, s.description, s.content, s.config, s.created_by, s.created_at, s.updated_at, s.quality_score, s.source_task_id, s.usage_count, s.success_count, s.failure_count, s.last_used_at, s.pinned, s.archived_at FROM skill s
 JOIN agent_skill ask ON ask.skill_id = s.id
 WHERE ask.agent_id = $1
 ORDER BY s.name ASC
@@ -189,6 +222,14 @@ func (q *Queries) ListAgentSkills(ctx context.Context, agentID pgtype.UUID) ([]S
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.QualityScore,
+			&i.SourceTaskID,
+			&i.UsageCount,
+			&i.SuccessCount,
+			&i.FailureCount,
+			&i.LastUsedAt,
+			&i.Pinned,
+			&i.ArchivedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -240,6 +281,58 @@ func (q *Queries) ListAgentSkillsByWorkspace(ctx context.Context, workspaceID pg
 	return items, nil
 }
 
+const listSimilarSkills = `-- name: ListSimilarSkills :many
+SELECT id, workspace_id, name, description, content, config, created_by, created_at, updated_at, quality_score, source_task_id, usage_count, success_count, failure_count, last_used_at, pinned, archived_at FROM skill
+WHERE workspace_id = $1
+AND archived_at IS NULL
+AND id != $2
+AND (name ILIKE '%' || $3 || '%' OR $3 = ANY(string_to_array(name, '/')))
+`
+
+type ListSimilarSkillsParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ID          pgtype.UUID `json:"id"`
+	Column3     pgtype.Text `json:"column_3"`
+}
+
+func (q *Queries) ListSimilarSkills(ctx context.Context, arg ListSimilarSkillsParams) ([]Skill, error) {
+	rows, err := q.db.Query(ctx, listSimilarSkills, arg.WorkspaceID, arg.ID, arg.Column3)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Skill{}
+	for rows.Next() {
+		var i Skill
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.Description,
+			&i.Content,
+			&i.Config,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.QualityScore,
+			&i.SourceTaskID,
+			&i.UsageCount,
+			&i.SuccessCount,
+			&i.FailureCount,
+			&i.LastUsedAt,
+			&i.Pinned,
+			&i.ArchivedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSkillFiles = `-- name: ListSkillFiles :many
 
 SELECT id, skill_id, path, content, created_at, updated_at FROM skill_file
@@ -275,9 +368,84 @@ func (q *Queries) ListSkillFiles(ctx context.Context, skillID pgtype.UUID) ([]Sk
 	return items, nil
 }
 
+const listSkillsByQuality = `-- name: ListSkillsByQuality :many
+SELECT s.id, s.workspace_id, s.name, s.description, s.content, s.config, s.created_by, s.created_at, s.updated_at, s.quality_score, s.source_task_id, s.usage_count, s.success_count, s.failure_count, s.last_used_at, s.pinned, s.archived_at, as2.agent_id IS NOT NULL as assigned_to_agent
+FROM skill s
+LEFT JOIN agent_skill as2 ON as2.skill_id = s.id
+WHERE s.workspace_id = $1
+AND s.archived_at IS NULL
+ORDER BY s.quality_score DESC
+LIMIT $2
+`
+
+type ListSkillsByQualityParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Limit       int32       `json:"limit"`
+}
+
+type ListSkillsByQualityRow struct {
+	ID              pgtype.UUID        `json:"id"`
+	WorkspaceID     pgtype.UUID        `json:"workspace_id"`
+	Name            string             `json:"name"`
+	Description     string             `json:"description"`
+	Content         string             `json:"content"`
+	Config          []byte             `json:"config"`
+	CreatedBy       pgtype.UUID        `json:"created_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	QualityScore    pgtype.Float8      `json:"quality_score"`
+	SourceTaskID    pgtype.UUID        `json:"source_task_id"`
+	UsageCount      pgtype.Int4        `json:"usage_count"`
+	SuccessCount    pgtype.Int4        `json:"success_count"`
+	FailureCount    pgtype.Int4        `json:"failure_count"`
+	LastUsedAt      pgtype.Timestamptz `json:"last_used_at"`
+	Pinned          pgtype.Bool        `json:"pinned"`
+	ArchivedAt      pgtype.Timestamptz `json:"archived_at"`
+	AssignedToAgent interface{}        `json:"assigned_to_agent"`
+}
+
+func (q *Queries) ListSkillsByQuality(ctx context.Context, arg ListSkillsByQualityParams) ([]ListSkillsByQualityRow, error) {
+	rows, err := q.db.Query(ctx, listSkillsByQuality, arg.WorkspaceID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSkillsByQualityRow{}
+	for rows.Next() {
+		var i ListSkillsByQualityRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.Description,
+			&i.Content,
+			&i.Config,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.QualityScore,
+			&i.SourceTaskID,
+			&i.UsageCount,
+			&i.SuccessCount,
+			&i.FailureCount,
+			&i.LastUsedAt,
+			&i.Pinned,
+			&i.ArchivedAt,
+			&i.AssignedToAgent,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSkillsByWorkspace = `-- name: ListSkillsByWorkspace :many
 
-SELECT id, workspace_id, name, description, content, config, created_by, created_at, updated_at FROM skill
+SELECT id, workspace_id, name, description, content, config, created_by, created_at, updated_at, quality_score, source_task_id, usage_count, success_count, failure_count, last_used_at, pinned, archived_at FROM skill
 WHERE workspace_id = $1
 ORDER BY name ASC
 `
@@ -302,6 +470,14 @@ func (q *Queries) ListSkillsByWorkspace(ctx context.Context, workspaceID pgtype.
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.QualityScore,
+			&i.SourceTaskID,
+			&i.UsageCount,
+			&i.SuccessCount,
+			&i.FailureCount,
+			&i.LastUsedAt,
+			&i.Pinned,
+			&i.ArchivedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -311,6 +487,88 @@ func (q *Queries) ListSkillsByWorkspace(ctx context.Context, workspaceID pgtype.
 		return nil, err
 	}
 	return items, nil
+}
+
+const listStaleSkills = `-- name: ListStaleSkills :many
+SELECT id, workspace_id, name, description, content, config, created_by, created_at, updated_at, quality_score, source_task_id, usage_count, success_count, failure_count, last_used_at, pinned, archived_at FROM skill
+WHERE archived_at IS NULL
+AND pinned = FALSE
+AND (quality_score < 30 OR (last_used_at IS NOT NULL AND last_used_at < now() - interval '30 days' AND quality_score < 60))
+ORDER BY quality_score ASC
+`
+
+func (q *Queries) ListStaleSkills(ctx context.Context) ([]Skill, error) {
+	rows, err := q.db.Query(ctx, listStaleSkills)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Skill{}
+	for rows.Next() {
+		var i Skill
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.Description,
+			&i.Content,
+			&i.Config,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.QualityScore,
+			&i.SourceTaskID,
+			&i.UsageCount,
+			&i.SuccessCount,
+			&i.FailureCount,
+			&i.LastUsedAt,
+			&i.Pinned,
+			&i.ArchivedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const pinSkill = `-- name: PinSkill :exec
+UPDATE skill SET pinned = TRUE, updated_at = now() WHERE id = $1
+`
+
+func (q *Queries) PinSkill(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, pinSkill, id)
+	return err
+}
+
+const recordSkillFailure = `-- name: RecordSkillFailure :exec
+UPDATE skill SET failure_count = failure_count + 1, quality_score = GREATEST(0, quality_score - 2), updated_at = now() WHERE id = $1
+`
+
+func (q *Queries) RecordSkillFailure(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, recordSkillFailure, id)
+	return err
+}
+
+const recordSkillSuccess = `-- name: RecordSkillSuccess :exec
+UPDATE skill SET success_count = success_count + 1, quality_score = LEAST(100, quality_score + 1), updated_at = now() WHERE id = $1
+`
+
+func (q *Queries) RecordSkillSuccess(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, recordSkillSuccess, id)
+	return err
+}
+
+const recordSkillUsage = `-- name: RecordSkillUsage :exec
+UPDATE skill SET usage_count = usage_count + 1, last_used_at = now(), updated_at = now() WHERE id = $1
+`
+
+func (q *Queries) RecordSkillUsage(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, recordSkillUsage, id)
+	return err
 }
 
 const removeAgentSkill = `-- name: RemoveAgentSkill :exec
@@ -337,6 +595,15 @@ func (q *Queries) RemoveAllAgentSkills(ctx context.Context, agentID pgtype.UUID)
 	return err
 }
 
+const unpinSkill = `-- name: UnpinSkill :exec
+UPDATE skill SET pinned = FALSE, updated_at = now() WHERE id = $1
+`
+
+func (q *Queries) UnpinSkill(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, unpinSkill, id)
+	return err
+}
+
 const updateSkill = `-- name: UpdateSkill :one
 UPDATE skill SET
     name = COALESCE($2, name),
@@ -345,7 +612,7 @@ UPDATE skill SET
     config = COALESCE($5, config),
     updated_at = now()
 WHERE id = $1
-RETURNING id, workspace_id, name, description, content, config, created_by, created_at, updated_at
+RETURNING id, workspace_id, name, description, content, config, created_by, created_at, updated_at, quality_score, source_task_id, usage_count, success_count, failure_count, last_used_at, pinned, archived_at
 `
 
 type UpdateSkillParams struct {
@@ -375,8 +642,32 @@ func (q *Queries) UpdateSkill(ctx context.Context, arg UpdateSkillParams) (Skill
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.QualityScore,
+		&i.SourceTaskID,
+		&i.UsageCount,
+		&i.SuccessCount,
+		&i.FailureCount,
+		&i.LastUsedAt,
+		&i.Pinned,
+		&i.ArchivedAt,
 	)
 	return i, err
+}
+
+const updateSkillQuality = `-- name: UpdateSkillQuality :exec
+
+UPDATE skill SET quality_score = $2, updated_at = now() WHERE id = $1
+`
+
+type UpdateSkillQualityParams struct {
+	ID           pgtype.UUID   `json:"id"`
+	QualityScore pgtype.Float8 `json:"quality_score"`
+}
+
+// Skill Governance Queries
+func (q *Queries) UpdateSkillQuality(ctx context.Context, arg UpdateSkillQualityParams) error {
+	_, err := q.db.Exec(ctx, updateSkillQuality, arg.ID, arg.QualityScore)
+	return err
 }
 
 const upsertSkillFile = `-- name: UpsertSkillFile :one

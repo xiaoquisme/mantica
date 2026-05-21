@@ -255,6 +255,9 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 				r.Get("/", h.ListSkills)
 				r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Post("/", h.CreateSkill)
 				r.With(middleware.RequireWorkspaceRole(queries, "owner", "admin")).Post("/import", h.ImportSkill)
+				// Governance
+				r.Get("/governance", h.GetSkillGovernance)
+				r.Post("/auto-archive", h.AutoArchiveStaleSkills)
 				r.Route("/{id}", func(r chi.Router) {
 					r.Get("/", h.GetSkill)
 					r.Put("/", h.UpdateSkill)
@@ -262,6 +265,11 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 					r.Get("/files", h.ListSkillFiles)
 					r.Put("/files", h.UpsertSkillFile)
 					r.Delete("/files/{fileId}", h.DeleteSkillFile)
+					// Governance per-skill
+					r.Post("/pin", h.PinSkill)
+					r.Post("/unpin", h.UnpinSkill)
+					r.Post("/archive", h.ArchiveSkill)
+					r.Post("/usage", h.RecordSkillUsage)
 				})
 			})
 

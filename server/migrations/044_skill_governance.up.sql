@@ -1,0 +1,13 @@
+-- Skill governance fields
+ALTER TABLE skill ADD COLUMN IF NOT EXISTS quality_score DOUBLE PRECISION DEFAULT 0;
+ALTER TABLE skill ADD COLUMN IF NOT EXISTS source_task_id UUID REFERENCES agent_task_queue(id) ON DELETE SET NULL;
+ALTER TABLE skill ADD COLUMN IF NOT EXISTS usage_count INT DEFAULT 0;
+ALTER TABLE skill ADD COLUMN IF NOT EXISTS success_count INT DEFAULT 0;
+ALTER TABLE skill ADD COLUMN IF NOT EXISTS failure_count INT DEFAULT 0;
+ALTER TABLE skill ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ;
+ALTER TABLE skill ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE;
+ALTER TABLE skill ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+
+-- Index for governance queries
+CREATE INDEX IF NOT EXISTS idx_skill_quality ON skill(quality_score) WHERE archived_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_skill_archived ON skill(archived_at) WHERE archived_at IS NOT NULL;

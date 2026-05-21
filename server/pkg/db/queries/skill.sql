@@ -82,3 +82,49 @@ FROM agent_skill ask
 JOIN skill s ON s.id = ask.skill_id
 WHERE s.workspace_id = $1
 ORDER BY s.name ASC;
+
+-- Skill Governance Queries
+
+-- name: UpdateSkillQuality :exec
+UPDATE skill SET quality_score = $2, updated_at = now() WHERE id = $1;
+
+-- name: RecordSkillUsage :exec
+UPDATE skill SET usage_count = usage_count + 1, last_used_at = now(), updated_at = now() WHERE id = $1;
+
+-- name: RecordSkillSuccess :exec
+UPDATE skill SET success_count = success_count + 1, quality_score = LEAST(100, quality_score + 1), updated_at = now() WHERE id = $1;
+
+-- name: RecordSkillFailure :exec
+UPDATE skill SET failure_count = failure_count + 1, quality_score = GREATEST(0, quality_score - 2), updated_at = now() WHERE id = $1;
+
+-- name: PinSkill :exec
+UPDATE skill SET pinned = TRUE, updated_at = now() WHERE id = $1;
+
+-- name: UnpinSkill :exec
+UPDATE skill SET pinned = FALSE, updated_at = now() WHERE id = $1;
+
+-- name: ArchiveSkill :exec
+UPDATE skill SET archived_at = now(), updated_at = now() WHERE id = $1 AND pinned = FALSE;
+
+-- name: ListStaleSkills :many
+SELECT * FROM skill
+WHERE archived_at IS NULL
+AND pinned = FALSE
+AND (quality_score < 30 OR (last_used_at IS NOT NULL AND last_used_at < now() - interval '30 days' AND quality_score < 60))
+ORDER BY quality_score ASC;
+
+-- name: ListSimilarSkills :many
+SELECT * FROM skill
+WHERE workspace_id = $1
+AND archived_at IS NULL
+AND id != $2
+AND (name ILIKE '%' || $3 || '%' OR $3 = ANY(string_to_array(name, '/')));
+
+-- name: ListSkillsByQuality :many
+SELECT s.*, as2.agent_id IS NOT NULL as assigned_to_agent
+FROM skill s
+LEFT JOIN agent_skill as2 ON as2.skill_id = s.id
+WHERE s.workspace_id = $1
+AND s.archived_at IS NULL
+ORDER BY s.quality_score DESC
+LIMIT $2;

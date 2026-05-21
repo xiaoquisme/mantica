@@ -64,12 +64,23 @@ func (e *Evolver) AnalyzeAndEvolve(ctx context.Context, taskID, agentID pgtype.U
 func (e *Evolver) handleSuccess(ctx context.Context, task db.AgentTaskQueue, analysis db.TaskAnalysis, agentID, workspaceID pgtype.UUID) *EvolutionResult {
 	result := &EvolutionResult{}
 
-	// Only extract skills from tasks with good metrics
+	// ── Quality Gates ──
+
+	// Gate 1: Error rate must be reasonable
 	if analysis.ErrorCount > analysis.ToolCount/2 {
-		return result // too many errors, not a clean success
+		return result
 	}
+	// Gate 2: Must have enough tool calls to be interesting
 	if analysis.ToolCount < 2 {
-		return result // too simple, not worth a skill
+		return result
+	}
+	// Gate 3: Output must be substantial (not empty or trivial)
+	if analysis.OutputLength.Valid && analysis.OutputLength.Int32 < 20 {
+		return result
+	}
+	// Gate 4: Communication quality check
+	if analysis.CommunicationQuality.Valid && analysis.CommunicationQuality.Float64 < 0.4 {
+		return result
 	}
 
 	// Get task messages to understand what was done
@@ -84,23 +95,86 @@ func (e *Evolver) handleSuccess(ctx context.Context, task db.AgentTaskQueue, ana
 		return result
 	}
 
-	// Check if a similar skill already exists for this agent
+	// ── Dedup: Check if a similar skill already exists ──
+
+	// Check agent-level skills
 	existingSkills, _ := e.Queries.ListAgentSkills(ctx, agentID)
 	for _, s := range existingSkills {
 		if skillCoversPattern(s.Content, toolSeq) {
-			return result // already have a skill for this pattern
+			// Existing skill already covers this pattern — update quality instead
+			e.Queries.RecordSkillSuccess(ctx, s.ID)
+			e.Logger.Info("skill reinforced (existing pattern)", "skill_id", util.UUIDToString(s.ID), "task_id", util.UUIDToString(task.ID))
+			return result
 		}
 	}
 
-	// Generate skill from execution pattern
+	// Check workspace-level similar skills
 	skillName := generateSkillName(task, toolSeq)
+	nameParts := strings.Split(skillName, "/")
+	if len(nameParts) > 1 {
+		coreName := nameParts[1] // e.g. "terminal-execute_code" from "auto/terminal-execute_code-workflow"
+		similar, _ := e.Queries.ListSimilarSkills(ctx, db.ListSimilarSkillsParams{
+			WorkspaceID: workspaceID,
+			ID:          pgtype.UUID{}, // exclude self
+			Column3:     pgtype.Text{String: coreName, Valid: true},
+		})
+		if len(similar) > 0 {
+			// Merge: update the existing similar skill if ours is better
+			best := similar[0]
+			for _, s := range similar[1:] {
+				if s.QualityScore.Float64 > best.QualityScore.Float64 {
+					best = s
+				}
+			}
+			e.Logger.Info("skill merged with existing (workspace-level)", "existing_skill", best.Name, "new_pattern", skillName)
+			return result
+		}
+	}
+
+	// ── Calculate quality_score ──
+
+	qualityScore := 50.0 // base
+
+	// Communication quality bonus
+	if analysis.CommunicationQuality.Valid {
+		qualityScore = analysis.CommunicationQuality.Float64 * 100
+	}
+
+	// First attempt success bonus
+	if analysis.FirstAttemptSuccess.Valid && analysis.FirstAttemptSuccess.Bool {
+		qualityScore += 10
+	}
+
+	// Tool efficiency bonus (diverse tool usage = more interesting skill)
+	if analysis.ToolEfficiency.Valid && analysis.ToolEfficiency.Float64 > 0.5 {
+		qualityScore += 5
+	}
+
+	// Low error rate bonus
+	if analysis.ErrorCount == 0 {
+		qualityScore += 10
+	} else if float64(analysis.ErrorCount) < float64(analysis.ToolCount)*0.1 {
+		qualityScore += 5
+	}
+
+	// Cap at 100
+	if qualityScore > 100 {
+		qualityScore = 100
+	}
+
+	// Gate 5: Minimum quality threshold
+	if qualityScore < 40 {
+		return result
+	}
+
+	// ── Create Skill ──
+
 	skillContent := generateSkillContent(task, messages, toolSeq)
 
-	// Save as a workspace skill
 	skill, err := e.Queries.CreateSkill(ctx, db.CreateSkillParams{
 		WorkspaceID: workspaceID,
 		Name:        skillName,
-		Description: fmt.Sprintf("Auto-extracted from task %s", util.UUIDToString(task.ID)[:8]),
+		Description: fmt.Sprintf("Auto-extracted from task %s (quality: %.0f)", util.UUIDToString(task.ID)[:8], qualityScore),
 		Content:     skillContent,
 		Config:      []byte("{}"),
 		CreatedBy:   pgtype.UUID{},
@@ -109,6 +183,12 @@ func (e *Evolver) handleSuccess(ctx context.Context, task db.AgentTaskQueue, ana
 		e.Logger.Warn("failed to auto-create skill", "error", err)
 		return result
 	}
+
+	// Set quality_score and source_task_id
+	e.Queries.UpdateSkillQuality(ctx, db.UpdateSkillQualityParams{
+		ID:           skill.ID,
+		QualityScore: pgtype.Float8{Float64: qualityScore, Valid: true},
+	})
 
 	// Link skill to agent
 	e.Queries.AddAgentSkill(ctx, db.AddAgentSkillParams{
@@ -119,9 +199,10 @@ func (e *Evolver) handleSuccess(ctx context.Context, task db.AgentTaskQueue, ana
 	result.SkillExtracted = true
 	result.SkillName = skillName
 
-	e.Logger.Info("auto-extracted skill from successful task",
+	e.Logger.Info("auto-extracted skill",
 		"task_id", util.UUIDToString(task.ID),
 		"skill_name", skillName,
+		"quality_score", qualityScore,
 		"agent_id", util.UUIDToString(agentID),
 	)
 

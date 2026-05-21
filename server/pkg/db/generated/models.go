@@ -336,15 +336,23 @@ type ScheduledTask struct {
 }
 
 type Skill struct {
-	ID          pgtype.UUID        `json:"id"`
-	WorkspaceID pgtype.UUID        `json:"workspace_id"`
-	Name        string             `json:"name"`
-	Description string             `json:"description"`
-	Content     string             `json:"content"`
-	Config      []byte             `json:"config"`
-	CreatedBy   pgtype.UUID        `json:"created_by"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID           pgtype.UUID        `json:"id"`
+	WorkspaceID  pgtype.UUID        `json:"workspace_id"`
+	Name         string             `json:"name"`
+	Description  string             `json:"description"`
+	Content      string             `json:"content"`
+	Config       []byte             `json:"config"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	QualityScore pgtype.Float8      `json:"quality_score"`
+	SourceTaskID pgtype.UUID        `json:"source_task_id"`
+	UsageCount   pgtype.Int4        `json:"usage_count"`
+	SuccessCount pgtype.Int4        `json:"success_count"`
+	FailureCount pgtype.Int4        `json:"failure_count"`
+	LastUsedAt   pgtype.Timestamptz `json:"last_used_at"`
+	Pinned       pgtype.Bool        `json:"pinned"`
+	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
 }
 
 type SkillFile struct {
