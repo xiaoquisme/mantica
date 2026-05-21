@@ -618,7 +618,12 @@ export default function SkillsPage() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const qc = useQueryClient();
   const wsId = useWorkspaceId();
-  const { data: skills = [] } = useQuery(skillListOptions(wsId));
+  const { data: rawSkills = [] } = useQuery(skillListOptions(wsId));
+  // Deduplicate skills by ID to prevent React key conflicts
+  const skills = useMemo(
+    () => Array.from(new Map(rawSkills.map((s) => [s.id, s])).values()),
+    [rawSkills],
+  );
   const [selectedId, setSelectedId] = useState<string>("");
   const [showCreate, setShowCreate] = useState(false);
   const [viewMode, setViewMode] = useState<"skills" | "governance">("skills");
