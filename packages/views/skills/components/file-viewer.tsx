@@ -66,7 +66,9 @@ function FrontmatterCard({ data }: { data: Frontmatter }) {
             <span className="shrink-0 font-medium text-muted-foreground min-w-[80px]">
               {key}
             </span>
-            <span className="text-foreground">{value}</span>
+            <span className="text-foreground">
+              {typeof value === "string" ? value : JSON.stringify(value)}
+            </span>
           </div>
         ))}
       </div>
