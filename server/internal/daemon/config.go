@@ -25,6 +25,7 @@ const (
 // Config holds all daemon configuration.
 type Config struct {
 	ServerBaseURL      string
+	DatabaseURL        string // PostgreSQL connection string for context cache
 	DaemonID           string
 	DeviceName         string
 	RuntimeName        string
@@ -68,6 +69,9 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+
+	// Database URL for context cache (optional)
+	databaseURL := os.Getenv("DATABASE_URL")
 
 	// Probe available agent CLIs
 	agents := map[string]AgentEntry{}
@@ -272,6 +276,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 
 	return Config{
 		ServerBaseURL:      serverBaseURL,
+		DatabaseURL:        databaseURL,
 		DaemonID:           daemonID,
 		DeviceName:         deviceName,
 		RuntimeName:        runtimeName,

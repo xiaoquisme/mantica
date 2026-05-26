@@ -11,11 +11,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/xiaoquisme/mantica/server/internal/cli"
 	"github.com/xiaoquisme/mantica/server/internal/daemon/execenv"
 	"github.com/xiaoquisme/mantica/server/internal/daemon/repocache"
 	"github.com/xiaoquisme/mantica/server/internal/daemon/usage"
 	"github.com/xiaoquisme/mantica/server/pkg/agent"
+	db "github.com/xiaoquisme/mantica/server/pkg/db/generated"
 )
 
 // workspaceState tracks registered runtimes for a single workspace.
@@ -30,6 +33,11 @@ type Daemon struct {
 	client    *Client
 	repoCache *repocache.Cache
 	logger    *slog.Logger
+
+	// Database connection for context cache
+	dbPool   *pgxpool.Pool
+	queries  *db.Queries
+	cacheMgr *ContextCacheManager
 
 	mu           sync.Mutex
 	workspaces   map[string]*workspaceState
@@ -79,6 +87,12 @@ func (d *Daemon) Run(ctx context.Context) error {
 	// Load auth token from CLI config.
 	if err := d.resolveAuth(); err != nil {
 		return err
+	}
+
+	// Initialize database connection for context cache (optional).
+	if err := d.initDatabase(); err != nil {
+		d.logger.Warn("database connection failed, context cache disabled", "error", err)
+		// Non-fatal - daemon can run without context cache
 	}
 
 	// Load and register watched workspaces.
@@ -145,6 +159,30 @@ func (d *Daemon) resolveAuth() error {
 	}
 	d.client.SetToken(cfg.Token)
 	d.logger.Info("authenticated")
+	return nil
+}
+
+// initDatabase initializes the database connection for context cache.
+func (d *Daemon) initDatabase() error {
+	if d.cfg.DatabaseURL == "" {
+		return fmt.Errorf("DATABASE_URL not configured")
+	}
+
+	pool, err := pgxpool.New(context.Background(), d.cfg.DatabaseURL)
+	if err != nil {
+		return fmt.Errorf("connect to database: %w", err)
+	}
+
+	// Test connection
+	if err := pool.Ping(context.Background()); err != nil {
+		pool.Close()
+		return fmt.Errorf("ping database: %w", err)
+	}
+
+	d.dbPool = pool
+	d.queries = db.New(pool)
+	d.cacheMgr = NewContextCacheManager(d.queries, d.logger)
+	d.logger.Info("database connected for context cache")
 	return nil
 }
 
@@ -928,7 +966,27 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	}
 
 	// Inject runtime-specific config (meta skill) so the agent discovers .agent_context/.
-	if err := execenv.InjectRuntimeConfig(env.WorkDir, provider, taskCtx); err != nil {
+	// Load context cache from database if available
+	var cache *execenv.ContextCache
+	if d.cacheMgr != nil && task.IssueID != "" {
+		var issueID pgtype.UUID
+		if err := issueID.Scan(task.IssueID); err == nil {
+			taskID := pgtype.UUID{}
+			if err := taskID.Scan(task.ID); err == nil {
+				cache, err = d.cacheMgr.LoadCacheForTask(ctx, taskID, issueID)
+				if err != nil {
+					d.logger.Debug("failed to load context cache", "error", err)
+					cache = execenv.NewContextCache()
+				}
+			}
+		}
+	}
+	if cache == nil {
+		cache = execenv.NewContextCache()
+	}
+
+	// Use role-specific condensed prompt if agent name matches a known role
+	if err := execenv.InjectRuntimeConfig(env.WorkDir, provider, taskCtx, cache); err != nil {
 		d.logger.Warn("execenv: inject runtime config failed (non-fatal)", "error", err)
 	}
 	// NOTE: No cleanup — workdir is preserved for reuse by future tasks on
@@ -1166,6 +1224,23 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLo
 	case "completed":
 		if result.Output == "" {
 			return TaskResult{}, fmt.Errorf("%s returned empty output", provider)
+		}
+		// Save context cache for next stage
+		if d.cacheMgr != nil && cache != nil && task.IssueID != "" {
+			var issueID pgtype.UUID
+			if err := issueID.Scan(task.IssueID); err == nil {
+				// Update cache with basic issue info if not already present
+				if !cache.HasIssue() {
+					// TODO: Fetch issue details from API and update cache
+					// For now, just save what we have
+				}
+				taskID := pgtype.UUID{}
+				if err := taskID.Scan(task.ID); err == nil {
+					if err := d.cacheMgr.SaveCacheForTask(ctx, taskID, cache); err != nil {
+						d.logger.Debug("failed to save context cache", "error", err)
+					}
+				}
+			}
 		}
 		return TaskResult{
 			Status:    "completed",

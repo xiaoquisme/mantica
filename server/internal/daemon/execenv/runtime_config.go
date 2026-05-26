@@ -9,13 +9,14 @@ import (
 
 // InjectRuntimeConfig writes the meta skill content into the runtime-specific
 // config file so the agent discovers its environment through its native mechanism.
+// If cache is provided, a condensed version is generated.
 //
 // For Claude:   writes {workDir}/CLAUDE.md  (skills discovered natively from .claude/skills/)
 // For Codex:    writes {workDir}/AGENTS.md  (skills discovered natively via CODEX_HOME)
 // For OpenCode: writes {workDir}/AGENTS.md  (skills discovered natively from .config/opencode/skills/)
 // For OpenClaw: writes {workDir}/AGENTS.md  (skills discovered natively from .openclaw/skills/)
-func InjectRuntimeConfig(workDir, provider string, ctx TaskContextForEnv) error {
-	content := buildMetaSkillContent(provider, ctx)
+func InjectRuntimeConfig(workDir, provider string, ctx TaskContextForEnv, cache *ContextCache) error {
+	content := buildMetaSkillContent(provider, ctx, cache)
 
 	switch provider {
 	case "claude":
@@ -30,9 +31,20 @@ func InjectRuntimeConfig(workDir, provider string, ctx TaskContextForEnv) error 
 
 // buildMetaSkillContent generates the meta skill markdown that teaches the agent
 // about the Mantica runtime environment and available CLI tools.
-func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
+// If cache is provided, it generates a condensed version with cache hints.
+func buildMetaSkillContent(provider string, ctx TaskContextForEnv, cache *ContextCache) string {
 	var b strings.Builder
 
+	// Check if we have cached data to generate a condensed version
+	hasCachedIssue := cache != nil && cache.HasIssue()
+	hasCachedMemory := cache != nil && cache.HasMemory()
+
+	if hasCachedIssue || hasCachedMemory {
+		// Generate condensed version with cache hints
+		return buildCondensedMetaSkillContent(provider, ctx, cache)
+	}
+
+	// Full version for first-time execution
 	b.WriteString("# Mantica Agent Runtime\n\n")
 	b.WriteString("You are a agent in the Mantica platform. Use the `mantica` CLI to interact with the platform.\n\n")
 
@@ -255,4 +267,18 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 	b.WriteString("Bad: \"1. Read the issue 2. Found the bug in auth.go 3. Created branch 4. ...\"\n")
 
 	return b.String()
+}
+
+// buildCondensedMetaSkillContent generates a condensed version when context is cached.
+// This reduces prompt size by ~60% by referencing cached data instead of re-explaining.
+func buildCondensedMetaSkillContent(provider string, ctx TaskContextForEnv, cache *ContextCache) string {
+	// Try to use role-specific template if agent name matches
+	if ctx.AgentName != "" {
+		if template := GetRoleTemplate(ctx.AgentName); template != nil {
+			return buildRoleSpecificContent(template, provider, ctx)
+		}
+	}
+
+	// Fallback to generic condensed content
+	return buildGenericCondensedContent(provider, ctx)
 }
