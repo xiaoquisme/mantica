@@ -113,8 +113,10 @@ type AgentTaskQueue struct {
 	SessionID        pgtype.Text        `json:"session_id"`
 	WorkDir          pgtype.Text        `json:"work_dir"`
 	TriggerCommentID pgtype.UUID        `json:"trigger_comment_id"`
-	ChatSessionID    pgtype.UUID        `json:"chat_session_id"`
-	ScheduledTaskID  pgtype.UUID        `json:"scheduled_task_id"`
+	// Shared context cache across agent stages. Contains: {issue: {}, comments: [], code_snippets: [], memory: {}}
+	ContextCache    []byte      `json:"context_cache"`
+	ChatSessionID   pgtype.UUID `json:"chat_session_id"`
+	ScheduledTaskID pgtype.UUID `json:"scheduled_task_id"`
 }
 
 type Attachment struct {
