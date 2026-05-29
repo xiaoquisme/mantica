@@ -27,7 +27,7 @@ type workspaceState struct {
 	runtimeIDs  []string
 }
 
-// Daemon is the local agent runtime that polls for and executes tasks.
+// Daemon is the local agent runtime that polls for executes tasks.
 type Daemon struct {
 	cfg       Config
 	client    *Client
@@ -38,6 +38,10 @@ type Daemon struct {
 	dbPool   *pgxpool.Pool
 	queries  *db.Queries
 	cacheMgr *ContextCacheManager
+
+	// Sub-agent infrastructure
+	subAgentPool *SubAgentPool
+	kanbanAgent  *KanbanAgent
 
 	mu           sync.Mutex
 	workspaces   map[string]*workspaceState
@@ -52,6 +56,10 @@ type Daemon struct {
 // New creates a new Daemon instance.
 func New(cfg Config, logger *slog.Logger) *Daemon {
 	cacheRoot := filepath.Join(cfg.WorkspacesRoot, ".repos")
+	
+	// Initialize sub-agent infrastructure (queries will be set later in initDatabase)
+	subAgentPool := NewSubAgentPool(logger)
+	
 	return &Daemon{
 		cfg:          cfg,
 		client:       NewClient(cfg.ServerBaseURL),
@@ -59,6 +67,7 @@ func New(cfg Config, logger *slog.Logger) *Daemon {
 		logger:       logger,
 		workspaces:   make(map[string]*workspaceState),
 		runtimeIndex: make(map[string]Runtime),
+		subAgentPool: subAgentPool,
 	}
 }
 
@@ -182,6 +191,10 @@ func (d *Daemon) initDatabase() error {
 	d.dbPool = pool
 	d.queries = db.New(pool)
 	d.cacheMgr = NewContextCacheManager(d.queries, d.logger)
+	
+	// Initialize Kanban Agent with database queries
+	d.kanbanAgent = NewKanbanAgent(d.subAgentPool, d.queries, d.logger)
+	
 	d.logger.Info("database connected for context cache")
 	return nil
 }
@@ -819,6 +832,13 @@ func (d *Daemon) handleTask(ctx context.Context, task Task) {
 	if task.Agent != nil {
 		agentName = task.Agent.Name
 	}
+	
+	// Special handling for Kanban Agent
+	if agentName == "KANBAN" {
+		d.handleKanbanTask(ctx, task, provider, taskLog)
+		return
+	}
+	
 	if task.ChatSessionID != "" {
 		taskLog.Info("picked chat task", "chat_session", shortID(task.ChatSessionID), "agent", agentName, "provider", provider)
 	} else {
@@ -1317,4 +1337,77 @@ func convertSkillsForEnv(skills []SkillData) []execenv.SkillContextForEnv {
 		}
 	}
 	return result
+}
+
+// handleKanbanTask handles tasks assigned to the Kanban Agent
+func (d *Daemon) handleKanbanTask(ctx context.Context, task Task, provider string, taskLog *slog.Logger) {
+	// Start the task
+	if err := d.client.StartTask(ctx, task.ID); err != nil {
+		taskLog.Error("start kanban task failed", "error", err)
+		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("start kanban task failed: %s", err.Error())); failErr != nil {
+			taskLog.Error("fail kanban task after start error", "error", failErr)
+		}
+		return
+	}
+
+	taskLog.Info("kanban agent starting task decomposition", "issue", task.IssueID)
+
+	// Get issue details from the task
+	title := ""
+	description := ""
+	if task.IssueID != "" {
+		// In a real implementation, we would fetch the issue details from the server
+		// For now, use placeholder values
+		title = fmt.Sprintf("Issue %s", task.IssueID)
+		description = "Task description would be fetched from server"
+	} else {
+		// For chat tasks, use the session ID
+		title = fmt.Sprintf("Chat Task %s", shortID(task.ChatSessionID))
+		description = "Chat task from user"
+	}
+
+	// Decompose the task
+	subTasks, err := d.kanbanAgent.DecomposeTask(ctx, task.IssueID, title, description)
+	if err != nil {
+		taskLog.Error("decompose task failed", "error", err)
+		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("decompose task failed: %s", err.Error())); failErr != nil {
+			taskLog.Error("fail kanban task after decompose error", "error", failErr)
+		}
+		return
+	}
+
+	taskLog.Info("task decomposed", "subtasks", len(subTasks))
+
+	// Parse workspace ID
+	workspaceUUID, err := parseUUID(task.WorkspaceID)
+	if err != nil {
+		taskLog.Error("invalid workspace ID", "error", err)
+		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("invalid workspace ID: %s", err.Error())); failErr != nil {
+			taskLog.Error("fail kanban task after workspace parse error", "error", failErr)
+		}
+		return
+	}
+
+	// Execute sub-tasks in parallel (respecting dependencies)
+	results, err := d.kanbanAgent.ExecuteParallel(ctx, task.ID, workspaceUUID, subTasks)
+	if err != nil {
+		taskLog.Error("execute parallel sub-tasks failed", "error", err)
+		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("execute sub-tasks failed: %s", err.Error())); failErr != nil {
+			taskLog.Error("fail kanban task after execute error", "error", failErr)
+		}
+		return
+	}
+
+	// Aggregate results
+	summary := d.kanbanAgent.AggregateResults(results)
+
+	taskLog.Info("kanban task completed", "successful_subtasks", len(results))
+
+	// Complete the kanban task with the aggregated summary
+	if err := d.client.CompleteTask(ctx, task.ID, summary, "", "", ""); err != nil {
+		taskLog.Error("complete kanban task failed", "error", err)
+		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("complete kanban task failed: %s", err.Error())); failErr != nil {
+			taskLog.Error("fail kanban task after complete error", "error", failErr)
+		}
+	}
 }

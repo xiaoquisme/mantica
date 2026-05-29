@@ -47,7 +47,7 @@ const updateTaskContextCache = `-- name: UpdateTaskContextCache :one
 UPDATE agent_task_queue
 SET context_cache = $2
 WHERE id = $1
-RETURNING id, agent_id, issue_id, status, priority, dispatched_at, started_at, completed_at, result, error, created_at, context, runtime_id, session_id, work_dir, trigger_comment_id, context_cache, chat_session_id, scheduled_task_id
+RETURNING id, agent_id, issue_id, status, priority, dispatched_at, started_at, completed_at, result, error, created_at, context, runtime_id, session_id, work_dir, trigger_comment_id, context_cache, chat_session_id, scheduled_task_id, parent_task_id, subagent_role, task_depth, waiting_for_subagents, completed_subagents, total_subagents, failed_subagents
 `
 
 type UpdateTaskContextCacheParams struct {
@@ -78,6 +78,13 @@ func (q *Queries) UpdateTaskContextCache(ctx context.Context, arg UpdateTaskCont
 		&i.ContextCache,
 		&i.ChatSessionID,
 		&i.ScheduledTaskID,
+		&i.ParentTaskID,
+		&i.SubagentRole,
+		&i.TaskDepth,
+		&i.WaitingForSubagents,
+		&i.CompletedSubagents,
+		&i.TotalSubagents,
+		&i.FailedSubagents,
 	)
 	return i, err
 }

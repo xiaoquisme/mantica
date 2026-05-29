@@ -9,7 +9,9 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Columns3,
   Link2,
+  List,
   MoreHorizontal,
   PanelRight,
   Plus,
@@ -82,6 +84,7 @@ import { timeAgo } from "@mantica/core/utils";
 import { cn } from "@mantica/ui/lib/utils";
 
 import { ProgressRing } from "./progress-ring";
+import { SubtaskKanban } from "./subtask-kanban";
 
 function shortDate(date: string | null): string {
   if (!date) return "—";
@@ -282,6 +285,17 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
     enabled: !!parentIssueId,
   });
   const [subIssuesCollapsed, setSubIssuesCollapsed] = useState(false);
+  const [subtaskViewMode, setSubtaskViewMode] = useState<"list" | "board">("list");
+  const handleSubtaskStatusChange = useCallback(
+    (issueId: string, newStatus: IssueStatus) => {
+      updateIssueMutation.mutate({
+        issueId,
+        workspaceId: wsId,
+        patch: { status: newStatus },
+      });
+    },
+    [updateIssueMutation, wsId],
+  );
 
   const loading = issueLoading;
 
@@ -839,6 +853,40 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                       {doneCount} of {childIssues.length} sub-tasks complete
                     </TooltipContent>
                   </Tooltip>
+                  {/* View toggle */}
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <div className="inline-flex items-center rounded-md border bg-muted/30 p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setSubtaskViewMode("list")}
+                            className={cn(
+                              "inline-flex h-6 w-6 items-center justify-center rounded-sm transition-colors",
+                              subtaskViewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                            aria-label="List view"
+                          >
+                            <List className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSubtaskViewMode("board")}
+                            className={cn(
+                              "inline-flex h-6 w-6 items-center justify-center rounded-sm transition-colors",
+                              subtaskViewMode === "board" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                            aria-label="Board view"
+                          >
+                            <Columns3 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      }
+                    />
+                    <TooltipContent side="bottom">
+                      {subtaskViewMode === "list" ? "List view" : "Board view"}
+                    </TooltipContent>
+                  </Tooltip>
                   <Tooltip>
                     <TooltipTrigger
                       render={
@@ -861,8 +909,8 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                   </Tooltip>
                 </div>
 
-                {/* List */}
-                {!subIssuesCollapsed && (
+                {/* View mode based on subtaskViewMode */}
+                {!subIssuesCollapsed && subtaskViewMode === "list" && (
                   <div className="overflow-hidden rounded-lg border bg-card/30 divide-y divide-border/60">
                     {childIssues.map((child) => {
                       const isDone =
@@ -907,6 +955,9 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                       );
                     })}
                   </div>
+                )}
+                {!subIssuesCollapsed && subtaskViewMode === "board" && (
+                  <SubtaskKanban subtasks={childIssues} onStatusChange={handleSubtaskStatusChange} />
                 )}
               </div>
             );

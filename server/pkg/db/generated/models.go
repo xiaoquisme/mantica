@@ -40,6 +40,15 @@ type Agent struct {
 	DefaultModel       pgtype.Text        `json:"default_model"`
 }
 
+type AgentComposition struct {
+	ID            pgtype.UUID        `json:"id"`
+	ParentAgentID pgtype.UUID        `json:"parent_agent_id"`
+	ChildAgentID  pgtype.UUID        `json:"child_agent_id"`
+	Role          string             `json:"role"`
+	Priority      int32              `json:"priority"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
 type AgentRuntime struct {
 	ID          pgtype.UUID        `json:"id"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`
@@ -114,9 +123,16 @@ type AgentTaskQueue struct {
 	WorkDir          pgtype.Text        `json:"work_dir"`
 	TriggerCommentID pgtype.UUID        `json:"trigger_comment_id"`
 	// Shared context cache across agent stages. Contains: {issue: {}, comments: [], code_snippets: [], memory: {}}
-	ContextCache    []byte      `json:"context_cache"`
-	ChatSessionID   pgtype.UUID `json:"chat_session_id"`
-	ScheduledTaskID pgtype.UUID `json:"scheduled_task_id"`
+	ContextCache        []byte      `json:"context_cache"`
+	ChatSessionID       pgtype.UUID `json:"chat_session_id"`
+	ScheduledTaskID     pgtype.UUID `json:"scheduled_task_id"`
+	ParentTaskID        pgtype.UUID `json:"parent_task_id"`
+	SubagentRole        pgtype.Text `json:"subagent_role"`
+	TaskDepth           int32       `json:"task_depth"`
+	WaitingForSubagents bool        `json:"waiting_for_subagents"`
+	CompletedSubagents  int32       `json:"completed_subagents"`
+	TotalSubagents      int32       `json:"total_subagents"`
+	FailedSubagents     int32       `json:"failed_subagents"`
 }
 
 type Attachment struct {

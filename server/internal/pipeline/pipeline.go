@@ -19,9 +19,21 @@ var Stages = map[string]StageConfig{
 }
 
 // ClassifierStage is the entry stage triggered when Classifier is assigned to a backlog issue.
+// NOTE: This is being replaced by KanbanStage in the new architecture.
 var ClassifierStage = StageConfig{
 	AgentName:        "Classifier",
 	InProgressStatus: "classifying",
+}
+
+// KanbanStage is the new entry stage for Kanban Agent orchestration.
+var KanbanStage = StageConfig{
+	AgentName:        "KANBAN",
+	InProgressStatus: "in_kanban",
+}
+
+// IsKanbanAgent returns true if the given agent name is the Kanban Agent.
+func IsKanbanAgent(name string) bool {
+	return name == KanbanStage.AgentName
 }
 
 // IsClassifierAgent returns true if the given agent name is the Classifier.
@@ -44,6 +56,9 @@ func IsReadyStatus(status string) bool {
 // status), so a Classifier crash reverts to "backlog" rather than
 // "ready_classifying" (which doesn't exist). Callers should additionally
 // clear the assignee in that case so the user can re-trigger Classifier.
+//
+// The Kanban stage is also special: its in-progress status is "in_kanban"
+// and it reverts to "backlog" so the user can re-trigger Kanban.
 func RevertStatusFor(inStatus string) (readyStatus string, ok bool) {
 	for ready, stage := range Stages {
 		if stage.InProgressStatus == inStatus {
@@ -53,12 +68,16 @@ func RevertStatusFor(inStatus string) (readyStatus string, ok bool) {
 	if inStatus == ClassifierStage.InProgressStatus {
 		return "backlog", true
 	}
+	if inStatus == KanbanStage.InProgressStatus {
+		return "backlog", true
+	}
 	return "", false
 }
 
 // AllowedAgentTransitions maps agent name to the statuses they are allowed to set.
 // This prevents agents from setting status to backlog, done, or other stages they don't own.
 var AllowedAgentTransitions = map[string][]string{
+	"KANBAN":      {"done", "blocked", "ready_kanban"}, // Kanban can set to done or blocked
 	"Classifier":  {"ready_analyze", "ready_arch_design", "blocked"},
 	"BA":          {"ready_arch_design", "blocked"},
 	"TL":          {"ready_dev", "blocked"},
