@@ -168,7 +168,7 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv, cache *Contex
 			b.WriteString("   b. Push directly to main\n")
 		}
 		b.WriteString("5. If the task does not require code (e.g. research, documentation), post your findings as a comment\n")
-		fmt.Fprintf(&b, "6. Run `mantica issue status %s in_review`\n", ctx.IssueID)
+		fmt.Fprintf(&b, "6. Run `mantica issue status %s done`\n", ctx.IssueID)
 		fmt.Fprintf(&b, "7. If blocked, run `mantica issue status %s blocked` and post a comment explaining why\n\n", ctx.IssueID)
 	}
 

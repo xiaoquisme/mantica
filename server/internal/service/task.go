@@ -634,16 +634,14 @@ func (s *TaskService) TriggerPipeline(ctx context.Context, issue db.Issue) *db.I
 // AutoRevertIssueStatusOnFailure reverts an issue's status from in_* back to
 // the matching ready_* when the agent task for that stage failed. Posts a
 // system comment recording the run id and error, then re-triggers the
-// pipeline so the next agent run is dispatched automatically.
+// AutoRevertIssueStatusOnFailure reverts an issue's status when an agent task fails.
 //
 // CAS-safe (no-op when the issue status no longer matches the expected
 // in_*), idempotent against duplicate failure callbacks for the same issue,
 // and skipped entirely for chat tasks (no issue) or unrecognized statuses.
 //
-// The Classifier stage is special-cased: in_status="classifying" reverts to
-// "backlog" AND the Classifier assignee is cleared so the user can re-trigger
-// the Classifier by reassigning. Re-dispatch via TriggerPipeline only happens
-// for stages whose ready_* maps back into pipeline.Stages.
+// Re-dispatch via TriggerPipeline only happens for stages whose ready_*
+// maps back into pipeline.Stages.
 func (s *TaskService) AutoRevertIssueStatusOnFailure(ctx context.Context, task db.AgentTaskQueue) {
 	if !task.IssueID.Valid {
 		return
@@ -657,8 +655,8 @@ func (s *TaskService) AutoRevertIssueStatusOnFailure(ctx context.Context, task d
 
 	readyStatus, ok := pipeline.RevertStatusFor(issue.Status)
 	if !ok {
-		// Issue is not in an in_* status — agent already advanced it (e.g. to
-		// ready_review) before crashing, or it was never in a stage status.
+		// Issue is not in a doing status — agent already advanced it
+		// before crashing, or it was never in a stage status.
 		return
 	}
 

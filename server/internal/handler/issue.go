@@ -927,14 +927,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		h.triggerPipeline(r.Context(), issue)
 	} else if issue.AssigneeType.Valid && issue.AssigneeID.Valid {
 		// Non-pipeline status: enqueue directly if assignee is an agent.
-		// Special case: backlog + Classifier → advance to classifying.
-		if issue.Status == "backlog" && issue.AssigneeType.String == "agent" {
-			if ag, err := h.Queries.GetAgent(r.Context(), issue.AssigneeID); err == nil && pipeline.IsClassifierAgent(ag.Name) {
-				h.advanceToClassifying(r.Context(), issue, ag)
-			} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
-				h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
-			}
-		} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
+		if h.shouldEnqueueAgentTask(r.Context(), issue) {
 			h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
 		}
 	}
@@ -1142,27 +1135,19 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Reconcile task queue when assignee changes.
-	// Special case: backlog issue assigned to Classifier → advance to classifying.
-	// For ready_* statuses: let triggerPipeline handle auto-assignment.
+	// For todo statuses: let triggerPipeline handle auto-assignment.
 	// Otherwise: direct enqueue for manual assignees.
 	if assigneeChanged {
 		h.TaskService.CancelTasksForIssue(r.Context(), issue.ID)
 
-		if issue.Status == "backlog" && issue.AssigneeType.String == "agent" && issue.AssigneeID.Valid {
-			// Check if the new assignee is Classifier
-			if ag, err := h.Queries.GetAgent(r.Context(), issue.AssigneeID); err == nil && pipeline.IsClassifierAgent(ag.Name) {
-				h.advanceToClassifying(r.Context(), issue, ag)
-			} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
-				h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
-			}
-		} else if pipeline.IsReadyStatus(issue.Status) {
+		if pipeline.IsReadyStatus(issue.Status) {
 			h.triggerPipeline(r.Context(), issue)
 		} else if h.shouldEnqueueAgentTask(r.Context(), issue) {
 			h.TaskService.EnqueueTaskForIssue(r.Context(), issue)
 		}
 	}
 
-	// Pipeline: when status moves to ready_*, auto-assign the next agent.
+	// Pipeline: when status moves to todo, auto-assign the next agent.
 	// Skip if assigneeChanged already handled it above.
 	if statusChanged && !assigneeChanged && pipeline.IsReadyStatus(issue.Status) {
 		h.triggerPipeline(r.Context(), issue)
