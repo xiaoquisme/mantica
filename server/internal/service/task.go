@@ -663,7 +663,6 @@ func (s *TaskService) AutoRevertIssueStatusOnFailure(ctx context.Context, task d
 	}
 
 	expectedStatus := issue.Status
-	isClassifier := expectedStatus == pipeline.ClassifierStage.InProgressStatus
 
 	revertedIssue, err := s.Queries.RevertIssueStatusIfMatching(ctx, db.RevertIssueStatusIfMatchingParams{
 		ID:             issue.ID,
@@ -682,23 +681,6 @@ func (s *TaskService) AutoRevertIssueStatusOnFailure(ctx context.Context, task d
 			"error", err,
 		)
 		return
-	}
-
-	// For the Classifier stage there is no ready_classifying — clear the
-	// assignee so the user can re-trigger by reassigning the Classifier agent.
-	if isClassifier {
-		cleared, err := s.Queries.ClearIssueAssigneeIfStatus(ctx, db.ClearIssueAssigneeIfStatusParams{
-			ID:             revertedIssue.ID,
-			ExpectedStatus: readyStatus,
-		})
-		if err == nil {
-			revertedIssue = cleared
-		} else if !errors.Is(err, pgx.ErrNoRows) {
-			slog.Warn("auto-revert: failed to clear classifier assignee",
-				"issue_id", util.UUIDToString(issue.ID),
-				"error", err,
-			)
-		}
 	}
 
 	// Build the system comment summarising the failure cause and revert.

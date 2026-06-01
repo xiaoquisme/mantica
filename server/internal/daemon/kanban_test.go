@@ -116,10 +116,10 @@ func TestKanbanAgent_AggregateResults(t *testing.T) {
 	}
 	k.initDecompositionRules()
 
-	results := map[string]*SubTaskResult{
-		"task-1": {Success: true, Output: "Task 1 completed"},
-		"task-2": {Success: true, Output: "Task 2 completed"},
-		"task-3": {Success: false, Error: "Task 3 failed"},
+	results := []*SubTaskResult{
+		{Success: true, Output: "Task 1 completed"},
+		{Success: true, Output: "Task 2 completed"},
+		{Success: false, Error: "Task 3 failed"},
 	}
 
 	summary := k.AggregateResults(results)

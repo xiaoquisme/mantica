@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useState } from "react";
 import { Columns3, List } from "lucide-react";
 import { cn } from "@mantica/ui/lib/utils";
@@ -20,10 +19,8 @@ interface SubtaskKanbanProps {
 }
 
 const KANBAN_COLUMNS = [
-  { id: "todo", title: "To Do", statuses: ["todo", "backlog"] },
-  { id: "in_progress", title: "In Progress", statuses: ["in_dev", "in_arch_design", "in_analyze"] },
-  { id: "review", title: "Review", statuses: ["ready_review", "in_review"] },
-  { id: "testing", title: "Testing", statuses: ["ready_test", "in_test"] },
+  { id: "todo", title: "To Do", statuses: ["backlog", "todo"] },
+  { id: "doing", title: "Doing", statuses: ["in_analyze", "in_arch_design", "doing", "ready_review", "in_review", "ready_test", "in_test"] },
   { id: "done", title: "Done", statuses: ["done"] },
   { id: "blocked", title: "Blocked", statuses: ["blocked"] },
 ];

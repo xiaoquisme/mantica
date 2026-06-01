@@ -21,21 +21,12 @@ type mention struct {
 
 // statusLabels maps DB status values to human-readable labels for notifications.
 var statusLabels = map[string]string{
-	"backlog":            "Backlog",
-	"classifying":        "Classifying",
-	"ready_analyze":      "Ready Analyze",
-	"in_analyze":         "In Analyze",
-	"ready_arch_design":  "Ready Arch Design",
-	"in_arch_design":     "In Arch Design",
-	"ready_dev":          "Ready Dev",
-	"in_dev":             "In Dev",
-	"ready_review":       "Ready Review",
-	"in_review":          "In Review",
-	"ready_test":         "Ready Test",
-	"in_test":            "In Test",
-	"done":               "Done",
-	"blocked":            "Blocked",
-	"cancelled":          "Cancelled",
+	"backlog":   "Backlog",
+	"todo":      "Todo",
+	"doing":     "Doing",
+	"done":      "Done",
+	"blocked":   "Blocked",
+	"cancelled": "Cancelled",
 }
 
 // priorityLabels maps DB priority values to human-readable labels for notifications.

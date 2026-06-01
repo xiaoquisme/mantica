@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  Shield, Pin, PinOff, Archive, Trash2,
-  TrendingUp, AlertTriangle, CheckCircle, RefreshCw,
+  Pin, PinOff, Archive, Trash2,
+  AlertTriangle, CheckCircle, RefreshCw,
 } from "lucide-react";
 import { api } from "@mantica/core/api";
 import type { GovernanceOverview, SkillQualityInfo } from "@mantica/core/types";

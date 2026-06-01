@@ -22,9 +22,7 @@ import (
 )
 
 var validIssueStatuses = []string{
-	"backlog", "classifying", "ready_analyze", "in_analyze",
-	"ready_arch_design", "in_arch_design", "ready_dev", "in_dev",
-	"ready_review", "in_review", "ready_test", "in_test",
+	"backlog", "todo", "doing",
 	"done", "blocked", "cancelled",
 }
 
@@ -386,22 +384,13 @@ func buildSearchQuery(phrase string, terms []string, queryNum int, hasNum bool, 
 
 	// Status priority: active issues first
 	statusRank := `CASE i.status
-		WHEN 'in_dev' THEN 0
-		WHEN 'in_analyze' THEN 1
-		WHEN 'in_arch_design' THEN 2
-		WHEN 'in_review' THEN 3
-		WHEN 'in_test' THEN 4
-		WHEN 'classifying' THEN 5
-		WHEN 'ready_dev' THEN 6
-		WHEN 'ready_arch_design' THEN 7
-		WHEN 'ready_analyze' THEN 8
-		WHEN 'ready_review' THEN 9
-		WHEN 'ready_test' THEN 10
-		WHEN 'blocked' THEN 11
-		WHEN 'backlog' THEN 12
-		WHEN 'done' THEN 13
-		WHEN 'cancelled' THEN 14
-		ELSE 15
+		WHEN 'doing' THEN 0
+		WHEN 'todo' THEN 1
+		WHEN 'blocked' THEN 2
+		WHEN 'backlog' THEN 3
+		WHEN 'done' THEN 4
+		WHEN 'cancelled' THEN 5
+		ELSE 6
 	END`
 
 	// --- match_source expression ---

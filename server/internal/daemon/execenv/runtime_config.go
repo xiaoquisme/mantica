@@ -81,7 +81,7 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv, cache *Contex
 	b.WriteString("- `mantica issue assign <id> --to <name>` — Assign an issue to a member or agent by name (use --unassign to remove assignee)\n")
 	b.WriteString("- `mantica issue comment add <issue-id> --content \"...\" [--parent <comment-id>]` — Post a comment (use --parent to reply to a specific comment)\n")
 	b.WriteString("- `mantica issue comment delete <comment-id>` — Delete a comment\n")
-	b.WriteString("- `mantica issue status <id> <status>` — Update issue status (todo, in_progress, in_review, done, blocked)\n")
+	b.WriteString("- `mantica issue status <id> <status>` — Update issue status (backlog, todo, doing, done, blocked, cancelled)\n")
 	b.WriteString("- `mantica issue update <id> [--title X] [--description X] [--priority X]` — Update issue fields\n\n")
 
 	// Inject available repositories section.

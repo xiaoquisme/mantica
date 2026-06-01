@@ -286,16 +286,9 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
   });
   const [subIssuesCollapsed, setSubIssuesCollapsed] = useState(false);
   const [subtaskViewMode, setSubtaskViewMode] = useState<"list" | "board">("list");
-  const handleSubtaskStatusChange = useCallback(
-    (issueId: string, newStatus: IssueStatus) => {
-      updateIssueMutation.mutate({
-        issueId,
-        workspaceId: wsId,
-        patch: { status: newStatus },
-      });
-    },
-    [updateIssueMutation, wsId],
-  );
+
+  // Issue field updates via TQ mutation (optimistic update + rollback in mutation hook)
+  const updateIssueMutation = useUpdateIssue();
 
   const loading = issueLoading;
 
@@ -321,8 +314,6 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
     }
   }, [issueId, issue?.identifier]);
 
-  // Issue field updates via TQ mutation (optimistic update + rollback in mutation hook)
-  const updateIssueMutation = useUpdateIssue();
   const handleUpdateField = useCallback(
     (updates: Partial<UpdateIssueRequest>) => {
       if (!issue) return;
@@ -957,7 +948,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
                   </div>
                 )}
                 {!subIssuesCollapsed && subtaskViewMode === "board" && (
-                  <SubtaskKanban subtasks={childIssues} onStatusChange={handleSubtaskStatusChange} />
+                  <SubtaskKanban childIssues={childIssues} />
                 )}
               </div>
             );

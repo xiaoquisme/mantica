@@ -23,16 +23,14 @@ const (
 
 // SubTaskTemplate defines a template for creating sub-tasks
 type SubTaskTemplate struct {
-	AgentName string
 	TaskDesc  string
-	DependsOn []string
+	DependsOn []int // indices of tasks this depends on
 }
 
 // DecompositionRule defines how to decompose a task
 type DecompositionRule struct {
-	Name         string
-	SubTasks     []SubTaskTemplate
-	Dependencies map[string][]string // task name -> dependency names
+	Name     string
+	SubTasks []SubTaskTemplate
 }
 
 // SubTaskResult represents the result of a sub-task
@@ -46,9 +44,8 @@ type SubTaskResult struct {
 type SubTask struct {
 	ID          string
 	IssueID     string
-	AgentName   string
 	Description string
-	DependsOn   []string
+	DependsOn   []int
 	Status      string
 	Result      *SubTaskResult
 }
@@ -56,16 +53,14 @@ type SubTask struct {
 // KanbanAgent orchestrates task decomposition and execution
 type KanbanAgent struct {
 	DecompositionRules map[TaskType]DecompositionRule
-	SubAgentPool       *SubAgentPool
 	queries            *db.Queries
 	logger             *slog.Logger
 }
 
 // NewKanbanAgent creates a new Kanban Agent
-func NewKanbanAgent(pool *SubAgentPool, queries *db.Queries, logger *slog.Logger) *KanbanAgent {
+func NewKanbanAgent(queries *db.Queries, logger *slog.Logger) *KanbanAgent {
 	k := &KanbanAgent{
 		DecompositionRules: make(map[TaskType]DecompositionRule),
-		SubAgentPool:       pool,
 		queries:            queries,
 		logger:             logger,
 	}
@@ -76,37 +71,16 @@ func NewKanbanAgent(pool *SubAgentPool, queries *db.Queries, logger *slog.Logger
 	return k
 }
 
-// findAgentByName finds an agent by name in a specific workspace
-func (k *KanbanAgent) findAgentByName(ctx context.Context, workspaceID pgtype.UUID, name string) (*db.Agent, error) {
-	agents, err := k.queries.ListAgents(ctx, workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf("agent lookup failed: %v", err)
-	}
-
-	for _, agent := range agents {
-		if agent.Name == name {
-			return &agent, nil
-		}
-	}
-
-	return nil, fmt.Errorf("agent not found: %s", name)
-}
-
 // initDecompositionRules sets up the default decomposition rules
 func (k *KanbanAgent) initDecompositionRules() {
 	// Bug Fix rule
 	k.DecompositionRules[TaskTypeBugFix] = DecompositionRule{
 		Name: "Bug Fix",
 		SubTasks: []SubTaskTemplate{
-			{AgentName: "TL", TaskDesc: "Analyze root cause"},
-			{AgentName: "DEV", TaskDesc: "Implement fix", DependsOn: []string{"TL"}},
-			{AgentName: "QA", TaskDesc: "Test fix", DependsOn: []string{"DEV"}},
-			{AgentName: "Code Review", TaskDesc: "Review code", DependsOn: []string{"DEV"}},
-		},
-		Dependencies: map[string][]string{
-			"DEV":         {"TL"},
-			"QA":          {"DEV"},
-			"Code Review": {"DEV"},
+			{TaskDesc: "Analyze root cause"},
+			{TaskDesc: "Implement fix", DependsOn: []int{0}},
+			{TaskDesc: "Test fix", DependsOn: []int{1}},
+			{TaskDesc: "Review code", DependsOn: []int{1}},
 		},
 	}
 
@@ -114,17 +88,11 @@ func (k *KanbanAgent) initDecompositionRules() {
 	k.DecompositionRules[TaskTypeFeature] = DecompositionRule{
 		Name: "Feature Implementation",
 		SubTasks: []SubTaskTemplate{
-			{AgentName: "BA", TaskDesc: "Analyze requirements"},
-			{AgentName: "TL", TaskDesc: "Design architecture", DependsOn: []string{"BA"}},
-			{AgentName: "DEV", TaskDesc: "Implement feature", DependsOn: []string{"TL"}},
-			{AgentName: "QA", TaskDesc: "Write and run tests", DependsOn: []string{"DEV"}},
-			{AgentName: "Code Review", TaskDesc: "Review implementation", DependsOn: []string{"DEV"}},
-		},
-		Dependencies: map[string][]string{
-			"TL":          {"BA"},
-			"DEV":         {"TL"},
-			"QA":          {"DEV"},
-			"Code Review": {"DEV"},
+			{TaskDesc: "Analyze requirements"},
+			{TaskDesc: "Design architecture", DependsOn: []int{0}},
+			{TaskDesc: "Implement feature", DependsOn: []int{1}},
+			{TaskDesc: "Write and run tests", DependsOn: []int{2}},
+			{TaskDesc: "Review implementation", DependsOn: []int{2}},
 		},
 	}
 
@@ -132,13 +100,9 @@ func (k *KanbanAgent) initDecompositionRules() {
 	k.DecompositionRules[TaskTypeRefactoring] = DecompositionRule{
 		Name: "Refactoring",
 		SubTasks: []SubTaskTemplate{
-			{AgentName: "TL", TaskDesc: "Plan refactoring"},
-			{AgentName: "DEV", TaskDesc: "Execute refactoring", DependsOn: []string{"TL"}},
-			{AgentName: "Code Review", TaskDesc: "Review changes", DependsOn: []string{"DEV"}},
-		},
-		Dependencies: map[string][]string{
-			"DEV":         {"TL"},
-			"Code Review": {"DEV"},
+			{TaskDesc: "Plan refactoring"},
+			{TaskDesc: "Execute refactoring", DependsOn: []int{0}},
+			{TaskDesc: "Review changes", DependsOn: []int{1}},
 		},
 	}
 }
@@ -193,9 +157,8 @@ func (k *KanbanAgent) DecomposeTask(ctx context.Context, issueID, title, descrip
 
 	for i, template := range rule.SubTasks {
 		subTask := SubTask{
-			ID:          fmt.Sprintf("%s-%s-%d", issueID, template.AgentName, i),
+			ID:          fmt.Sprintf("%s-%d", issueID, i),
 			IssueID:     issueID,
-			AgentName:   template.AgentName,
 			Description: fmt.Sprintf("%s: %s", template.TaskDesc, title),
 			DependsOn:   template.DependsOn,
 			Status:      "pending",
@@ -208,7 +171,6 @@ func (k *KanbanAgent) DecomposeTask(ctx context.Context, issueID, title, descrip
 
 // ExecuteParallel executes ready sub-tasks in parallel, respecting dependency order.
 // Tasks without unmet dependencies are executed concurrently.
-// Each task is executed via the cyclic Main→Terminal→Summary pattern.
 func (k *KanbanAgent) ExecuteParallel(ctx context.Context, parentTaskID string, workspaceID pgtype.UUID, subTasks []SubTask) (map[string]*SubTaskResult, error) {
 	completed := make(map[string]bool)
 	results := make(map[string]*SubTaskResult)
@@ -252,30 +214,22 @@ func (k *KanbanAgent) ExecuteParallel(ctx context.Context, parentTaskID string, 
 func (k *KanbanAgent) findReadyTasks(subTasks []SubTask, completed map[string]bool) []SubTask {
 	var ready []SubTask
 
-	for _, task := range subTasks {
+	for idx, task := range subTasks {
 		if completed[task.ID] {
 			continue
 		}
 
 		// Check if all dependencies are completed
 		allDepsCompleted := true
-		for _, dep := range task.DependsOn {
-			// Find the task with this agent name
-			found := false
-			for _, t := range subTasks {
-				if t.AgentName == dep && completed[t.ID] {
-					found = true
-					break
-				}
-			}
-			if !found {
+		for _, depIdx := range task.DependsOn {
+			if depIdx < len(subTasks) && !completed[subTasks[depIdx].ID] {
 				allDepsCompleted = false
 				break
 			}
 		}
 
 		if allDepsCompleted {
-			ready = append(ready, task)
+			ready = append(ready, subTasks[idx])
 		}
 	}
 
@@ -284,7 +238,7 @@ func (k *KanbanAgent) findReadyTasks(subTasks []SubTask, completed map[string]bo
 
 // executeSubTask executes a single sub-task by creating a database task and waiting for completion
 func (k *KanbanAgent) executeSubTask(ctx context.Context, parentTaskID string, workspaceID pgtype.UUID, task SubTask) *SubTaskResult {
-	k.logger.Info("executing sub-task", "task_id", task.ID, "agent", task.AgentName, "description", task.Description)
+	k.logger.Info("executing sub-task", "task_id", task.ID, "description", task.Description)
 
 	// Parse parent task ID
 	parentUUID, err := parseUUID(parentTaskID)
@@ -295,21 +249,12 @@ func (k *KanbanAgent) executeSubTask(ctx context.Context, parentTaskID string, w
 		}
 	}
 
-	// Find agent by name in the workspace
-	agent, err := k.findAgentByName(ctx, workspaceID, task.AgentName)
+	// Find any available agent with a runtime in the workspace
+	agent, runtimeID, err := k.findAvailableAgent(ctx, workspaceID)
 	if err != nil {
 		return &SubTaskResult{
 			Success: false,
-			Error:   fmt.Sprintf("agent not found: %s, error: %v", task.AgentName, err),
-		}
-	}
-
-	// Find a runtime for this agent
-	runtimeID, err := k.findRuntimeForAgent(ctx, agent.ID)
-	if err != nil {
-		return &SubTaskResult{
-			Success: false,
-			Error:   fmt.Sprintf("no runtime found for agent: %s, error: %v", task.AgentName, err),
+			Error:   fmt.Sprintf("no available agent: %v", err),
 		}
 	}
 
@@ -321,15 +266,15 @@ func (k *KanbanAgent) executeSubTask(ctx context.Context, parentTaskID string, w
 			Error:   fmt.Sprintf("invalid issue ID: %v", err),
 		}
 	}
-	subTaskDepth := 1 // Could be calculated based on parent depth
+	subTaskDepth := 1
 
 	createdTask, err := k.queries.CreateSubTask(ctx, db.CreateSubTaskParams{
 		AgentID:      agent.ID,
 		RuntimeID:    runtimeID,
 		IssueID:      issueID,
-		Priority:     5, // Default priority
+		Priority:     5,
 		ParentTaskID: parentUUID,
-		SubagentRole: pgtype.Text{String: task.AgentName, Valid: true},
+		SubagentRole: pgtype.Text{String: "main", Valid: true},
 		TaskDepth:    int32(subTaskDepth),
 	})
 	if err != nil {
@@ -339,11 +284,27 @@ func (k *KanbanAgent) executeSubTask(ctx context.Context, parentTaskID string, w
 		}
 	}
 
-	k.logger.Info("sub-task created", "subtask_id", createdTask.ID, "agent", task.AgentName)
+	k.logger.Info("sub-task created", "subtask_id", createdTask.ID)
 
 	// Wait for sub-task to complete (poll database)
 	result := k.waitForSubTaskCompletion(ctx, createdTask.ID, 5*time.Minute)
 	return result
+}
+
+// findAvailableAgent finds any agent with a runtime in the workspace
+func (k *KanbanAgent) findAvailableAgent(ctx context.Context, workspaceID pgtype.UUID) (*db.Agent, pgtype.UUID, error) {
+	agents, err := k.queries.ListAgents(ctx, workspaceID)
+	if err != nil {
+		return nil, pgtype.UUID{}, fmt.Errorf("failed to list agents: %v", err)
+	}
+
+	for _, agent := range agents {
+		if agent.RuntimeID.Valid {
+			return &agent, agent.RuntimeID, nil
+		}
+	}
+
+	return nil, pgtype.UUID{}, fmt.Errorf("no agent with runtime found in workspace")
 }
 
 // waitForSubTaskCompletion polls the database until the sub-task completes or times out
@@ -405,24 +366,6 @@ func (k *KanbanAgent) waitForSubTaskCompletion(ctx context.Context, taskID pgtyp
 	}
 }
 
-// findRuntimeForAgent finds a runtime for an agent
-func (k *KanbanAgent) findRuntimeForAgent(ctx context.Context, agentID pgtype.UUID) (pgtype.UUID, error) {
-	// Get agent details to find associated runtime
-	agent, err := k.queries.GetAgent(ctx, agentID)
-	if err != nil {
-		return pgtype.UUID{}, fmt.Errorf("failed to get agent: %v", err)
-	}
-
-	// If agent has a runtime_id, use it
-	if agent.RuntimeID.Valid {
-		return agent.RuntimeID, nil
-	}
-
-	// Otherwise, find a default runtime
-	// This needs to be implemented based on your runtime selection logic
-	return pgtype.UUID{}, fmt.Errorf("no runtime found for agent")
-}
-
 // parseUUID parses a string into a pgtype.UUID
 func parseUUID(s string) (pgtype.UUID, error) {
 	var uuid pgtype.UUID
@@ -430,38 +373,19 @@ func parseUUID(s string) (pgtype.UUID, error) {
 	return uuid, err
 }
 
-// WaitForSubTasks waits for all sub-tasks to complete
-func (k *KanbanAgent) WaitForSubTasks(ctx context.Context, timeout time.Duration) error {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	for {
-		select {
-		case <-timeoutCtx.Done():
-			return fmt.Errorf("timeout waiting for sub-tasks")
-		case <-ticker.C:
-			// Check sub-task status from database
-			k.logger.Debug("checking sub-task status")
-		}
-	}
-}
-
 // AggregateResults combines results from all sub-tasks
-func (k *KanbanAgent) AggregateResults(results map[string]*SubTaskResult) string {
+func (k *KanbanAgent) AggregateResults(results []*SubTaskResult) string {
 	var output string
 	successCount := 0
 	failureCount := 0
 
-	for taskID, result := range results {
+	for i, result := range results {
 		if result.Success {
 			successCount++
-			output += fmt.Sprintf("✓ %s: %s\n", taskID, result.Output)
+			output += fmt.Sprintf("✓ Step %d: %s\n", i+1, result.Output)
 		} else {
 			failureCount++
-			output += fmt.Sprintf("✗ %s: %s\n", taskID, result.Error)
+			output += fmt.Sprintf("✗ Step %d: %s\n", i+1, result.Error)
 		}
 	}
 

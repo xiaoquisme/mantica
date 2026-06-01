@@ -7,28 +7,21 @@ type StageConfig struct {
 }
 
 // Stages maps ready_* status values to their pipeline stage config.
-// Triggered automatically when an agent sets status to ready_*.
-// Note: backlog is NOT here — it is handled separately on assigneeChanged
-// so users can freely move issues back to backlog without auto-triggering.
+// With simplified statuses, we only have "todo" as the trigger.
 var Stages = map[string]StageConfig{
-	"ready_analyze":     {AgentName: "BA", InProgressStatus: "in_analyze"},
-	"ready_arch_design": {AgentName: "TL", InProgressStatus: "in_arch_design"},
-	"ready_dev":         {AgentName: "DEV", InProgressStatus: "in_dev"},
-	"ready_review":      {AgentName: "Code Review", InProgressStatus: "in_review"},
-	"ready_test":        {AgentName: "QA", InProgressStatus: "in_test"},
+	"todo": {AgentName: "KANBAN", InProgressStatus: "in_dev"},
 }
 
-// ClassifierStage is the entry stage triggered when Classifier is assigned to a backlog issue.
-// NOTE: This is being replaced by KanbanStage in the new architecture.
+// KanbanStage is the entry stage for Kanban Agent orchestration.
+var KanbanStage = StageConfig{
+	AgentName:        "KANBAN",
+	InProgressStatus: "in_dev",
+}
+
+// ClassifierStage is kept for backwards compatibility but is no longer used.
 var ClassifierStage = StageConfig{
 	AgentName:        "Classifier",
 	InProgressStatus: "classifying",
-}
-
-// KanbanStage is the new entry stage for Kanban Agent orchestration.
-var KanbanStage = StageConfig{
-	AgentName:        "KANBAN",
-	InProgressStatus: "in_kanban",
 }
 
 // IsKanbanAgent returns true if the given agent name is the Kanban Agent.
@@ -36,9 +29,9 @@ func IsKanbanAgent(name string) bool {
 	return name == KanbanStage.AgentName
 }
 
-// IsClassifierAgent returns true if the given agent name is the Classifier.
+// IsClassifierAgent always returns false since we no longer have a classifier stage.
 func IsClassifierAgent(name string) bool {
-	return name == ClassifierStage.AgentName
+	return false
 }
 
 // IsReadyStatus returns true if the status is a pipeline trigger.
@@ -47,26 +40,29 @@ func IsReadyStatus(status string) bool {
 	return ok
 }
 
+// IsAllowedAgentTransition checks if an agent is allowed to set a given status.
+// In simplified mode, kanban agent can set any status.
+func IsAllowedAgentTransition(agentName string, status string) bool {
+	// Kanban agent can set any status
+	if IsKanbanAgent(agentName) {
+		return true
+	}
+	// Other agents can only set done, blocked, or cancelled
+	switch status {
+	case "done", "blocked", "cancelled":
+		return true
+	default:
+		return false
+	}
+}
+
 // RevertStatusFor returns the ready_* status that an in_* status should
-// revert to when the agent run for that stage fails. Used by the auto-revert
-// path in TaskService to recover from agent crashes/timeouts.
-//
-// The Classifier stage is special: its in-progress status is "classifying"
-// and its trigger is assigneeChanged on a backlog issue (not a ready_*
-// status), so a Classifier crash reverts to "backlog" rather than
-// "ready_classifying" (which doesn't exist). Callers should additionally
-// clear the assignee in that case so the user can re-trigger Classifier.
-//
-// The Kanban stage is also special: its in-progress status is "in_kanban"
-// and it reverts to "backlog" so the user can re-trigger Kanban.
+// revert to when the agent run for that stage fails.
 func RevertStatusFor(inStatus string) (readyStatus string, ok bool) {
 	for ready, stage := range Stages {
 		if stage.InProgressStatus == inStatus {
 			return ready, true
 		}
-	}
-	if inStatus == ClassifierStage.InProgressStatus {
-		return "backlog", true
 	}
 	if inStatus == KanbanStage.InProgressStatus {
 		return "backlog", true
@@ -74,64 +70,51 @@ func RevertStatusFor(inStatus string) (readyStatus string, ok bool) {
 	return "", false
 }
 
-// AllowedAgentTransitions maps agent name to the statuses they are allowed to set.
-// This prevents agents from setting status to backlog, done, or other stages they don't own.
-var AllowedAgentTransitions = map[string][]string{
-	"KANBAN":      {"done", "blocked", "ready_kanban"}, // Kanban can set to done or blocked
-	"Classifier":  {"ready_analyze", "ready_arch_design", "blocked"},
-	"BA":          {"ready_arch_design", "blocked"},
-	"TL":          {"ready_dev", "blocked"},
-	"DEV":         {"ready_review", "blocked"},
-	"Code Review": {"ready_test", "ready_dev", "blocked"},
-	"QA":          {"done", "ready_dev", "blocked"},
-}
-
-// IsAllowedAgentTransition checks if an agent is allowed to set a given status.
-// Returns true if the agent name is not in the map (no restriction) or the status is allowed.
-func IsAllowedAgentTransition(agentName, newStatus string) bool {
-	allowed, ok := AllowedAgentTransitions[agentName]
-	if !ok {
-		return true
-	}
-	for _, s := range allowed {
-		if s == newStatus {
-			return true
-		}
-	}
-	return false
-}
-
-// FanInRule describes how a parent issue advances when its parallel children
-// all reach a terminal status.
+// FanInRule defines how child issue statuses affect the parent.
 type FanInRule struct {
-	NextStatus            string   // status to set on the parent when fan-in fires
-	TerminalChildStatuses []string // child statuses that count as "done" for fan-in
+	NextStatus    string   // status to set on parent when all children are terminal
+	Terminal      []string // child statuses considered terminal
 }
 
-// IsTerminal returns true if the given child status counts as terminal under this rule.
+// IsTerminal returns true if the given status is considered terminal for fan-in.
 func (r FanInRule) IsTerminal(status string) bool {
-	for _, s := range r.TerminalChildStatuses {
-		if s == status {
+	for _, t := range r.Terminal {
+		if t == status {
 			return true
 		}
 	}
 	return false
 }
 
-// FanInConfig maps a parent's in_* status to the rule that decides when the
-// parent advances based on its parallel child issues. When every child reaches
-// a terminal status, the parent is moved to NextStatus and the existing
-// pipeline machinery handles the rest (agent reassignment, task enqueue, WS
-// broadcast).
-var FanInConfig = map[string]FanInRule{
-	"in_arch_design": {NextStatus: "ready_dev", TerminalChildStatuses: []string{"done"}},
-	"in_dev":         {NextStatus: "ready_review", TerminalChildStatuses: []string{"done"}},
-	"in_review":      {NextStatus: "ready_test", TerminalChildStatuses: []string{"done"}},
-	"in_test":        {NextStatus: "done", TerminalChildStatuses: []string{"done"}},
+// FanInRuleFor returns the fan-in rule for a given parent status.
+func FanInRuleFor(parentStatus string) (FanInRule, bool) {
+	// For any non-terminal parent status, use default fan-in
+	switch parentStatus {
+	case "done", "cancelled":
+		return FanInRule{}, false // already terminal
+	default:
+		return FanInRule{
+			NextStatus: "done",
+			Terminal:   []string{"done", "cancelled"},
+		}, true
+	}
 }
 
-// FanInRuleFor returns the fan-in rule for a parent's current status, if any.
-func FanInRuleFor(parentStatus string) (FanInRule, bool) {
-	r, ok := FanInConfig[parentStatus]
-	return r, ok
+// FanInConfig controls how child issue statuses affect the parent.
+type FanInConfig struct {
+	// ChildTerminalStatuses are statuses considered "finished" for fan-in.
+	ChildTerminalStatuses []string
+	// ParentDoneStatus is the status to set on the parent when all children are terminal.
+	ParentDoneStatus string
+	// ParentBlockedStatus is the status to set when any child is blocked.
+	ParentBlockedStatus string
+}
+
+// DefaultFanIn returns the default fan-in configuration.
+func DefaultFanIn() FanInConfig {
+	return FanInConfig{
+		ChildTerminalStatuses: []string{"done", "cancelled"},
+		ParentDoneStatus:      "done",
+		ParentBlockedStatus:   "blocked",
+	}
 }

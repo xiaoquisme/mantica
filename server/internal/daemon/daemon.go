@@ -39,9 +39,8 @@ type Daemon struct {
 	queries  *db.Queries
 	cacheMgr *ContextCacheManager
 
-	// Sub-agent infrastructure
-	subAgentPool *SubAgentPool
-	kanbanAgent  *KanbanAgent
+	// Kanban agent for task decomposition
+	kanbanAgent *KanbanAgent
 
 	mu           sync.Mutex
 	workspaces   map[string]*workspaceState
@@ -56,10 +55,7 @@ type Daemon struct {
 // New creates a new Daemon instance.
 func New(cfg Config, logger *slog.Logger) *Daemon {
 	cacheRoot := filepath.Join(cfg.WorkspacesRoot, ".repos")
-	
-	// Initialize sub-agent infrastructure (queries will be set later in initDatabase)
-	subAgentPool := NewSubAgentPool(logger)
-	
+
 	return &Daemon{
 		cfg:          cfg,
 		client:       NewClient(cfg.ServerBaseURL),
@@ -67,7 +63,6 @@ func New(cfg Config, logger *slog.Logger) *Daemon {
 		logger:       logger,
 		workspaces:   make(map[string]*workspaceState),
 		runtimeIndex: make(map[string]Runtime),
-		subAgentPool: subAgentPool,
 	}
 }
 
@@ -193,7 +188,7 @@ func (d *Daemon) initDatabase() error {
 	d.cacheMgr = NewContextCacheManager(d.queries, d.logger)
 	
 	// Initialize Kanban Agent with database queries
-	d.kanbanAgent = NewKanbanAgent(d.subAgentPool, d.queries, d.logger)
+	d.kanbanAgent = NewKanbanAgent(d.queries, d.logger)
 	
 	d.logger.Info("database connected for context cache")
 	return nil
@@ -832,109 +827,20 @@ func (d *Daemon) handleTask(ctx context.Context, task Task) {
 	if task.Agent != nil {
 		agentName = task.Agent.Name
 	}
-	
+
+	// Only kanban agent is allowed to process tasks directly.
+	// Other agents are dispatched by kanban agent via runTask.
+	if agentName != "KANBAN" {
+		taskLog.Info("skipping non-kanban task", "agent", agentName)
+		if err := d.client.FailTask(ctx, task.ID, "only kanban agent is supported"); err != nil {
+			taskLog.Error("fail task failed", "error", err)
+		}
+		return
+	}
+
 	// Special handling for Kanban Agent
-	if agentName == "KANBAN" {
-		d.handleKanbanTask(ctx, task, provider, taskLog)
-		return
-	}
-	
-	if task.ChatSessionID != "" {
-		taskLog.Info("picked chat task", "chat_session", shortID(task.ChatSessionID), "agent", agentName, "provider", provider)
-	} else {
-		taskLog.Info("picked task", "issue", task.IssueID, "agent", agentName, "provider", provider)
-	}
-
-	if err := d.client.StartTask(ctx, task.ID); err != nil {
-		taskLog.Error("start task failed", "error", err)
-		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("start task failed: %s", err.Error())); failErr != nil {
-			taskLog.Error("fail task after start error", "error", failErr)
-		}
-		return
-	}
-
-	_ = d.client.ReportProgress(ctx, task.ID, fmt.Sprintf("Launching %s", provider), 1, 2)
-
-	// Create a cancellable context so we can interrupt the running agent
-	// when the server-side task status changes to 'cancelled'.
-	runCtx, runCancel := context.WithCancel(ctx)
-	defer runCancel()
-
-	// Poll for cancellation every 5 seconds while the task is running.
-	cancelledByPoll := make(chan struct{})
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-runCtx.Done():
-				return
-			case <-ticker.C:
-				if status, err := d.client.GetTaskStatus(ctx, task.ID); err == nil && status == "cancelled" {
-					taskLog.Info("task cancelled by server, interrupting agent")
-					runCancel()
-					close(cancelledByPoll)
-					return
-				}
-			}
-		}
-	}()
-
-	result, err := d.runTask(runCtx, task, provider, taskLog)
-
-	// Check if we were cancelled by the polling goroutine. The agent may have
-	// finished its work before the context cancellation took effect, so we still
-	// attempt to report the result. The server now accepts completed results from
-	// cancelled tasks so the execution history shows the accurate outcome.
-	interruptedByPoll := false
-	select {
-	case <-cancelledByPoll:
-		interruptedByPoll = true
-	default:
-	}
-
-	if err != nil && !interruptedByPoll {
-		taskLog.Error("task failed", "error", err)
-		if failErr := d.client.FailTask(ctx, task.ID, err.Error()); failErr != nil {
-			taskLog.Error("fail task callback failed", "error", failErr)
-		}
-		return
-	}
-
-	// If the agent was interrupted with an error and produced no usable result, nothing to report.
-	if interruptedByPoll && err != nil {
-		taskLog.Info("task cancelled mid-execution with no result, skipping completion report")
-		return
-	}
-
-	_ = d.client.ReportProgress(ctx, task.ID, "Finishing task", 2, 2)
-
-	// Report usage independently so it's captured even for failed/blocked tasks.
-	if len(result.Usage) > 0 {
-		if err := d.client.ReportTaskUsage(ctx, task.ID, result.Usage); err != nil {
-			taskLog.Warn("report task usage failed", "error", err)
-		}
-	}
-
-	switch result.Status {
-	case "blocked":
-		if err := d.client.FailTask(ctx, task.ID, result.Comment); err != nil {
-			taskLog.Error("report blocked task failed", "error", err)
-		}
-	default:
-		taskLog.Info("task completed", "status", result.Status)
-		if err := d.client.CompleteTask(ctx, task.ID, result.Comment, result.BranchName, result.SessionID, result.WorkDir); err != nil {
-			taskLog.Error("complete task failed, falling back to fail", "error", err)
-			if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("complete task failed: %s", err.Error())); failErr != nil {
-				taskLog.Error("fail task fallback also failed", "error", failErr)
-			}
-		} else {
-			// Backfill tool_use/tool_result messages from Hermes session JSONL.
-			// Hermes quiet mode only outputs final text, but the session file
-			// contains full tool call data that we can extract post-hoc.
-			go d.ExtractAndSendSessionMessages(task.ID, result.SessionID, taskLog)
-		}
-	}
+	d.handleKanbanTask(ctx, task, provider, taskLog)
+	return
 }
 
 func (d *Daemon) runTask(ctx context.Context, task Task, provider string, taskLog *slog.Logger) (TaskResult, error) {
@@ -1338,9 +1244,9 @@ func convertSkillsForEnv(skills []SkillData) []execenv.SkillContextForEnv {
 	}
 	return result
 }
-
 // handleKanbanTask handles tasks assigned to the Kanban Agent
 func (d *Daemon) handleKanbanTask(ctx context.Context, task Task, provider string, taskLog *slog.Logger) {
+
 	// Start the task
 	if err := d.client.StartTask(ctx, task.ID); err != nil {
 		taskLog.Error("start kanban task failed", "error", err)
@@ -1352,14 +1258,26 @@ func (d *Daemon) handleKanbanTask(ctx context.Context, task Task, provider strin
 
 	taskLog.Info("kanban agent starting task decomposition", "issue", task.IssueID)
 
-	// Get issue details from the task
+	// Get issue details from the database
 	title := ""
 	description := ""
 	if task.IssueID != "" {
-		// In a real implementation, we would fetch the issue details from the server
-		// For now, use placeholder values
-		title = fmt.Sprintf("Issue %s", task.IssueID)
-		description = "Task description would be fetched from server"
+		issueUUID, err := parseUUID(task.IssueID)
+		if err != nil {
+			taskLog.Error("invalid issue ID", "error", err)
+			_ = d.client.FailTask(ctx, task.ID, fmt.Sprintf("invalid issue ID: %s", err.Error()))
+			return
+		}
+		issue, err := d.queries.GetIssue(ctx, issueUUID)
+		if err != nil {
+			taskLog.Error("failed to fetch issue", "error", err)
+			_ = d.client.FailTask(ctx, task.ID, fmt.Sprintf("failed to fetch issue: %s", err.Error()))
+			return
+		}
+		title = issue.Title
+		if issue.Description.Valid {
+			description = issue.Description.String
+		}
 	} else {
 		// For chat tasks, use the session ID
 		title = fmt.Sprintf("Chat Task %s", shortID(task.ChatSessionID))
@@ -1378,30 +1296,52 @@ func (d *Daemon) handleKanbanTask(ctx context.Context, task Task, provider strin
 
 	taskLog.Info("task decomposed", "subtasks", len(subTasks))
 
-	// Parse workspace ID
-	workspaceUUID, err := parseUUID(task.WorkspaceID)
-	if err != nil {
-		taskLog.Error("invalid workspace ID", "error", err)
-		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("invalid workspace ID: %s", err.Error())); failErr != nil {
-			taskLog.Error("fail kanban task after workspace parse error", "error", failErr)
-		}
+	// Find an available provider for subtasks (prefer claude, then codex, then hermes)
+	subtaskProvider := d.findAvailableProvider()
+	if subtaskProvider == "" {
+		taskLog.Error("no available provider for subtasks")
+		_ = d.client.FailTask(ctx, task.ID, "no available provider for subtasks")
 		return
 	}
 
-	// Execute sub-tasks in parallel (respecting dependencies)
-	results, err := d.kanbanAgent.ExecuteParallel(ctx, task.ID, workspaceUUID, subTasks)
-	if err != nil {
-		taskLog.Error("execute parallel sub-tasks failed", "error", err)
-		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("execute sub-tasks failed: %s", err.Error())); failErr != nil {
-			taskLog.Error("fail kanban task after execute error", "error", failErr)
+	// Execute sub-tasks sequentially, each via runTask
+	var results []*SubTaskResult
+	for i, subtask := range subTasks {
+		taskLog.Info("executing sub-task", "index", i, "description", subtask.Description)
+
+		// Create a synthetic task for this subtask
+		subtaskTask := Task{
+			ID:          fmt.Sprintf("%s-sub-%d", task.ID, i),
+			IssueID:     task.IssueID,
+			WorkspaceID: task.WorkspaceID,
+			RuntimeID:   task.RuntimeID,
+			Agent: &AgentData{
+				Name: subtask.Description,
+			},
+			Repos: task.Repos,
 		}
-		return
+
+		// Run the subtask
+		result, err := d.runTask(ctx, subtaskTask, subtaskProvider, taskLog)
+		if err != nil {
+			taskLog.Error("sub-task failed", "index", i, "error", err)
+			results = append(results, &SubTaskResult{
+				Success: false,
+				Error:   err.Error(),
+			})
+		} else {
+			taskLog.Info("sub-task completed", "index", i)
+			results = append(results, &SubTaskResult{
+				Success: true,
+				Output:  result.Comment,
+			})
+		}
 	}
 
 	// Aggregate results
 	summary := d.kanbanAgent.AggregateResults(results)
 
-	taskLog.Info("kanban task completed", "successful_subtasks", len(results))
+	taskLog.Info("kanban task completed", "total_subtasks", len(results))
 
 	// Complete the kanban task with the aggregated summary
 	if err := d.client.CompleteTask(ctx, task.ID, summary, "", "", ""); err != nil {
@@ -1410,4 +1350,19 @@ func (d *Daemon) handleKanbanTask(ctx context.Context, task Task, provider strin
 			taskLog.Error("fail kanban task after complete error", "error", failErr)
 		}
 	}
+}
+
+// findAvailableProvider finds an available provider (claude > codex > hermes)
+func (d *Daemon) findAvailableProvider() string {
+	preferredOrder := []string{"claude", "codex", "hermes"}
+	for _, p := range preferredOrder {
+		if _, ok := d.cfg.Agents[p]; ok {
+			return p
+		}
+	}
+	// Fallback: return first available
+	for p := range d.cfg.Agents {
+		return p
+	}
+	return ""
 }
