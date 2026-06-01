@@ -132,7 +132,7 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@mantica/core/issues/config", () => ({
-  ALL_STATUSES: ["backlog", "in_dev", "done"],
+  ALL_STATUSES: ["backlog", "doing", "done"],
   STATUS_CONFIG: {
     backlog: { label: "Backlog" },
     in_dev: { label: "In Dev" },
@@ -351,7 +351,7 @@ describe("BoardCardContextMenu — Status submenu (TES-70)", () => {
     await user.click(screen.getByText("In Dev"));
 
     expect(mockMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "issue-1", status: "in_dev" }),
+      expect.objectContaining({ id: "issue-1", status: "doing" }),
       expect.any(Object),
     );
   });

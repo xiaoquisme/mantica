@@ -193,9 +193,9 @@ vi.mock("@mantica/core/api", () => ({
 
 // Mock issue config
 vi.mock("@mantica/core/issues/config", () => ({
-  ALL_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
-  BOARD_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked"],
-  STATUS_ORDER: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
+  ALL_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "doing", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
+  BOARD_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "doing", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked"],
+  STATUS_ORDER: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "doing", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
   STATUS_CONFIG: {
     backlog: { label: "Backlog", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent" },
     classifying: { label: "Classifying", iconColor: "text-orange-400", hoverBg: "hover:bg-orange-400/10" },
@@ -286,7 +286,7 @@ const mockIssue: Issue = {
   identifier: "TES-1",
   title: "Implement authentication",
   description: "Add JWT auth to the backend",
-  status: "in_dev",
+  status: "doing",
   priority: "high",
   assignee_type: "member",
   assignee_id: "user-1",
@@ -499,7 +499,7 @@ describe("IssueDetail (shared)", () => {
       identifier: "TES-5",
       title: "Parent Feature",
       description: "Parent issue description",
-      status: "in_dev",
+      status: "doing",
       priority: "high",
       assignee_type: null,
       assignee_id: null,
@@ -792,7 +792,7 @@ describe("IssueDetail (shared)", () => {
       identifier: "TES-X",
       title: "Child",
       description: null,
-      status: "in_dev",
+      status: "doing",
       priority: "none",
       assignee_type: null,
       assignee_id: null,
@@ -813,7 +813,7 @@ describe("IssueDetail (shared)", () => {
       makeChild({ id: "c1", identifier: "TES-10", title: "Child A", status: "done" }),
       makeChild({ id: "c2", identifier: "TES-11", title: "Child B", status: "done" }),
       makeChild({ id: "c3", identifier: "TES-12", title: "Child C", status: "done" }),
-      makeChild({ id: "c4", identifier: "TES-13", title: "Child D", status: "in_dev" }),
+      makeChild({ id: "c4", identifier: "TES-13", title: "Child D", status: "doing" }),
     ];
     mockApiObj.listChildIssues.mockResolvedValue({ issues: children });
 
@@ -835,7 +835,7 @@ describe("IssueDetail (shared)", () => {
   it("renders each child sub-issue as a clickable link to its identifier (TES-173 AC1, AC2)", async () => {
     const children = [
       makeChild({ id: "c1", identifier: "TES-10", title: "Child A", status: "done" }),
-      makeChild({ id: "c2", identifier: "TES-11", title: "Child B", status: "in_dev" }),
+      makeChild({ id: "c2", identifier: "TES-11", title: "Child B", status: "doing" }),
     ];
     mockApiObj.listChildIssues.mockResolvedValue({ issues: children });
 

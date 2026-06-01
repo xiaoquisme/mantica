@@ -86,7 +86,7 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@mantica/core/issues/config", () => ({
-  ALL_STATUSES: ["backlog", "in_dev", "done"],
+  ALL_STATUSES: ["backlog", "doing", "done"],
   STATUS_CONFIG: {
     backlog: { label: "Backlog" },
     in_dev: { label: "In Dev" },

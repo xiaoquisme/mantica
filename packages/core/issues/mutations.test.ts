@@ -40,7 +40,7 @@ function makeIssue(labels: Label[]): Issue {
     identifier: "TES-1",
     title: "Test Issue",
     description: null,
-    status: "in_dev",
+    status: "doing",
     priority: "high",
     assignee_type: null,
     assignee_id: null,

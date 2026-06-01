@@ -139,9 +139,9 @@ vi.mock("@mantica/ui/components/ui/dropdown-menu", () => ({
 
 // Mock issue config
 vi.mock("@mantica/core/issues/config", () => ({
-  ALL_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
-  BOARD_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked"],
-  STATUS_ORDER: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "in_dev", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
+  ALL_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "doing", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
+  BOARD_STATUSES: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "doing", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked"],
+  STATUS_ORDER: ["backlog", "classifying", "ready_analyze", "in_analyze", "ready_arch_design", "in_arch_design", "ready_dev", "doing", "ready_review", "in_review", "ready_test", "in_test", "done", "blocked", "cancelled"],
   STATUS_CONFIG: {
     backlog: { label: "Backlog", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent" },
     classifying: { label: "Classifying", iconColor: "text-orange-400", hoverBg: "hover:bg-orange-400/10" },
@@ -344,7 +344,7 @@ const mockIssues: Issue[] = [
     identifier: "TES-2",
     title: "Design landing page",
     description: null,
-    status: "in_dev",
+    status: "doing",
     priority: "medium",
     assignee_type: "agent",
     assignee_id: "agent-1",

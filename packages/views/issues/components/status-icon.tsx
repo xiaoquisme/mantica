@@ -84,10 +84,6 @@ function BacklogIcon() {
   );
 }
 
-function InReviewIcon() {
-  return <ProgressCircle progress={0.75} />;
-}
-
 function DoneIcon() {
   return (
     <ProgressCircle progress={1}>
@@ -137,17 +133,8 @@ function CancelledIcon() {
 
 const STATUS_RENDERERS: Record<IssueStatus, () => React.ReactNode> = {
   backlog: BacklogIcon,
-  classifying: () => <ProgressCircle progress={0.1} />,
-  ready_analyze: () => <ProgressCircle progress={0} />,
-  in_analyze: () => <ProgressCircle progress={0.25} />,
-  ready_arch_design: () => <ProgressCircle progress={0} />,
-  in_arch_design: () => <ProgressCircle progress={0.4} />,
-  ready_dev: () => <ProgressCircle progress={0} />,
-  in_dev: () => <ProgressCircle progress={0.55} />,
-  ready_review: () => <ProgressCircle progress={0} />,
-  in_review: InReviewIcon,
-  ready_test: () => <ProgressCircle progress={0} />,
-  in_test: () => <ProgressCircle progress={0.85} />,
+  todo: () => <ProgressCircle progress={0.25} />,
+  doing: () => <ProgressCircle progress={0.55} />,
   done: DoneIcon,
   blocked: BlockedIcon,
   cancelled: CancelledIcon,
