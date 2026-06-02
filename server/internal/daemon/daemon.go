@@ -1287,6 +1287,13 @@ func (d *Daemon) handleKanbanTask(ctx context.Context, task Task, provider strin
 		}
 	}
 
+	// Report token usage independently of complete/fail
+	if len(result.Usage) > 0 {
+		if err := d.client.ReportTaskUsage(ctx, task.ID, result.Usage); err != nil {
+			taskLog.Warn("report task usage failed", "error", err)
+		}
+	}
+
 	taskLog.Info("kanban task completed")
 }
 
