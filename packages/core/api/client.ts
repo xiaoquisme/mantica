@@ -600,6 +600,10 @@ export class ApiClient {
     return this.fetch(`/api/tasks/${taskId}/usage`);
   }
 
+  async getSubTasks(taskId: string): Promise<AgentTask[]> {
+    return this.fetch(`/api/tasks/${taskId}/subtasks`);
+  }
+
   async listFailedAnalyses(limit = 20): Promise<TaskAnalysisWithAgent[]> {
     return this.fetch(`/api/analysis/failed?limit=${limit}`);
   }

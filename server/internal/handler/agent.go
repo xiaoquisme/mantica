@@ -97,6 +97,13 @@ type AgentTaskResponse struct {
 	ChatSessionID    string         `json:"chat_session_id,omitempty"`    // non-empty for chat tasks
 	ChatMessage      string         `json:"chat_message,omitempty"`       // user message for chat tasks
 	ScheduledTaskID  string         `json:"scheduled_task_id,omitempty"`  // non-empty for scheduled tasks
+	ParentTaskID     *string        `json:"parent_task_id,omitempty"`     // parent task ID for subtasks
+	SubagentRole     *string        `json:"subagent_role,omitempty"`      // role of subagent (kanban, main, terminal, summary, orchestrator)
+	TaskDepth        int32          `json:"task_depth"`                   // depth in task hierarchy
+	WaitingForSubagents bool        `json:"waiting_for_subagents"`        // whether parent is waiting for subagents
+	CompletedSubagents  int32       `json:"completed_subagents"`          // number of completed subagents
+	TotalSubagents      int32       `json:"total_subagents"`              // total number of subagents
+	FailedSubagents     int32       `json:"failed_subagents"`             // number of failed subagents
 }
 
 // TaskAgentData holds agent info included in claim responses so the daemon
@@ -128,6 +135,13 @@ func taskToResponse(t db.AgentTaskQueue) AgentTaskResponse {
 		Error:            textToPtr(t.Error),
 		CreatedAt:        timestampToString(t.CreatedAt),
 		TriggerCommentID: uuidToPtr(t.TriggerCommentID),
+		ParentTaskID:     uuidToPtr(t.ParentTaskID),
+		SubagentRole:     textToPtr(t.SubagentRole),
+		TaskDepth:        t.TaskDepth,
+		WaitingForSubagents: t.WaitingForSubagents,
+		CompletedSubagents:  t.CompletedSubagents,
+		TotalSubagents:      t.TotalSubagents,
+		FailedSubagents:     t.FailedSubagents,
 	}
 }
 
@@ -479,5 +493,32 @@ func (h *Handler) ListAgentTasks(w http.ResponseWriter, r *http.Request) {
 		resp[i] = taskToResponse(t)
 	}
 
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// GetSubTasks returns the subtasks for a parent task.
+func (h *Handler) GetSubTasks(w http.ResponseWriter, r *http.Request) {
+	taskID := chi.URLParam(r, "taskId")
+
+	// Verify the task exists
+	_, err := h.Queries.GetAgentTask(r.Context(), parseUUID(taskID))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "task not found")
+		return
+	}
+
+	subtasks, err := h.Queries.GetSubTasksByParent(r.Context(), parseUUID(taskID))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get subtasks")
+		return
+	}
+
+	resp := make([]AgentTaskResponse, len(subtasks))
+	for i, t := range subtasks {
+		resp[i] = taskToResponse(t)
+	}
+	if resp == nil {
+		resp = []AgentTaskResponse{}
+	}
 	writeJSON(w, http.StatusOK, resp)
 }

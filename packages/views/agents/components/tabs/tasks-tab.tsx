@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ListTodo, Clock, ChevronDown, ChevronRight, Wrench, Coins, Cpu, Zap } from "lucide-react";
+import { ListTodo, Clock, ChevronDown, ChevronRight, Wrench, Coins, Cpu, Zap, GitBranch, Users } from "lucide-react";
 import type { Agent, AgentTask, TaskUsage, TaskMessagePayload } from "@mantica/core/types";
 import { Skeleton } from "@mantica/ui/components/ui/skeleton";
 import { api } from "@mantica/core/api";
@@ -17,9 +17,44 @@ function formatTokenCount(count: number): string {
   return String(count);
 }
 
+function SubTaskItem({ task }: { task: AgentTask }) {
+  const config = taskStatusConfig[task.status] ?? taskStatusConfig.queued!;
+  const Icon = config.icon;
+  const isRunning = task.status === "running";
+
+  return (
+    <div className="flex items-center gap-2 rounded-md bg-background px-3 py-2 border text-xs">
+      <Icon className={`h-3 w-3 shrink-0 ${config.color} ${isRunning ? "animate-spin" : ""}`} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          {task.subagent_role && (
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+              {task.subagent_role}
+            </span>
+          )}
+          <span className="truncate">
+            {task.issue_id ? `Issue ${task.issue_id.slice(0, 8)}...` : "Subtask"}
+          </span>
+        </div>
+        <div className="text-muted-foreground mt-0.5">
+          {task.completed_at
+            ? `${task.status === "completed" ? "Completed" : "Failed"} ${new Date(task.completed_at).toLocaleString()}`
+            : task.started_at
+              ? `Started ${new Date(task.started_at).toLocaleString()}`
+              : `Queued ${new Date(task.created_at).toLocaleString()}`}
+        </div>
+      </div>
+      <span className={`shrink-0 text-[10px] font-medium ${config.color}`}>
+        {config.label}
+      </span>
+    </div>
+  );
+}
+
 function TaskExecutionPanel({ task }: { task: AgentTask }) {
   const [messages, setMessages] = useState<TaskMessagePayload[]>([]);
   const [usage, setUsage] = useState<TaskUsage[]>([]);
+  const [subtasks, setSubtasks] = useState<AgentTask[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,11 +62,15 @@ function TaskExecutionPanel({ task }: { task: AgentTask }) {
     Promise.all([
       api.listTaskMessages(task.id).catch(() => []),
       api.getTaskUsage(task.id).catch(() => []),
-    ]).then(([msgs, u]) => {
+      task.total_subagents && task.total_subagents > 0
+        ? api.getSubTasks(task.id).catch(() => [])
+        : Promise.resolve([]),
+    ]).then(([msgs, u, subs]) => {
       setMessages(msgs);
       setUsage(u);
+      setSubtasks(subs);
     }).finally(() => setLoading(false));
-  }, [task.id]);
+  }, [task.id, task.total_subagents]);
 
   if (loading) {
     return (
@@ -114,7 +153,40 @@ function TaskExecutionPanel({ task }: { task: AgentTask }) {
         </div>
       )}
 
-      {toolMessages.length === 0 && totalInputTokens === 0 && totalOutputTokens === 0 && (
+      {/* Subtasks */}
+      {subtasks.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <GitBranch className="h-3.5 w-3.5" />
+            Subtasks ({subtasks.length})
+            {task.waiting_for_subagents && (
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                {task.completed_subagents}/{task.total_subagents} completed
+              </span>
+            )}
+          </div>
+          <div className="space-y-1 max-h-60 overflow-y-auto">
+            {subtasks.map((subtask) => (
+              <SubTaskItem key={subtask.id} task={subtask} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Parent Task Info */}
+      {task.parent_task_id && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Users className="h-3 w-3" />
+          <span>Subtask of {task.parent_task_id.slice(0, 8)}...</span>
+          {task.subagent_role && (
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+              {task.subagent_role}
+            </span>
+          )}
+        </div>
+      )}
+
+      {toolMessages.length === 0 && totalInputTokens === 0 && totalOutputTokens === 0 && subtasks.length === 0 && !task.parent_task_id && (
         <div className="text-xs text-muted-foreground text-center py-2">
           No execution data available yet.
         </div>

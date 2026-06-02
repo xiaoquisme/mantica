@@ -246,6 +246,7 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus) chi.Route
 			// Task Analysis
 			r.Get("/api/tasks/{id}/analysis", h.GetTaskAnalysis)
 			r.Get("/api/tasks/{id}/usage", h.GetTaskUsage)
+			r.Get("/api/tasks/{id}/subtasks", h.GetSubTasks)
 			r.Get("/api/analysis/failed", h.ListFailedAnalyses)
 
 			// Config apply

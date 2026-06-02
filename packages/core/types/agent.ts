@@ -36,6 +36,13 @@ export interface AgentTask {
   error: string | null;
   created_at: string;
   scheduled_task_id?: string | null;
+  parent_task_id?: string | null;
+  subagent_role?: string | null;
+  task_depth?: number;
+  waiting_for_subagents?: boolean;
+  completed_subagents?: number;
+  total_subagents?: number;
+  failed_subagents?: number;
 }
 
 export interface Agent {
