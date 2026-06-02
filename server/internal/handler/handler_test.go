@@ -766,3 +766,129 @@ func TestDaemonRegisterMissingWorkspaceReturns404(t *testing.T) {
 		t.Fatalf("DaemonRegister: expected workspace not found error, got %s", w.Body.String())
 	}
 }
+
+func TestCreateWorkspaceCreatesKANBANAgent(t *testing.T) {
+	ctx := context.Background()
+	const testSlug = "kanban-agent-test"
+
+	t.Cleanup(func() {
+		testPool.Exec(ctx, `DELETE FROM workspace WHERE slug = $1`, testSlug)
+	})
+
+	// Create workspace via API
+	w := httptest.NewRecorder()
+	body := map[string]string{
+		"name":  "KANBAN Agent Test",
+		"slug":  testSlug,
+		"issue_prefix": "KAT",
+	}
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(body)
+	req := httptest.NewRequest("POST", "/api/workspaces", &buf)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-User-ID", testUserID)
+	testHandler.CreateWorkspace(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("CreateWorkspace: expected 201, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var ws WorkspaceResponse
+	json.NewDecoder(w.Body).Decode(&ws)
+
+	// Verify KANBAN agent was created
+	var agentName string
+	err := testPool.QueryRow(ctx,
+		`SELECT name FROM agent WHERE workspace_id = $1 AND name = 'KANBAN'`,
+		ws.ID,
+	).Scan(&agentName)
+	if err != nil {
+		t.Fatalf("KANBAN agent not found in workspace %s: %v", ws.ID, err)
+	}
+	if agentName != "KANBAN" {
+		t.Fatalf("expected agent name 'KANBAN', got %q", agentName)
+	}
+
+	// Verify agent has instructions
+	var instructions string
+	err = testPool.QueryRow(ctx,
+		`SELECT instructions FROM agent WHERE workspace_id = $1 AND name = 'KANBAN'`,
+		ws.ID,
+	).Scan(&instructions)
+	if err != nil {
+		t.Fatalf("failed to get agent instructions: %v", err)
+	}
+	if !strings.Contains(instructions, "Kanban Agent") {
+		t.Fatalf("expected instructions to contain 'Kanban Agent', got %q", instructions)
+	}
+}
+
+func TestVerifyCodeCreatesKANBANAgent(t *testing.T) {
+	const email = "kanban-verify-test@mantica.ai"
+	ctx := context.Background()
+
+	t.Cleanup(func() {
+		testPool.Exec(ctx, `DELETE FROM verification_code WHERE email = $1`, email)
+		user, err := testHandler.Queries.GetUserByEmail(ctx, email)
+		if err == nil {
+			workspaces, listErr := testHandler.Queries.ListWorkspaces(ctx, user.ID)
+			if listErr == nil {
+				for _, workspace := range workspaces {
+					_ = testHandler.Queries.DeleteWorkspace(ctx, workspace.ID)
+				}
+			}
+		}
+		testPool.Exec(ctx, `DELETE FROM "user" WHERE email = $1`, email)
+	})
+
+	// Send code
+	w := httptest.NewRecorder()
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(map[string]string{"email": email})
+	req := httptest.NewRequest("POST", "/auth/send-code", &buf)
+	req.Header.Set("Content-Type", "application/json")
+	testHandler.SendCode(w, req)
+
+	// Read code from DB
+	dbCode, err := testHandler.Queries.GetLatestVerificationCode(ctx, email)
+	if err != nil {
+		t.Fatalf("GetLatestVerificationCode: %v", err)
+	}
+
+	// Verify (creates workspace)
+	w = httptest.NewRecorder()
+	buf.Reset()
+	json.NewEncoder(&buf).Encode(map[string]string{"email": email, "code": dbCode.Code})
+	req = httptest.NewRequest("POST", "/auth/verify-code", &buf)
+	req.Header.Set("Content-Type", "application/json")
+	testHandler.VerifyCode(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("VerifyCode: expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	user, err := testHandler.Queries.GetUserByEmail(ctx, email)
+	if err != nil {
+		t.Fatalf("GetUserByEmail: %v", err)
+	}
+
+	workspaces, err := testHandler.Queries.ListWorkspaces(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("ListWorkspaces: %v", err)
+	}
+	if len(workspaces) != 1 {
+		t.Fatalf("ListWorkspaces: expected 1 workspace, got %d", len(workspaces))
+	}
+
+	// Verify KANBAN agent was created
+	var agentName string
+	err = testPool.QueryRow(ctx,
+		`SELECT name FROM agent WHERE workspace_id = $1 AND name = 'KANBAN'`,
+		workspaces[0].ID,
+	).Scan(&agentName)
+	if err != nil {
+		t.Fatalf("KANBAN agent not found in workspace %s: %v", workspaces[0].ID, err)
+	}
+	if agentName != "KANBAN" {
+		t.Fatalf("expected agent name 'KANBAN', got %q", agentName)
+	}
+}

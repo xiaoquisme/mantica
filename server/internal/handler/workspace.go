@@ -199,7 +199,7 @@ func (h *Handler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		Description:        "Orchestrator agent that decomposes issues and coordinates execution",
 		AvatarUrl:          pgtype.Text{},
 		RuntimeMode:        "local",
-		RuntimeConfig:      []byte{},
+		RuntimeConfig:      []byte("{}"),
 		RuntimeID:          pgtype.UUID{},
 		Visibility:         "workspace",
 		MaxConcurrentTasks: 1,
