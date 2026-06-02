@@ -55,6 +55,7 @@ import type {
   AgentHintsResponse,
   SmartSummaryResponse,
   GovernanceOverview,
+  TaskUsage,
 } from "../types";
 import { type Logger, noopLogger } from "../logger";
 
@@ -593,6 +594,10 @@ export class ApiClient {
 
   async getTaskAnalysis(taskId: string): Promise<TaskAnalysis> {
     return this.fetch(`/api/tasks/${taskId}/analysis`);
+  }
+
+  async getTaskUsage(taskId: string): Promise<TaskUsage[]> {
+    return this.fetch(`/api/tasks/${taskId}/usage`);
   }
 
   async listFailedAnalyses(limit = 20): Promise<TaskAnalysisWithAgent[]> {

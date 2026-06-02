@@ -21,6 +21,7 @@ export type {
   RuntimeUpdate,
   RuntimeUpdateStatus,
   IssueUsageSummary,
+  TaskUsage,
   AgentScore,
   AgentScoreHistoryEntry,
   TaskAnalysis,

@@ -522,6 +522,42 @@ func (h *Handler) ReportTaskUsage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// GetTaskUsage returns the token usage for a task.
+func (h *Handler) GetTaskUsage(w http.ResponseWriter, r *http.Request) {
+	taskID := chi.URLParam(r, "taskId")
+
+	usage, err := h.Queries.GetTaskUsage(r.Context(), parseUUID(taskID))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get task usage")
+		return
+	}
+
+	type TaskUsageResponse struct {
+		Provider         string `json:"provider"`
+		Model            string `json:"model"`
+		InputTokens      int64  `json:"input_tokens"`
+		OutputTokens     int64  `json:"output_tokens"`
+		CacheReadTokens  int64  `json:"cache_read_tokens"`
+		CacheWriteTokens int64  `json:"cache_write_tokens"`
+	}
+
+	resp := make([]TaskUsageResponse, len(usage))
+	for i, u := range usage {
+		resp[i] = TaskUsageResponse{
+			Provider:         u.Provider,
+			Model:            u.Model,
+			InputTokens:      u.InputTokens,
+			OutputTokens:     u.OutputTokens,
+			CacheReadTokens:  u.CacheReadTokens,
+			CacheWriteTokens: u.CacheWriteTokens,
+		}
+	}
+	if resp == nil {
+		resp = []TaskUsageResponse{}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 // GetTaskStatus returns the current status of a task.
 // Used by the daemon to check whether a task was cancelled mid-execution.
 func (h *Handler) GetTaskStatus(w http.ResponseWriter, r *http.Request) {

@@ -160,6 +160,15 @@ export interface RuntimeUsage {
   cache_write_tokens: number;
 }
 
+export interface TaskUsage {
+  provider: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+}
+
 export interface RuntimeHourlyActivity {
   hour: number;
   count: number;
