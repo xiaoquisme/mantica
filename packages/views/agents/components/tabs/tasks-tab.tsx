@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ListTodo, Clock, ChevronDown, ChevronRight, Wrench, Coins, Cpu, Zap, GitBranch, Users } from "lucide-react";
+import { ListTodo, Clock, ChevronDown, ChevronRight, Wrench, Coins, Cpu, Zap, GitBranch, Users, Copy, Check } from "lucide-react";
 import type { Agent, AgentTask, TaskUsage, TaskMessagePayload } from "@mantica/core/types";
 import { Skeleton } from "@mantica/ui/components/ui/skeleton";
 import { api } from "@mantica/core/api";
@@ -15,6 +15,99 @@ function formatTokenCount(count: number): string {
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
   if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
   return String(count);
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }, [text]);
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="shrink-0 p-1 hover:bg-muted rounded transition-colors"
+      title="Copy to clipboard"
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-green-500" />
+      ) : (
+        <Copy className="h-3 w-3 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
+function ToolCallItem({ msg, toolResult }: { msg: TaskMessagePayload; toolResult?: TaskMessagePayload }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-md bg-background border text-xs overflow-hidden">
+      <div
+        className="flex items-start gap-2 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? (
+          <ChevronDown className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
+        )}
+        <Zap className="h-3 w-3 mt-0.5 shrink-0 text-blue-500" />
+        <div className="min-w-0 flex-1">
+          <div className="font-medium">{msg.tool ?? "Unknown Tool"}</div>
+          {msg.input && Object.keys(msg.input).length > 0 && (
+            <div className="mt-0.5 text-muted-foreground truncate">
+              {Object.entries(msg.input)
+                .filter(([_, v]) => v !== undefined && v !== null && v !== "")
+                .slice(0, 3)
+                .map(([k, v]) => `${k}: ${String(v).slice(0, 50)}`)
+                .join(" · ")}
+            </div>
+          )}
+        </div>
+      </div>
+      {expanded && (
+        <div className="border-t bg-muted/30">
+          {/* Input */}
+          {msg.input && Object.keys(msg.input).length > 0 && (
+            <div className="px-3 py-2 border-b">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">Input</span>
+                <CopyButton text={JSON.stringify(msg.input, null, 2)} />
+              </div>
+              <pre className="text-[11px] whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+                {JSON.stringify(msg.input, null, 2)}
+              </pre>
+            </div>
+          )}
+          {/* Output */}
+          {toolResult?.output && (
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">Output</span>
+                <CopyButton text={toolResult.output} />
+              </div>
+              <pre className="text-[11px] whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+                {toolResult.output}
+              </pre>
+            </div>
+          )}
+          {!toolResult && (
+            <div className="px-3 py-2 text-[11px] text-muted-foreground">
+              No output recorded
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SubTaskItem({ task }: { task: AgentTask }) {
@@ -88,6 +181,18 @@ function TaskExecutionPanel({ task }: { task: AgentTask }) {
   const totalCacheWrite = usage.reduce((sum, u) => sum + u.cache_write_tokens, 0);
   const uniqueModels = [...new Set(usage.map((u) => u.model))];
 
+  // Match tool results to tool calls by sequence (tool_use followed by tool_result)
+  const toolResultMap = new Map<number, TaskMessagePayload>();
+  let lastToolUseIdx = -1;
+  messages.forEach((msg, idx) => {
+    if (msg.type === "tool_use") {
+      lastToolUseIdx = idx;
+    } else if (msg.type === "tool_result" && lastToolUseIdx >= 0) {
+      toolResultMap.set(lastToolUseIdx, msg);
+      lastToolUseIdx = -1;
+    }
+  });
+
   return (
     <div className="px-4 py-3 space-y-4 bg-muted/30">
       {/* Token Usage Summary */}
@@ -131,24 +236,14 @@ function TaskExecutionPanel({ task }: { task: AgentTask }) {
             <Wrench className="h-3.5 w-3.5" />
             Tool Calls ({toolMessages.length})
           </div>
-          <div className="space-y-1 max-h-60 overflow-y-auto">
-            {toolMessages.map((msg, i) => (
-              <div key={i} className="flex items-start gap-2 rounded-md bg-background px-3 py-2 border text-xs">
-                <Zap className="h-3 w-3 mt-0.5 shrink-0 text-blue-500" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{msg.tool ?? "Unknown Tool"}</div>
-                  {msg.input && Object.keys(msg.input).length > 0 && (
-                    <div className="mt-1 text-muted-foreground truncate">
-                      {Object.entries(msg.input)
-                        .filter(([_, v]) => v !== undefined && v !== null && v !== "")
-                        .slice(0, 3)
-                        .map(([k, v]) => `${k}: ${String(v).slice(0, 50)}`)
-                        .join(" · ")}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="space-y-1 max-h-80 overflow-y-auto">
+            {toolMessages.map((msg, i) => {
+              const msgIdx = messages.indexOf(msg);
+              const toolResult = toolResultMap.get(msgIdx);
+              return (
+                <ToolCallItem key={i} msg={msg} toolResult={toolResult} />
+              );
+            })}
           </div>
         </div>
       )}
