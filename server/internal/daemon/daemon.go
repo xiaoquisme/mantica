@@ -1244,7 +1244,10 @@ func convertSkillsForEnv(skills []SkillData) []execenv.SkillContextForEnv {
 	}
 	return result
 }
-// handleKanbanTask handles tasks assigned to the Kanban Agent
+
+// handleKanbanTask handles tasks assigned to the Kanban Agent.
+// Instead of decomposing into subtasks, it sends the issue directly to the LLM
+// in a single call and reports the result.
 func (d *Daemon) handleKanbanTask(ctx context.Context, task Task, provider string, taskLog *slog.Logger) {
 
 	// Start the task
@@ -1256,100 +1259,35 @@ func (d *Daemon) handleKanbanTask(ctx context.Context, task Task, provider strin
 		return
 	}
 
-	taskLog.Info("kanban agent starting task decomposition", "issue", task.IssueID)
+	taskLog.Info("kanban agent starting task", "issue", task.IssueID)
 
-	// Get issue details from the database
-	title := ""
-	description := ""
-	if task.IssueID != "" {
-		issueUUID, err := parseUUID(task.IssueID)
-		if err != nil {
-			taskLog.Error("invalid issue ID", "error", err)
-			_ = d.client.FailTask(ctx, task.ID, fmt.Sprintf("invalid issue ID: %s", err.Error()))
-			return
-		}
-		issue, err := d.queries.GetIssue(ctx, issueUUID)
-		if err != nil {
-			taskLog.Error("failed to fetch issue", "error", err)
-			_ = d.client.FailTask(ctx, task.ID, fmt.Sprintf("failed to fetch issue: %s", err.Error()))
-			return
-		}
-		title = issue.Title
-		if issue.Description.Valid {
-			description = issue.Description.String
-		}
-	} else {
-		// For chat tasks, use the session ID
-		title = fmt.Sprintf("Chat Task %s", shortID(task.ChatSessionID))
-		description = "Chat task from user"
-	}
-
-	// Decompose the task
-	subTasks, err := d.kanbanAgent.DecomposeTask(ctx, task.IssueID, title, description)
-	if err != nil {
-		taskLog.Error("decompose task failed", "error", err)
-		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("decompose task failed: %s", err.Error())); failErr != nil {
-			taskLog.Error("fail kanban task after decompose error", "error", failErr)
-		}
-		return
-	}
-
-	taskLog.Info("task decomposed", "subtasks", len(subTasks))
-
-	// Find an available provider for subtasks (prefer claude, then codex, then hermes)
+	// Find an available provider (prefer claude, then codex, then hermes)
 	subtaskProvider := d.findAvailableProvider()
 	if subtaskProvider == "" {
-		taskLog.Error("no available provider for subtasks")
-		_ = d.client.FailTask(ctx, task.ID, "no available provider for subtasks")
+		taskLog.Error("no available provider")
+		_ = d.client.FailTask(ctx, task.ID, "no available provider")
 		return
 	}
 
-	// Execute sub-tasks sequentially, each via runTask
-	var results []*SubTaskResult
-	for i, subtask := range subTasks {
-		taskLog.Info("executing sub-task", "index", i, "description", subtask.Description)
-
-		// Create a synthetic task for this subtask
-		subtaskTask := Task{
-			ID:          fmt.Sprintf("%s-sub-%d", task.ID, i),
-			IssueID:     task.IssueID,
-			WorkspaceID: task.WorkspaceID,
-			RuntimeID:   task.RuntimeID,
-			Agent: &AgentData{
-				Name: subtask.Description,
-			},
-			Repos: task.Repos,
+	// Execute the task directly via runTask (single LLM call)
+	result, err := d.runTask(ctx, task, subtaskProvider, taskLog)
+	if err != nil {
+		taskLog.Error("task execution failed", "error", err)
+		if failErr := d.client.FailTask(ctx, task.ID, err.Error()); failErr != nil {
+			taskLog.Error("fail task failed", "error", failErr)
 		}
+		return
+	}
 
-		// Run the subtask
-		result, err := d.runTask(ctx, subtaskTask, subtaskProvider, taskLog)
-		if err != nil {
-			taskLog.Error("sub-task failed", "index", i, "error", err)
-			results = append(results, &SubTaskResult{
-				Success: false,
-				Error:   err.Error(),
-			})
-		} else {
-			taskLog.Info("sub-task completed", "index", i)
-			results = append(results, &SubTaskResult{
-				Success: true,
-				Output:  result.Comment,
-			})
+	// Complete the task with the result
+	if err := d.client.CompleteTask(ctx, task.ID, result.Comment, result.BranchName, result.SessionID, result.WorkDir); err != nil {
+		taskLog.Error("complete task failed", "error", err)
+		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("complete task failed: %s", err.Error())); failErr != nil {
+			taskLog.Error("fail task fallback also failed", "error", failErr)
 		}
 	}
 
-	// Aggregate results
-	summary := d.kanbanAgent.AggregateResults(results)
-
-	taskLog.Info("kanban task completed", "total_subtasks", len(results))
-
-	// Complete the kanban task with the aggregated summary
-	if err := d.client.CompleteTask(ctx, task.ID, summary, "", "", ""); err != nil {
-		taskLog.Error("complete kanban task failed", "error", err)
-		if failErr := d.client.FailTask(ctx, task.ID, fmt.Sprintf("complete kanban task failed: %s", err.Error())); failErr != nil {
-			taskLog.Error("fail kanban task after complete error", "error", failErr)
-		}
-	}
+	taskLog.Info("kanban task completed")
 }
 
 // findAvailableProvider finds an available provider (claude > codex > hermes)

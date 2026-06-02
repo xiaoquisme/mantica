@@ -160,6 +160,24 @@ func (h *Handler) ensureUserWorkspace(ctx context.Context, user db.User) error {
 		return err
 	}
 
+	// Create default KANBAN agent for the workspace
+	if _, err := qtx.CreateAgent(ctx, db.CreateAgentParams{
+		WorkspaceID:        workspace.ID,
+		Name:               "KANBAN",
+		Description:        "Orchestrator agent that decomposes issues and coordinates execution",
+		AvatarUrl:          pgtype.Text{},
+		RuntimeMode:        "local",
+		RuntimeConfig:      []byte{},
+		RuntimeID:          pgtype.UUID{},
+		Visibility:         "workspace",
+		MaxConcurrentTasks: 1,
+		OwnerID:            user.ID,
+		Instructions:       "You are the Kanban Agent, the sole orchestrator for this workspace.\n\nYour job:\n1. Receive issues assigned to you\n2. Analyze the issue and determine what needs to be done\n3. Execute the work directly (code changes, analysis, etc.)\n4. Update issue status to \"done\" when complete, or \"blocked\" if stuck\n\nStatus values:\n- backlog: Not started\n- todo: Ready to work on\n- doing: Currently being worked on\n- done: Completed\n- blocked: Cannot proceed\n- cancelled: No longer needed",
+		DefaultModel:       pgtype.Text{},
+	}); err != nil {
+		slog.Warn("failed to create default kanban agent", "workspace_id", uuidToString(workspace.ID), "error", err)
+	}
+
 	return tx.Commit(ctx)
 }
 
